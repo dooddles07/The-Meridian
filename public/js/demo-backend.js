@@ -19,7 +19,7 @@
   'use strict';
 
   // Demo identities (used to auto-enter each portal)
-  var DEMO_MEMBER = { name: 'Brixsonn Romero', initials: 'BR', email: 'brixsonn.romero@example.com', unit: '12-09', type: 'Owner', contact_id: 'demo-contact-1' };
+  var DEMO_MEMBER = { name: 'Alex Tan', initials: 'AT', email: 'alex.tan@example.com', unit: '12-09', type: 'Owner', contact_id: 'demo-contact-1' };
   var MGMT_USER   = { username: 'management', role: 'management', displayName: 'Management' };
   var GH_USER     = { username: 'guardhouse', role: 'guardhouse', displayName: 'Guardhouse' };
 
@@ -73,7 +73,7 @@
     var me = DEMO_MEMBER;
     var d = {
       residents: [
-        { name: 'Brixsonn Romero', unit: '12-09', email: 'brixsonn.romero@example.com', phone: '+65 9123 4567', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-1' },
+        { name: 'Alex Tan', unit: '12-09', email: 'alex.tan@example.com', phone: '+65 9123 4567', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-1' },
         { name: 'Priya Nair', unit: '05-11', email: 'priya.nair@example.com', phone: '+65 9222 1188', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-2' },
         { name: 'Marcus Lee', unit: '18-02', email: 'marcus.lee@example.com', phone: '+65 9777 4321', type: 'Tenant', ghlLinked: true, contact_id: 'demo-contact-3' },
         { name: 'Sofia Reyes', unit: '09-14', email: 'sofia.reyes@example.com', phone: '+65 9345 8890', type: 'Owner', ghlLinked: false, contact_id: 'demo-contact-4' },
@@ -115,7 +115,7 @@
       // from `residents` (the directory management/guardhouse read) so passwords
       // never end up in those payloads — mirrors the real backend's separation.
       residentAuth: {
-        'brixsonn.romero@example.com': { password: 'demo1234', contact_id: 'demo-contact-1' },
+        'alex.tan@example.com': { password: 'demo1234', contact_id: 'demo-contact-1' },
       },
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
