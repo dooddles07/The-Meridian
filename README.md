@@ -36,7 +36,7 @@ system with **three portals** that talk to each other in real time:
 
 | Portal | Who uses it | Opens as |
 | --- | --- | --- |
-| **Resident** (`/portal.html`) | Home owners & tenants | Alex Tan · Unit 12-09 |
+| **Resident** (`/portal.html`) | Home owners & tenants | Furnished resident account, ready to explore |
 | **Management** (`/management.html`) | Building management office | Management console |
 | **Guardhouse** (`/guardhouse-portal.html`) | Security / front desk | Guard station |
 
