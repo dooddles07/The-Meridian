@@ -82,4 +82,4 @@ function guardhouseLogin(req, res) {
   return issueToken(res, 'guardhouse', account);
 }
 
-module.exports = { residentLogin, managementLogin, guardhouseLogin };
+module.exports = { residentSignup, residentLogin, managementLogin, guardhouseLogin };

@@ -1,15 +1,15 @@
-// PORTFOLIO PROJECT: runs fully client-side. This process only serves the static
-// frontend in ../public — all API calls are intercepted in-browser by
-// public/js/client-backend.js. The real backend (./controllers, ./models, ./routes,
-// ./services) is kept as reference only and is not mounted here.
-
-require('dotenv').config();
+// Local dev entry point. Serves the static frontend in ../public AND mounts the
+// real API (./app.js — JWT auth, MongoDB, the full route set) at /api/*, so
+// `npm start` runs the whole thing (resident signup/login is genuinely real,
+// backed by MONGO_URL). On Vercel, ../api/index.js re-exports ./app.js directly
+// as a Serverless Function instead; static files are served by the platform.
 
 const express = require('express');
 const path    = require('path');
 const helmet  = require('helmet');
 const cors    = require('cors');
 
+const api  = require('./app');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -39,14 +39,7 @@ app.use(helmet({
 // Same-origin only; this build has no cross-origin API surface.
 app.use(cors({ origin: false }));
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'The Lumina is running.', timestamp: new Date().toISOString() });
-});
-
-// Any /api/* request that slips past the browser mock gets a JSON 404 instead of the SPA HTML.
-app.use('/api', (req, res) => {
-  res.status(404).json({ success: false, message: 'This is a static build — the API runs entirely in the browser (see public/js/client-backend.js).' });
-});
+app.use(api); // handles /api/* (its own /api/health, auth, booking, etc.)
 
 const PUBLIC_DIR = path.join(__dirname, '../public');
 app.use(express.static(PUBLIC_DIR));
@@ -62,7 +55,6 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅ The Lumina running on http://localhost:${PORT}`);
-  console.log('   Static, client-side only — no database, CRM, or external connection.');
 });
 
 module.exports = app;

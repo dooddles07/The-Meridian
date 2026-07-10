@@ -111,12 +111,6 @@
         ann('Annual General Meeting 2026', 'All residents are invited to the AGM at the function room. Please RSVP so we can plan seating.', 'Event', { rsvp_enabled: true, eventAt: daysFromNow(14) + 'T19:30:00+08:00', event_venue: 'Function Room' }),
         ann('New Recycling Guidelines', 'Updated recycling bin locations and sorting rules are now in effect across all blocks.', 'General', {}),
       ],
-      // Resident signup/login credentials, keyed by lowercase email. Kept separate
-      // from `residents` (the directory management/guardhouse read) so passwords
-      // never end up in those payloads — mirrors the real backend's separation.
-      residentAuth: {
-        'alex.tan@example.com': { password: 'test1234', contact_id: 'local-contact-1' },
-      },
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
         convo(me, [
@@ -179,15 +173,6 @@
   }
   function ok(extra) { return J(Object.assign({ success: true }, extra || {})); }
 
-  // Builds the resident-portal "member" shape from a directory entry, for both
-  // signup and login responses.
-  function memberFor(email) {
-    var r = db.residents.find(function (x) { return x.email === email; });
-    if (!r) return null;
-    var initials = (r.name || '').split(/\s+/).map(function (p) { return p[0] || ''; }).join('').slice(0, 2).toUpperCase() || 'R';
-    return { name: r.name, initials: initials, email: r.email, unit: r.unit, type: r.type || 'Resident', contact_id: r.contact_id };
-  }
-
   // Map a stored collection item → the generic "opportunity" shape the resident
   // "My …" panels and the management pipeline tables consume.
   function oppName(kind, it) {
@@ -220,30 +205,10 @@
     if (opts.body) { try { body = JSON.parse(opts.body); } catch (e) { body = {}; } }
     var m; // regex capture holder
 
-    // AUTH — resident signup/login are real (checked against the in-browser
-    // residentAuth store) so the feature genuinely works; management/guardhouse
-    // stay no-op since portals are auto-entered anyway.
-    if (p === '/api/auth/resident/signup' && method === 'POST') {
-      var sName = String(body.name || '').trim();
-      var sUnit = String(body.unit || '').trim();
-      var sEmail = String(body.email || '').trim().toLowerCase();
-      var sPassword = String(body.password || '');
-      if (!sName || !sUnit || !sEmail || !sPassword) return J({ success: false, message: 'Name, unit number, email and password are required.' }, 400);
-      if (sPassword.length < 8) return J({ success: false, message: 'Password must be at least 8 characters.' }, 400);
-      if (db.residentAuth[sEmail]) return J({ success: false, message: 'An account with this email already exists. Try signing in instead.' }, 409);
-      var newContactId = uid('contact');
-      db.residentAuth[sEmail] = { password: sPassword, contact_id: newContactId };
-      db.residents.push({ name: sName, unit: sUnit, email: sEmail, phone: '', type: 'Resident', ghlLinked: false, contact_id: newContactId });
-      persist();
-      return ok({ token: 'local-token-' + newContactId, member: memberFor(sEmail) });
-    }
-    if (p === '/api/auth/resident/login' && method === 'POST') {
-      var lEmail = String(body.email || '').trim().toLowerCase();
-      var lPassword = String(body.password || '');
-      var auth = db.residentAuth[lEmail];
-      if (!auth || auth.password !== lPassword) return J({ success: false, message: 'Invalid email or password.' }, 401);
-      return ok({ token: 'local-token-' + auth.contact_id, member: memberFor(lEmail) });
-    }
+    // AUTH — resident signup/login are handled by the real backend (see the
+    // fetch override above, which passes /api/auth/resident/* straight through
+    // instead of reaching this router at all). Management/guardhouse stay
+    // no-op since those portals are auto-entered anyway.
     if (p === '/api/auth/management/login')  return ok({ token: 'local-token', user: MGMT_USER });
     if (p === '/api/auth/guardhouse/login')  return ok({ token: 'local-token', user: GH_USER });
 
@@ -546,13 +511,19 @@
     return { id: String(e._id), cat: e.cat, key: e.key, type: e.type, label: e.label, name: e.name, meta: e.meta, time: new Date(e.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) };
   }
 
-  // fetch override
+  // fetch override — resident signup/login are real (Mongo-backed, via the
+  // reference backend deployed as a Vercel Serverless Function), so those two
+  // paths pass through untouched. Everything else stays mocked: the other
+  // resident features + all of management/guardhouse were built against a
+  // real CRM (GoHighLevel) that isn't configured here, so they'd just 503
+  // against the real backend — the mock keeps them fully working instead.
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
     try {
       var s = (typeof url === 'string') ? url : (url && url.url) || '';
-      if (s.indexOf('/api/') !== -1) {
+      var isRealAuth = s.indexOf('/api/auth/resident/') !== -1;
+      if (s.indexOf('/api/') !== -1 && !isRealAuth) {
         return Promise.resolve(handle(s, opts));
       }
     } catch (e) {
