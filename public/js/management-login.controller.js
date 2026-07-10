@@ -56,7 +56,7 @@ usernameEl.addEventListener('keydown', e => { if (e.key === 'Enter') passwordEl.
 
 // Theme toggle
 (function () {
-  const KEY = 'meridian-portal-theme';
+  const KEY = 'lumina-portal-theme';
   function sync(theme) {
     document.querySelectorAll('[data-theme-toggle]').forEach(el => {
       el.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');

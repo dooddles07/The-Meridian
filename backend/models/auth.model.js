@@ -1,8 +1,8 @@
 // Account store — env-driven, no hardcoded accounts. All accounts come from the
 // environment; nothing is baked into source. Required env vars:
-//   MERIDIAN_MANAGEMENT  JSON: [{ "username", "password", "displayName" }]
-//   MERIDIAN_RESIDENTS   JSON: [{ "email", "unit", "name", "residentType", "ghl_contact_id" }]
-//   MERIDIAN_GUARDHOUSE  JSON: [{ "username", "password", "displayName" }]
+//   LUMINA_MANAGEMENT  JSON: [{ "username", "password", "displayName" }]
+//   LUMINA_RESIDENTS   JSON: [{ "email", "unit", "name", "residentType", "ghl_contact_id" }]
+//   LUMINA_GUARDHOUSE  JSON: [{ "username", "password", "displayName" }]
 
 const bcrypt = require('bcryptjs');
 
@@ -36,9 +36,9 @@ function load(key) {
   }
 }
 
-const MANAGEMENT = load('MERIDIAN_MANAGEMENT');
-const RESIDENTS  = load('MERIDIAN_RESIDENTS');
-const GUARDHOUSE = load('MERIDIAN_GUARDHOUSE');
+const MANAGEMENT = load('LUMINA_MANAGEMENT');
+const RESIDENTS  = load('LUMINA_RESIDENTS');
+const GUARDHOUSE = load('LUMINA_GUARDHOUSE');
 
 // Refuse to run with the old shipped defaults or obvious placeholder passwords —
 // these were public in source, so any deployment still using them is compromised.
@@ -62,16 +62,16 @@ function assertNoDefaultCreds(list, key) {
     }
   }
 }
-assertNoDefaultCreds(MANAGEMENT, 'MERIDIAN_MANAGEMENT');
-assertNoDefaultCreds(GUARDHOUSE, 'MERIDIAN_GUARDHOUSE');
+assertNoDefaultCreds(MANAGEMENT, 'LUMINA_MANAGEMENT');
+assertNoDefaultCreds(GUARDHOUSE, 'LUMINA_GUARDHOUSE');
 if (!MANAGEMENT.length) {
-  console.warn('[auth] MERIDIAN_MANAGEMENT is empty — no management account can sign in until it is set.');
+  console.warn('[auth] LUMINA_MANAGEMENT is empty — no management account can sign in until it is set.');
 }
 
 // Anti-enumeration: always perform exactly one password comparison, even when the
 // username is unknown (against a dummy hash), so response timing doesn't reveal
 // whether a username exists. Login error messages are already uniform.
-const DUMMY_HASH = bcrypt.hashSync('meridian-nonexistent-account-baseline', 12);
+const DUMMY_HASH = bcrypt.hashSync('lumina-nonexistent-account-baseline', 12);
 
 function authenticate(list, username, password) {
   const u = clean(username).toLowerCase();

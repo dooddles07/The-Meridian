@@ -1,7 +1,7 @@
 {
-  "name": "meridian-backend",
+  "name": "lumina-backend",
   "version": "1.0.0",
-  "description": "The Meridian — Resident, Management & Guardhouse Portal Backend",
+  "description": "The Lumina — Resident, Management & Guardhouse Portal Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

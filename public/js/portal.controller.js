@@ -7,9 +7,9 @@
   // are stored locally (browser) so the UI is fully usable; they'll be sent to
   // GHL once the booking API is reconnected.
 
-  const SESS = 'meridian_member';
-  const TOKEN_KEY = 'meridian_token';
-  const BK   = 'meridian_bookings';
+  const SESS = 'lumina_member';
+  const TOKEN_KEY = 'lumina_token';
+  const BK   = 'lumina_bookings';
   const $ = id => document.getElementById(id);
   // Finished bookings (no longer active): shown in history but excluded from the
   // active count, per-day limit, slot re-booking guard and guest linking.
@@ -47,7 +47,7 @@
 
   // Theme toggle
   (function initTheme() {
-    const KEY = 'meridian-portal-theme';
+    const KEY = 'lumina-portal-theme';
     function syncToggleUI(theme) {
       document.querySelectorAll('[data-theme-toggle]').forEach(el => {
         el.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');
@@ -305,7 +305,7 @@
       member = data.member;
       authToken = data.token || null;
       _authExpiredHandled = false;
-      try { localStorage.removeItem('meridian_demo_signed_out'); } catch {}
+      try { localStorage.removeItem('lumina_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
       if (authToken) { sessionStorage.setItem(TOKEN_KEY, authToken); localStorage.setItem(TOKEN_KEY, authToken); }
@@ -354,7 +354,7 @@
       member = data.member;
       authToken = data.token || null;
       _authExpiredHandled = false;
-      try { localStorage.removeItem('meridian_demo_signed_out'); } catch {}
+      try { localStorage.removeItem('lumina_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
       if (authToken) { sessionStorage.setItem(TOKEN_KEY, authToken); localStorage.setItem(TOKEN_KEY, authToken); }
@@ -771,15 +771,15 @@
   }
 
   // Quantum payment links per deposit facility / move. Each entry is one or more fees.
-  // "Pay Deposit" opens a local mock payment page (public/demo-pay.html) in the modal
+  // "Pay Deposit" opens a local mock payment page (public/checkout.html) in the modal
   // iframe - no external call is made.
   const PAY_LINKS = {
-    bbq:  [{ label: 'Refundable Deposit', url: 'demo-pay.html' }],
-    pool: [{ label: 'Refundable Deposit', url: 'demo-pay.html' }],
-    move: [{ label: 'Admin Fee + Refundable Deposit', url: 'demo-pay.html' }],
+    bbq:  [{ label: 'Refundable Deposit', url: 'checkout.html' }],
+    pool: [{ label: 'Refundable Deposit', url: 'checkout.html' }],
+    move: [{ label: 'Admin Fee + Refundable Deposit', url: 'checkout.html' }],
   };
   const VERANDAH_FEES = [
-    { label: 'Booking Fee + Refundable Deposit', feeLabel: 'deposit', amount: 600, url: 'demo-pay.html' },
+    { label: 'Booking Fee + Refundable Deposit', feeLabel: 'deposit', amount: 600, url: 'checkout.html' },
   ];
   // A facility requires a deposit if it has payment links OR is the Verandah
   // (whose fees live in VERANDAH_FEES, not PAY_LINKS).
@@ -1882,7 +1882,7 @@
             if (fees.length) { url = fees[0].url; title = 'Pay Deposit'; payLabel = fees[0].label; }
           }
           if (url) {
-            // Pass the real amount + label so the demo checkout shows them.
+            // Pass the real amount + label so the checkout page shows them.
             const q = new URLSearchParams();
             if (amt)      q.set('amount', amt);
             if (payLabel) q.set('label', payLabel);
@@ -2589,9 +2589,9 @@
   bind('logoutBtn', () => {
     authToken = null;
     [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
-    // Tells demo-backend.js's auto-login not to re-seed the canned demo session on
+    // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.
-    try { localStorage.setItem('meridian_demo_signed_out', '1'); } catch {}
+    try { localStorage.setItem('lumina_signed_out', '1'); } catch {}
     window.location.href = 'index.html';
   });
 

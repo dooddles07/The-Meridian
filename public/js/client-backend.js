@@ -1,25 +1,25 @@
 /*
- * demo-backend.js - PORTFOLIO DEMO
+ * client-backend.js - PORTFOLIO PROJECT
  *
  * Makes The Lumina portal run with ZERO backend and ZERO external connections.
  * It must be loaded BEFORE each portal's controller script. It does three things:
  *
- *   1. Auto-enters every portal (no login) by seeding a demo session.
+ *   1. Auto-enters every portal (no login) by seeding a preview session.
  *   2. Overrides window.fetch to intercept every "/api/..." request and answer it
  *      from an in-browser store (localStorage) - nothing ever hits the network.
- *   3. Seeds realistic demo data so every screen is populated.
+ *   3. Seeds realistic sample data so every screen is populated.
  *
  * All three portals (resident / management / guardhouse) share the same browser
  * store, so actions in one show up in another (e.g. a booking a resident makes
  * appears in the management table; a guest registration is findable at the
  * guardhouse). Data lives only in this browser and resets if you clear storage
- * or call window.__meridianDemoReset().
+ * or call window.__luminaReset().
  */
 (function () {
   'use strict';
 
-  // Demo identities (used to auto-enter each portal)
-  var DEMO_MEMBER = { name: 'Alex Tan', initials: 'AT', email: 'alex.tan@example.com', unit: '12-09', type: 'Owner', contact_id: 'demo-contact-1' };
+  // Preview identities (used to auto-enter each portal)
+  var MEMBER = { name: 'Alex Tan', initials: 'AT', email: 'alex.tan@example.com', unit: '12-09', type: 'Owner', contact_id: 'local-contact-1' };
   var MGMT_USER   = { username: 'management', role: 'management', displayName: 'Management' };
   var GH_USER     = { username: 'guardhouse', role: 'guardhouse', displayName: 'Guardhouse' };
 
@@ -28,14 +28,14 @@
       // Don't clobber a real signup/login session, and don't re-enter automatically
       // right after an explicit logout — either way, a login/signup click clears
       // this flag, and the next full reload with no session re-seeds the preview.
-      if (localStorage.getItem('meridian_demo_signed_out') === '1') return;
-      if (localStorage.getItem('meridian_token')) return;
-      var mem = JSON.stringify(DEMO_MEMBER);
-      localStorage.setItem('meridian_member', mem);   sessionStorage.setItem('meridian_member', mem);
-      localStorage.setItem('meridian_token', 'demo-token'); sessionStorage.setItem('meridian_token', 'demo-token');
-      localStorage.setItem('mgmtToken', 'demo-token'); sessionStorage.setItem('mgmtToken', 'demo-token');
+      if (localStorage.getItem('lumina_signed_out') === '1') return;
+      if (localStorage.getItem('lumina_token')) return;
+      var mem = JSON.stringify(MEMBER);
+      localStorage.setItem('lumina_member', mem);   sessionStorage.setItem('lumina_member', mem);
+      localStorage.setItem('lumina_token', 'local-token'); sessionStorage.setItem('lumina_token', 'local-token');
+      localStorage.setItem('mgmtToken', 'local-token'); sessionStorage.setItem('mgmtToken', 'local-token');
       localStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER)); sessionStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER));
-      sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'demo-token', user: GH_USER }));
+      sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'local-token', user: GH_USER }));
     } catch (e) { /* storage may be blocked; the mock still answers */ }
   }
   seedSession();
@@ -50,13 +50,13 @@
     move:     ['Deposit Pending', 'Confirmed', 'Completed', 'Deposit Refunded'],
   };
   var PIPELINE_IDS = {
-    facility: 'demo-pipeline-facility', guest: 'demo-pipeline-guest', parcel: 'demo-pipeline-parcel',
-    defect: 'demo-pipeline-defect', feedback: 'demo-pipeline-feedback', move: 'demo-pipeline-move',
+    facility: 'local-pipeline-facility', guest: 'local-pipeline-guest', parcel: 'local-pipeline-parcel',
+    defect: 'local-pipeline-defect', feedback: 'local-pipeline-feedback', move: 'local-pipeline-move',
   };
   var DEPOSIT_FACILITIES = { bbq: true, pool: true, verandah: true };
 
   // Store
-  var DB_KEY = 'meridian_demo_db_v2';
+  var DB_KEY = 'lumina_db_v2';
   var db = load();
   if (!db) { db = seedDB(); persist(); }
 
@@ -67,16 +67,16 @@
   function daysFromNow(n) { var d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
   function guestRef(date) { return 'GST-' + String(date || daysFromNow(0)).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000); }
 
-  window.__meridianDemoReset = function () { localStorage.removeItem(DB_KEY); location.reload(); };
+  window.__luminaReset = function () { localStorage.removeItem(DB_KEY); location.reload(); };
 
   function seedDB() {
-    var me = DEMO_MEMBER;
+    var me = MEMBER;
     var d = {
       residents: [
-        { name: 'Alex Tan', unit: '12-09', email: 'alex.tan@example.com', phone: '+65 9123 4567', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-1' },
-        { name: 'Priya Nair', unit: '05-11', email: 'priya.nair@example.com', phone: '+65 9222 1188', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-2' },
-        { name: 'Marcus Lee', unit: '18-02', email: 'marcus.lee@example.com', phone: '+65 9777 4321', type: 'Tenant', ghlLinked: true, contact_id: 'demo-contact-3' },
-        { name: 'Sofia Reyes', unit: '09-14', email: 'sofia.reyes@example.com', phone: '+65 9345 8890', type: 'Owner', ghlLinked: false, contact_id: 'demo-contact-4' },
+        { name: 'Alex Tan', unit: '12-09', email: 'alex.tan@example.com', phone: '+65 9123 4567', type: 'Owner', ghlLinked: true, contact_id: 'local-contact-1' },
+        { name: 'Priya Nair', unit: '05-11', email: 'priya.nair@example.com', phone: '+65 9222 1188', type: 'Owner', ghlLinked: true, contact_id: 'local-contact-2' },
+        { name: 'Marcus Lee', unit: '18-02', email: 'marcus.lee@example.com', phone: '+65 9777 4321', type: 'Tenant', ghlLinked: true, contact_id: 'local-contact-3' },
+        { name: 'Sofia Reyes', unit: '09-14', email: 'sofia.reyes@example.com', phone: '+65 9345 8890', type: 'Owner', ghlLinked: false, contact_id: 'local-contact-4' },
       ],
       bookings: [
         row('Confirmed',      'pool',   'Swimming Pool', '🏊', me, daysFromNow(2),  '9:00 AM - 10:00 AM', 2, ''),
@@ -103,8 +103,8 @@
         move('Move-In', daysFromNow(9), '10:00 AM - 1:00 PM', 'Bulky furniture, need service lift.', 'Deposit Pending', me),
       ],
       payments: [
-        pay('BBQ Pit - refundable deposit', 200, 'Deposit', 'paid',    'DEP-BBQ001', 'demo-opp-bbq',  '', me),
-        pay('Move-In - admin fee + deposit', 2200, 'Deposit', 'paid',   'DEP-MOV001', 'demo-opp-move', '', me),
+        pay('BBQ Pit - refundable deposit', 200, 'Deposit', 'paid',    'DEP-BBQ001', 'local-opp-bbq',  '', me),
+        pay('Move-In - admin fee + deposit', 2200, 'Deposit', 'paid',   'DEP-MOV001', 'local-opp-move', '', me),
       ],
       announcements: [
         ann('Scheduled Water Tank Cleaning', 'Water supply will be interrupted on the maintenance date below. Please store water in advance.', 'Maintenance', { pinned: true, eventAt: daysFromNow(4) + 'T09:00:00+08:00', eventEndAt: daysFromNow(4) + 'T14:00:00+08:00', blocked_facilities: ['pool'] }),
@@ -115,7 +115,7 @@
       // from `residents` (the directory management/guardhouse read) so passwords
       // never end up in those payloads — mirrors the real backend's separation.
       residentAuth: {
-        'alex.tan@example.com': { password: 'demo1234', contact_id: 'demo-contact-1' },
+        'alex.tan@example.com': { password: 'test1234', contact_id: 'local-contact-1' },
       },
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
@@ -134,42 +134,42 @@
     return d;
 
     function row(status, key, name, emoji, m, date, slot, pax, notes) {
-      var id = uid('demo-appt');
-      return { id: id, facilityKey: key, facility: name, facilityName: name, emoji: emoji, resident: m.name, unit: m.unit, pax: pax, date: date, slot: slot, notes: notes, status: status, stage: status, oppId: uid('demo-opp'), contactId: m.contact_id };
+      var id = uid('local-appt');
+      return { id: id, facilityKey: key, facility: name, facilityName: name, emoji: emoji, resident: m.name, unit: m.unit, pax: pax, date: date, slot: slot, notes: notes, status: status, stage: status, oppId: uid('local-opp'), contactId: m.contact_id };
     }
     function guest(visitor, email, phone, type, date, stage, m) {
-      return { oppId: uid('demo-opp'), contactId: m.contact_id, reference: guestRef(date), visitor: visitor, visitorEmail: email, visitorPhone: phone, visitorType: type, host: m.name, unit: m.unit, phone: phone, visitDate: date, duration: 'Single Visit (Day)', stage: stage, createdAt: nowISO() };
+      return { oppId: uid('local-opp'), contactId: m.contact_id, reference: guestRef(date), visitor: visitor, visitorEmail: email, visitorPhone: phone, visitorType: type, host: m.name, unit: m.unit, phone: phone, visitDate: date, duration: 'Single Visit (Day)', stage: stage, createdAt: nowISO() };
     }
     function parcel(ref, courier, desc, collector, stage, m) {
-      return { id: uid('demo-parcel'), opportunityId: uid('demo-opp'), contactId: m.contact_id, ref: ref, courier: courier, desc: desc, collector: collector, resident: m.name, unit: m.unit, stage: stage, ts: nowISO() };
+      return { id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: m.contact_id, ref: ref, courier: courier, desc: desc, collector: collector, resident: m.name, unit: m.unit, stage: stage, ts: nowISO() };
     }
     function defect(desc, category, location, urgency, stage, m) {
-      return { id: uid('demo-defect'), opportunityId: uid('demo-opp'), contactId: m.contact_id, desc: desc, category: category, location: location, urgency: urgency, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
+      return { id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: m.contact_id, desc: desc, category: category, location: location, urgency: urgency, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function feedback(type, category, desc, idate, itime, stage, m) {
-      return { id: uid('demo-fb'), opportunityId: uid('demo-opp'), contactId: m.contact_id, type: type, category: category, desc: desc, incident_date: idate, incident_time: itime, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
+      return { id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: m.contact_id, type: type, category: category, desc: desc, incident_date: idate, incident_time: itime, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function move(type, date, time, notes, stage, m) {
-      return { id: uid('demo-move'), opportunityId: uid('demo-opp'), contactId: m.contact_id, move_type: type, move_date: date, move_time: time, notes: notes, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
+      return { id: uid('local-move'), opportunityId: uid('local-opp'), contactId: m.contact_id, move_type: type, move_date: date, move_time: time, notes: notes, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function pay(desc, amount, category, status, ref, oppId, fee, m) {
-      return { id: uid('demo-pay'), description: desc, amount: amount, currency: 'SGD', category: category, status: status, reference: ref, opportunity_id: oppId, fee_label: fee, resident_unit: m.unit, resident_email: m.email, paid_at: status === 'paid' ? nowISO() : null, due_at: null, createdAt: nowISO() };
+      return { id: uid('local-pay'), description: desc, amount: amount, currency: 'SGD', category: category, status: status, reference: ref, opportunity_id: oppId, fee_label: fee, resident_unit: m.unit, resident_email: m.email, paid_at: status === 'paid' ? nowISO() : null, due_at: null, createdAt: nowISO() };
     }
     function ann(title, body, category, opt) {
       opt = opt || {};
-      return { id: uid('demo-ann'), title: title, body: body, category: category, eventAt: opt.eventAt || null, eventEndAt: opt.eventEndAt || null, pinned: !!opt.pinned, rsvp_enabled: !!opt.rsvp_enabled, blocked_facilities: opt.blocked_facilities || [], event_venue: opt.event_venue || '', createdAt: nowISO() };
+      return { id: uid('local-ann'), title: title, body: body, category: category, eventAt: opt.eventAt || null, eventEndAt: opt.eventEndAt || null, pinned: !!opt.pinned, rsvp_enabled: !!opt.rsvp_enabled, blocked_facilities: opt.blocked_facilities || [], event_venue: opt.event_venue || '', createdAt: nowISO() };
     }
     function convo(m, msgs, resolved) {
       var messages = msgs.map(function (x) {
-        return { id: uid('demo-msg'), sender: x.sender, sender_name: x.sender_name, body: x.body, createdAt: new Date(Date.now() - x.minsAgo * 60000).toISOString() };
+        return { id: uid('local-msg'), sender: x.sender, sender_name: x.sender_name, body: x.body, createdAt: new Date(Date.now() - x.minsAgo * 60000).toISOString() };
       });
       var last = messages[messages.length - 1];
-      return { id: uid('demo-convo'), contact_id: m.contact_id, resident_name: m.name, resident_unit: m.unit, resident_email: m.email, last_message_at: last.createdAt, last_message_preview: last.body.slice(0, 80), last_sender: last.sender, unread_management: 0, unread_resident: 0, resolved: !!resolved, messages: messages };
+      return { id: uid('local-convo'), contact_id: m.contact_id, resident_name: m.name, resident_unit: m.unit, resident_email: m.email, last_message_at: last.createdAt, last_message_preview: last.body.slice(0, 80), last_sender: last.sender, unread_management: 0, unread_resident: 0, resolved: !!resolved, messages: messages };
     }
     function resource(title, category, fileName, fileType) {
-      var text = 'The Lumina · ' + title + '\n\nThis is a demo document included with the portfolio build.';
+      var text = 'The Lumina · ' + title + '\n\nThis is a sample document included with this portfolio build.';
       var data = 'data:' + fileType + ';base64,' + btoa(unescape(encodeURIComponent(text)));
-      return { id: uid('demo-res'), title: title, category: category, visibility: 'residents', file_data: data, file_name: fileName, file_type: fileType, file_size: text.length, uploaded_by: 'Management', createdAt: nowISO() };
+      return { id: uid('local-res'), title: title, category: category, visibility: 'residents', file_data: data, file_name: fileName, file_type: fileType, file_size: text.length, uploaded_by: 'Management', createdAt: nowISO() };
     }
   }
 
@@ -235,17 +235,17 @@
       db.residentAuth[sEmail] = { password: sPassword, contact_id: newContactId };
       db.residents.push({ name: sName, unit: sUnit, email: sEmail, phone: '', type: 'Resident', ghlLinked: false, contact_id: newContactId });
       persist();
-      return ok({ token: 'demo-token-' + newContactId, member: memberFor(sEmail) });
+      return ok({ token: 'local-token-' + newContactId, member: memberFor(sEmail) });
     }
     if (p === '/api/auth/resident/login' && method === 'POST') {
       var lEmail = String(body.email || '').trim().toLowerCase();
       var lPassword = String(body.password || '');
       var auth = db.residentAuth[lEmail];
       if (!auth || auth.password !== lPassword) return J({ success: false, message: 'Invalid email or password.' }, 401);
-      return ok({ token: 'demo-token-' + auth.contact_id, member: memberFor(lEmail) });
+      return ok({ token: 'local-token-' + auth.contact_id, member: memberFor(lEmail) });
     }
-    if (p === '/api/auth/management/login')  return ok({ token: 'demo-token', user: MGMT_USER });
-    if (p === '/api/auth/guardhouse/login')  return ok({ token: 'demo-token', user: GH_USER });
+    if (p === '/api/auth/management/login')  return ok({ token: 'local-token', user: MGMT_USER });
+    if (p === '/api/auth/guardhouse/login')  return ok({ token: 'local-token', user: GH_USER });
 
     // PIPELINES
     if (p === '/api/pipelines') {
@@ -265,15 +265,15 @@
     if (p === '/api/booking' && method === 'POST') {
       var fk = body.facilityKey;
       var status = DEPOSIT_FACILITIES[fk] ? 'Deposit Pending' : 'Confirmed';
-      var id = uid('demo-appt');
+      var id = uid('local-appt');
       db.bookings.push({
         id: id, facilityKey: fk, facility: body.facilityName || fk, facilityName: body.facilityName || fk,
-        emoji: body.emoji || '', resident: body.member_name || DEMO_MEMBER.name, unit: body.member_unit || DEMO_MEMBER.unit,
+        emoji: body.emoji || '', resident: body.member_name || MEMBER.name, unit: body.member_unit || MEMBER.unit,
         pax: body.pax || 1, date: body.date, slot: body.slot, notes: body.notes || '', status: status, stage: status,
-        oppId: uid('demo-opp'), contactId: body.contact_id || DEMO_MEMBER.contact_id,
+        oppId: uid('local-opp'), contactId: body.contact_id || MEMBER.contact_id,
       });
       persist();
-      return ok({ message: 'Booking confirmed.', appointmentId: id, calendarId: 'demo-cal-' + fk, pipelineConnected: true });
+      return ok({ message: 'Booking confirmed.', appointmentId: id, calendarId: 'local-cal-' + fk, pipelineConnected: true });
     }
     if ((m = p.match(/^\/api\/booking\/([^/]+)$/)) && method === 'PUT') {
       var b1 = db.bookings.find(function (x) { return x.id === decodeURIComponent(m[1]); });
@@ -297,14 +297,14 @@
     if (p === '/api/announcements') return ok({ announcements: db.announcements });
 
     if (p === '/api/rsvp' && method === 'POST') {
-      var aId = body.announcement_id, cId = body.contact_id || DEMO_MEMBER.contact_id;
+      var aId = body.announcement_id, cId = body.contact_id || MEMBER.contact_id;
       db.rsvps[aId] = db.rsvps[aId] || {};
-      db.rsvps[aId][cId] = { response: body.response, attendee_count: body.attendee_count || 1, resident_name: body.resident_name || DEMO_MEMBER.name, resident_unit: body.resident_unit || DEMO_MEMBER.unit, updatedAt: nowISO() };
+      db.rsvps[aId][cId] = { response: body.response, attendee_count: body.attendee_count || 1, resident_name: body.resident_name || MEMBER.name, resident_unit: body.resident_unit || MEMBER.unit, updatedAt: nowISO() };
       persist();
       return ok({ response: body.response, attendee_count: body.attendee_count || 1 });
     }
     if (p === '/api/rsvp/mine') {
-      var cid = qs.get('contact_id') || DEMO_MEMBER.contact_id, r = {};
+      var cid = qs.get('contact_id') || MEMBER.contact_id, r = {};
       Object.keys(db.rsvps).forEach(function (a) { if (db.rsvps[a][cid]) r[a] = { response: db.rsvps[a][cid].response, attendee_count: db.rsvps[a][cid].attendee_count }; });
       return ok({ rsvps: r });
     }
@@ -317,8 +317,8 @@
     if (p === '/api/messages/unread') { var cc = db.conversations[0]; return ok({ unread: cc ? (cc.unread_resident || 0) : 0 }); }
     if (p === '/api/messages' && method === 'POST') {
       var conv = db.conversations[0];
-      if (!conv) { conv = { id: uid('demo-convo'), contact_id: DEMO_MEMBER.contact_id, resident_name: DEMO_MEMBER.name, resident_unit: DEMO_MEMBER.unit, resident_email: DEMO_MEMBER.email, unread_management: 0, unread_resident: 0, resolved: false, messages: [] }; db.conversations.push(conv); }
-      var msg = { id: uid('demo-msg'), sender: 'resident', sender_name: DEMO_MEMBER.name, body: body.body, createdAt: nowISO() };
+      if (!conv) { conv = { id: uid('local-convo'), contact_id: MEMBER.contact_id, resident_name: MEMBER.name, resident_unit: MEMBER.unit, resident_email: MEMBER.email, unread_management: 0, unread_resident: 0, resolved: false, messages: [] }; db.conversations.push(conv); }
+      var msg = { id: uid('local-msg'), sender: 'resident', sender_name: MEMBER.name, body: body.body, createdAt: nowISO() };
       conv.messages.push(msg); conv.last_message_at = msg.createdAt; conv.last_message_preview = body.body.slice(0, 80); conv.last_sender = 'resident'; conv.unread_management += 1; conv.resolved = false;
       persist();
       return ok({ message: msg });
@@ -331,7 +331,7 @@
       // Confirm the matching booking (by oppId) so the resident + management see it move.
       var bk = db.bookings.find(function (x) { return x.oppId === body.opportunity_id; }) || db.bookings.find(function (x) { return DEPOSIT_FACILITIES[x.facilityKey] && x.status === 'Deposit Pending'; });
       if (bk) { bk.status = 'Confirmed'; bk.stage = 'Confirmed'; }
-      db.payments.unshift({ id: uid('demo-pay'), description: body.description || 'Booking deposit', amount: amt, currency: 'SGD', category: 'Deposit', status: 'paid', reference: 'DEP-' + String(body.opportunity_id || uid('')).slice(-6).toUpperCase(), opportunity_id: body.opportunity_id || '', fee_label: body.fee_label || '', resident_unit: body.unit || DEMO_MEMBER.unit, resident_email: (body.email || DEMO_MEMBER.email), paid_at: nowISO(), due_at: null, createdAt: nowISO() });
+      db.payments.unshift({ id: uid('local-pay'), description: body.description || 'Booking deposit', amount: amt, currency: 'SGD', category: 'Deposit', status: 'paid', reference: 'DEP-' + String(body.opportunity_id || uid('')).slice(-6).toUpperCase(), opportunity_id: body.opportunity_id || '', fee_label: body.fee_label || '', resident_unit: body.unit || MEMBER.unit, resident_email: (body.email || MEMBER.email), paid_at: nowISO(), due_at: null, createdAt: nowISO() });
       persist();
       return ok({ message: 'Deposit paid - your booking is now confirmed.', amount: amt, stage: 'Confirmed' });
     }
@@ -340,23 +340,23 @@
     // RESIDENT SUBMISSIONS + "mine" lists
     if (p === '/api/guest' && method === 'POST') {
       var gref = guestRef(body.visit_date);
-      db.guests.unshift({ oppId: uid('demo-opp'), contactId: body.host_contact_id || DEMO_MEMBER.contact_id, reference: gref, visitor: body.visitor_name, visitorEmail: body.visitor_email, visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type, host: body.host_name || DEMO_MEMBER.name, unit: body.host_unit || DEMO_MEMBER.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
+      db.guests.unshift({ oppId: uid('local-opp'), contactId: body.host_contact_id || MEMBER.contact_id, reference: gref, visitor: body.visitor_name, visitorEmail: body.visitor_email, visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type, host: body.host_name || MEMBER.name, unit: body.host_unit || MEMBER.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
       persist();
       return ok({ message: 'Visitor registered.', reference: gref });
     }
     if (p === '/api/defect' && method === 'POST') {
-      db.defects.unshift({ id: uid('demo-defect'), opportunityId: uid('demo-opp'), contactId: DEMO_MEMBER.contact_id, desc: body.description, category: body.category || 'General', location: body.location || '', urgency: body.urgency || 'Medium', stage: 'Reported', contact: DEMO_MEMBER.name, unit: DEMO_MEMBER.unit, ts: nowISO() });
+      db.defects.unshift({ id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, desc: body.description, category: body.category || 'General', location: body.location || '', urgency: body.urgency || 'Medium', stage: 'Reported', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
       persist();
       return ok({ message: 'Defect report submitted.' });
     }
     if (p === '/api/feedback' && method === 'POST') {
       var fref = 'FB-' + Date.now().toString().slice(-8);
-      db.feedback.unshift({ id: uid('demo-fb'), opportunityId: uid('demo-opp'), contactId: DEMO_MEMBER.contact_id, type: body.type || 'Feedback', category: body.category || 'General', desc: body.description, incident_date: body.incident_date || '', incident_time: body.incident_time || '', stage: 'Submitted', contact: DEMO_MEMBER.name, unit: DEMO_MEMBER.unit, ts: nowISO() });
+      db.feedback.unshift({ id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, type: body.type || 'Feedback', category: body.category || 'General', desc: body.description, incident_date: body.incident_date || '', incident_time: body.incident_time || '', stage: 'Submitted', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
       persist();
       return ok({ message: 'Submission received.', reference: fref });
     }
     if (p === '/api/move' && method === 'POST') {
-      db.moves.unshift({ id: uid('demo-move'), opportunityId: uid('demo-opp'), contactId: DEMO_MEMBER.contact_id, move_type: body.move_type, move_date: body.move_date, move_time: body.move_time, notes: body.notes || '', stage: 'Deposit Pending', contact: body.name || DEMO_MEMBER.name, unit: body.unit || DEMO_MEMBER.unit, ts: nowISO() });
+      db.moves.unshift({ id: uid('local-move'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, move_type: body.move_type, move_date: body.move_date, move_time: body.move_time, notes: body.notes || '', stage: 'Deposit Pending', contact: body.name || MEMBER.name, unit: body.unit || MEMBER.unit, ts: nowISO() });
       persist();
       return ok({ message: 'Move booking submitted. Management will confirm within 2 working days.' });
     }
@@ -364,7 +364,7 @@
       var pref = body.parcel_reference;
       var dup = db.parcels.find(function (x) { return x.ref.toLowerCase() === String(pref).toLowerCase(); });
       if (dup) return ok({ message: 'This parcel is already logged with the guardhouse.', reference: pref, duplicate: true });
-      db.parcels.unshift({ id: uid('demo-parcel'), opportunityId: uid('demo-opp'), contactId: DEMO_MEMBER.contact_id, ref: pref, courier: body.courier || '', desc: body.description || '', collector: body.authorized_collector || '', resident: body.resident_name || DEMO_MEMBER.name, unit: body.resident_unit || DEMO_MEMBER.unit, stage: 'Received', ts: nowISO() });
+      db.parcels.unshift({ id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, ref: pref, courier: body.courier || '', desc: body.description || '', collector: body.authorized_collector || '', resident: body.resident_name || MEMBER.name, unit: body.resident_unit || MEMBER.unit, stage: 'Received', ts: nowISO() });
       persist();
       return ok({ message: 'Guardhouse notified.', reference: pref });
     }
@@ -431,8 +431,8 @@
     }
     if (p === '/api/management/guest' && method === 'POST') {
       var gref2 = guestRef(body.visit_date);
-      var host = db.residents.find(function (r) { return r.contact_id === body.host_contact_id || r.email === body.host_email; }) || DEMO_MEMBER;
-      db.guests.unshift({ oppId: uid('demo-opp'), contactId: host.contact_id, reference: gref2, visitor: body.visitor_name, visitorEmail: body.visitor_email || '', visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type || 'Guest', host: host.name, unit: host.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
+      var host = db.residents.find(function (r) { return r.contact_id === body.host_contact_id || r.email === body.host_email; }) || MEMBER;
+      db.guests.unshift({ oppId: uid('local-opp'), contactId: host.contact_id, reference: gref2, visitor: body.visitor_name, visitorEmail: body.visitor_email || '', visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type || 'Guest', host: host.name, unit: host.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
       persist();
       var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=' + encodeURIComponent(gref2);
       return ok({ message: 'Visitor registered.', reference: gref2, qr_url: qrUrl });
@@ -468,7 +468,7 @@
 
     if (p === '/api/management/announcements' && method === 'GET') return ok({ announcements: db.announcements });
     if (p === '/api/management/announcements' && method === 'POST') {
-      var a = { id: uid('demo-ann'), title: body.title, body: body.body, category: body.category || 'General', eventAt: body.eventAt || null, eventEndAt: body.eventEndAt || null, pinned: !!body.pinned, rsvp_enabled: !!body.rsvp_enabled, blocked_facilities: body.blocked_facilities || [], event_venue: body.event_venue || '', createdAt: nowISO() };
+      var a = { id: uid('local-ann'), title: body.title, body: body.body, category: body.category || 'General', eventAt: body.eventAt || null, eventEndAt: body.eventEndAt || null, pinned: !!body.pinned, rsvp_enabled: !!body.rsvp_enabled, blocked_facilities: body.blocked_facilities || [], event_venue: body.event_venue || '', createdAt: nowISO() };
       db.announcements.unshift(a); persist();
       return ok({ announcement: a });
     }
@@ -502,7 +502,7 @@
     }
     if ((m = p.match(/^\/api\/management\/messages\/([^/]+)\/reply$/)) && method === 'POST') {
       var c3 = db.conversations.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-      var rmsg = { id: uid('demo-msg'), sender: 'management', sender_name: 'Management', body: body.body, createdAt: nowISO() };
+      var rmsg = { id: uid('local-msg'), sender: 'management', sender_name: 'Management', body: body.body, createdAt: nowISO() };
       if (c3) { c3.messages.push(rmsg); c3.last_message_at = rmsg.createdAt; c3.last_message_preview = body.body.slice(0, 80); c3.last_sender = 'management'; c3.unread_resident += 1; persist(); }
       return ok({ message: rmsg });
     }
@@ -513,7 +513,7 @@
     }
     if (p === '/api/management/messages/start' && method === 'POST') {
       var host2 = db.residents.find(function (r) { return r.contact_id === body.contact_id || r.email === body.resident_email; }) || db.residents[0];
-      var nc = { id: uid('demo-convo'), contact_id: host2.contact_id, resident_name: host2.name, resident_unit: host2.unit, resident_email: host2.email, unread_management: 0, unread_resident: 1, resolved: false, messages: [{ id: uid('demo-msg'), sender: 'management', sender_name: 'Management', body: body.body, createdAt: nowISO() }] };
+      var nc = { id: uid('local-convo'), contact_id: host2.contact_id, resident_name: host2.name, resident_unit: host2.unit, resident_email: host2.email, unread_management: 0, unread_resident: 1, resolved: false, messages: [{ id: uid('local-msg'), sender: 'management', sender_name: 'Management', body: body.body, createdAt: nowISO() }] };
       nc.last_message_at = nc.messages[0].createdAt; nc.last_message_preview = body.body.slice(0, 80); nc.last_sender = 'management';
       db.conversations.unshift(nc); persist();
       return ok({ message: nc.messages[0], conversation_id: nc.id });
@@ -524,7 +524,7 @@
       return mr ? ok({ file_data: mr.file_data, file_name: mr.file_name, file_type: mr.file_type }) : J({ success: false, message: 'Not found.' }, 404);
     }
     if (p === '/api/management/resources' && method === 'POST') {
-      var nr = { id: uid('demo-res'), title: body.title, category: body.category || 'General', visibility: body.visibility || 'residents', file_data: body.file_data || '', file_name: body.file_name || '', file_type: body.file_type || '', file_size: body.file_size || 0, uploaded_by: 'Management', createdAt: nowISO() };
+      var nr = { id: uid('local-res'), title: body.title, category: body.category || 'General', visibility: body.visibility || 'residents', file_data: body.file_data || '', file_name: body.file_name || '', file_type: body.file_type || '', file_size: body.file_size || 0, uploaded_by: 'Management', createdAt: nowISO() };
       db.resources.unshift(nr); persist();
       return ok({ resource: stripFile(nr) });
     }
@@ -534,8 +534,8 @@
     }
 
     // Fallback
-    console.warn('[demo-backend] unhandled route:', method, p);
-    return J({ success: true, items: [], message: 'Demo: route not implemented.' }, 200);
+    console.warn('[client-backend] unhandled route:', method, p);
+    return J({ success: true, items: [], message: 'Not implemented.' }, 200);
   }
 
   function convoMeta(c) {
@@ -556,11 +556,11 @@
         return Promise.resolve(handle(s, opts));
       }
     } catch (e) {
-      console.error('[demo-backend] error handling', url, e);
-      return Promise.resolve(J({ success: false, message: 'Demo mock error.' }, 500));
+      console.error('[client-backend] error handling', url, e);
+      return Promise.resolve(J({ success: false, message: 'Mock error.' }, 500));
     }
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Portfolio demo - running fully client-side (no backend, no database, no external calls).', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Running fully client-side (no backend, no database, no external calls).', 'color:#312e81;font-weight:bold');
 })();

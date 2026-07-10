@@ -8,7 +8,7 @@ const dbReady = () => mongoose.connection.readyState === 1;
 // GHL Inbound Webhook that triggers the Parcel Tracking workflow (optional — for
 // email/automation). The opportunity itself is created here via the API so it
 // always exists, independent of any workflow being configured.
-const PARCEL_WEBHOOK = process.env.MERIDIAN_WEBHOOK_PARCEL || '';
+const PARCEL_WEBHOOK = process.env.LUMINA_WEBHOOK_PARCEL || '';
 
 // POST /api/parcel — resident notifies the guardhouse of a parcel they're expecting,
 // by its reference. Creates a Parcel Tracking opportunity (so it shows in My Parcels,

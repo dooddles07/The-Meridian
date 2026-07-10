@@ -50,7 +50,7 @@
 
   // Theme toggle
   (function initTheme() {
-    const KEY = 'meridian-portal-theme';
+    const KEY = 'lumina-portal-theme';
     function syncToggleUI(theme) {
       document.querySelectorAll('[data-theme-toggle]').forEach(el => {
         el.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');

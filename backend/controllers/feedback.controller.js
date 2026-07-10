@@ -7,7 +7,7 @@ const dbReady = () => mongoose.connection.readyState === 1;
 // GHL Inbound Webhook that triggers the "Feedback — New" workflow, which owns
 // opportunity creation. Creating the opp directly here skipped the workflow, so no
 // acknowledgement email or management notice ever fired.
-const FEEDBACK_WEBHOOK = process.env.MERIDIAN_WEBHOOK_FEEDBACK || '';
+const FEEDBACK_WEBHOOK = process.env.LUMINA_WEBHOOK_FEEDBACK || '';
 
 // POST /api/feedback — resident submits feedback, a complaint, or a suggestion.
 async function submitFeedback(req, res) {

@@ -182,7 +182,7 @@ a { color: inherit; text-decoration: none; }
 .badge__txt { min-width: 0; }
 .badge--ok { color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, transparent); background: var(--green-lt); }
 .badge--ok .material-symbols-outlined { color: var(--green); }
-.badge--demo .material-symbols-outlined { color: var(--gold); }
+.badge--note .material-symbols-outlined { color: var(--gold); }
 
 /* Portal directory */
 .directory {

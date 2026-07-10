@@ -1,6 +1,6 @@
 const ghl = require('../services/ghl.service');
 // GHL Inbound Webhook that triggers the Guest Registrations workflow.
-const GUEST_WEBHOOK = process.env.MERIDIAN_WEBHOOK_GUEST || '';
+const GUEST_WEBHOOK = process.env.LUMINA_WEBHOOK_GUEST || '';
 
 // POST /api/guest — register a visitor against the logged-in resident (host).
 async function registerGuest(req, res) {

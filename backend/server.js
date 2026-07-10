@@ -1,6 +1,6 @@
-// PORTFOLIO DEMO: runs fully client-side. This process only serves the static
+// PORTFOLIO PROJECT: runs fully client-side. This process only serves the static
 // frontend in ../public — all API calls are intercepted in-browser by
-// public/js/demo-backend.js. The real backend (./controllers, ./models, ./routes,
+// public/js/client-backend.js. The real backend (./controllers, ./models, ./routes,
 // ./services) is kept as reference only and is not mounted here.
 
 require('dotenv').config();
@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 app.set('trust proxy', 1);
 
 // CSP allows only self, jsDelivr, Google Fonts and the QR image API — no other
-// external hosts, since the demo talks to nothing but itself.
+// external hosts, since this build talks to nothing but itself.
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
@@ -36,16 +36,16 @@ app.use(helmet({
   },
 }));
 
-// Same-origin only; the demo has no cross-origin API surface.
+// Same-origin only; this build has no cross-origin API surface.
 app.use(cors({ origin: false }));
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'The Meridian demo is running.', timestamp: new Date().toISOString() });
+  res.status(200).json({ success: true, message: 'The Lumina is running.', timestamp: new Date().toISOString() });
 });
 
 // Any /api/* request that slips past the browser mock gets a JSON 404 instead of the SPA HTML.
 app.use('/api', (req, res) => {
-  res.status(404).json({ success: false, message: 'This is a static demo — the API runs entirely in the browser (see public/js/demo-backend.js).' });
+  res.status(404).json({ success: false, message: 'This is a static build — the API runs entirely in the browser (see public/js/client-backend.js).' });
 });
 
 const PUBLIC_DIR = path.join(__dirname, '../public');
@@ -61,7 +61,7 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ The Meridian demo running on http://localhost:${PORT}`);
+  console.log(`✅ The Lumina running on http://localhost:${PORT}`);
   console.log('   Static, client-side only — no database, CRM, or external connection.');
 });
 

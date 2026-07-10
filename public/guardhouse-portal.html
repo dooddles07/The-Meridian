@@ -11,7 +11,7 @@
   <script>
     // Honour the theme chosen on the landing (shared key across portals).
     (function(){
-      var t=localStorage.getItem('meridian-portal-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+      var t=localStorage.getItem('lumina-portal-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
       document.documentElement.dataset.theme=t;
     })();
   </script>
@@ -171,7 +171,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="js/shared.js"></script>
-<script src="js/demo-backend.js"></script>
+<script src="js/client-backend.js"></script>
 <script src="js/guardhouse.controller.js"></script>
 
 </body>

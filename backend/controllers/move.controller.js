@@ -7,7 +7,7 @@ const dbReady = () => mongoose.connection.readyState === 1;
 // GHL Inbound Webhook that triggers the "Move-In/Move-Out — New" workflow, which
 // owns opportunity creation (single Create-or-Update, duplicates off) — creating
 // the opp here too would produce duplicate cards.
-const MOVE_WEBHOOK = process.env.MERIDIAN_WEBHOOK_MOVE || '';
+const MOVE_WEBHOOK = process.env.LUMINA_WEBHOOK_MOVE || '';
 
 // POST /api/move — submit a move-in/move-out request for the logged-in resident.
 async function submitMove(req, res) {

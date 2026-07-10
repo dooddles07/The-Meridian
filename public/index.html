@@ -10,11 +10,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Tenor+Sans&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/meridian.css">
+  <link rel="stylesheet" href="css/lumina.css">
   <script>
     // Match the resident portal's theme so it carries across pages.
     (function () {
-      var t = localStorage.getItem('meridian-portal-theme') ||
+      var t = localStorage.getItem('lumina-portal-theme') ||
               (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.dataset.theme = t;
     })();
@@ -39,7 +39,7 @@
           <span class="material-symbols-outlined" aria-hidden="true">lock_open</span>
           <span class="badge__txt">No sign-in needed</span>
         </span>
-        <span class="badge badge--demo">
+        <span class="badge badge--note">
           <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
           <span class="badge__txt">Nothing is charged, and your activity stays on this device</span>
         </span>
@@ -112,7 +112,7 @@
     document.getElementById('themeToggle').addEventListener('click', function () {
       var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
       document.documentElement.dataset.theme = next;
-      try { localStorage.setItem('meridian-portal-theme', next); } catch (e) {}
+      try { localStorage.setItem('lumina-portal-theme', next); } catch (e) {}
     });
   </script>
 </body>

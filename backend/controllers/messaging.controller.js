@@ -5,7 +5,7 @@ const { Conversation, Message } = require('../models/messaging.model');
 
 // Optional GHL Inbound Webhook — fires on every new message so a GHL workflow can
 // notify the other party over WhatsApp / email. URL is the security; non-fatal.
-const MESSAGE_WEBHOOK = process.env.MERIDIAN_WEBHOOK_MESSAGE || '';
+const MESSAGE_WEBHOOK = process.env.LUMINA_WEBHOOK_MESSAGE || '';
 
 const dbReady = () => mongoose.connection.readyState === 1;
 const preview = (s) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 120);

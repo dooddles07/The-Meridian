@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Persisted resident accounts. Seeded from MERIDIAN_RESIDENTS on boot; their GHL
+// Persisted resident accounts. Seeded from LUMINA_RESIDENTS on boot; their GHL
 // contact is auto-created/updated (upserted) on login and on management actions.
 const residentSchema = new mongoose.Schema({
   email:          { type: String, required: true, unique: true, lowercase: true, trim: true },

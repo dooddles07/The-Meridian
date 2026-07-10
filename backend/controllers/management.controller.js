@@ -7,7 +7,7 @@ const Defect     = require('../models/defect.model');
 const dbReady = () => mongoose.connection.readyState === 1;
 
 const UNIT_FIELD_ID     = '6PZk0sj00b6l58c7jS7U';
-const MGMT_GUEST_WEBHOOK = process.env.MERIDIAN_WEBHOOK_GUEST_MGMT || '';
+const MGMT_GUEST_WEBHOOK = process.env.LUMINA_WEBHOOK_GUEST_MGMT || '';
 const REF_RE = /GST-\d{8}-\d{4}/;
 
 // GET /api/management/contacts/search?q=...  — resident typeahead for the host picker.

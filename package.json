@@ -1,8 +1,8 @@
 {
-  "name": "meridian-portal-demo",
+  "name": "lumina-portal",
   "version": "1.0.0",
   "private": true,
-  "description": "The Meridian — Community Living Portal (portfolio demo). Runs fully client-side: the Node server (./backend) serves the static frontend (./public); all data is mocked in-browser (public/js/demo-backend.js).",
+  "description": "The Lumina — Community Living Portal (portfolio project). Runs fully client-side: the Node server (./backend) serves the static frontend (./public); all data is mocked in-browser (public/js/client-backend.js).",
   "scripts": {
     "start": "cd backend && node server.js"
   },

@@ -4,7 +4,7 @@ const ghl      = require('./ghl.service');
 const Resident = require('../models/resident.model');
 const { RESIDENTS, normalizeUnit, clean } = require('../models/auth.model');
 
-const UNIT_FIELD = 'demo-field-unit';
+const UNIT_FIELD = 'local-field-unit';
 const dbReady    = () => mongoose.connection.readyState === 1;
 
 // Idempotent upsert by email — safe to reseed without duplicating accounts.

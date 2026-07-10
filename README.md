@@ -5,14 +5,14 @@ facility bookings, guest passes with QR check-in, parcel tracking, defect report
 feedback, move-in/out scheduling, deposits & payments, announcements with RSVP,
 two-way messaging, and a shared document library.
 
-**🔗 Live demo:** https://the-lumina.vercel.app
+**🔗 Live:** https://the-lumina.vercel.app
 *(No login required - every portal opens ready to explore.)*
 
-> **About this build.** This is a self-contained **portfolio demo** of a production
-> system. It runs **entirely in the browser** - no login, no database, no third-party
-> services, and no network calls leave the page. Every screen is populated with
-> realistic data and every action works against an in-browser mock, so reviewers can
-> click through the full product safely. See [How it works](#how-it-works).
+> **About this build.** This is a fully working **portfolio project** - a production-grade
+> system that runs **entirely in the browser**: no login required, no database, no
+> third-party services, and no network calls leave the page. Every screen is populated
+> with realistic data and every action works against an in-browser store, so reviewers
+> can click through the full product safely. See [How it works](#how-it-works).
 
 ---
 
@@ -113,7 +113,7 @@ shared daily log.
 
 ## End-to-end system flow
 
-How the roles connect. Everything below is a real, clickable path in the demo.
+How the roles connect. Everything below is a real, clickable path in the app.
 
 ### System overview
 
@@ -124,7 +124,7 @@ flowchart TB
         M["🗂️ Management console"]
         G["🛡️ Guardhouse station"]
     end
-    API["demo-backend.js<br/>(intercepts every /api/* call)"]
+    API["client-backend.js<br/>(intercepts every /api/* call)"]
     DB[("🗄️ In-browser store<br/>(localStorage)")]
 
     R <--> API
@@ -186,30 +186,31 @@ management; **messages** thread live between resident and management in both dir
 
 ## How it works
 
-The production front-end talks to a REST API. For this public demo that API is replaced
+The production front-end talks to a REST API. For this build, that API is replaced
 by a **client-side mock**, so the app has zero backend dependencies and can be hosted as a
 static site:
 
-- **[`public/js/demo-backend.js`](public/js/demo-backend.js)** overrides `window.fetch`,
+- **[`public/js/client-backend.js`](public/js/client-backend.js)** overrides `window.fetch`,
   intercepts every `"/api/…"` request, and serves it from an in-browser store
-  (`localStorage`) that's seeded with realistic demo data on first load.
+  (`localStorage`) that's seeded with realistic sample data on first load.
 - **All three portals share the same store**, so a resident's action shows up in
   management and at the guardhouse - the cross-portal hand-offs are genuine, just kept
   inside the browser.
-- **Authentication is bypassed** - a fixed demo session is seeded so anyone can explore
-  without credentials.
-- **Payments** open a **simulated** checkout page ([`public/demo-pay.html`](public/demo-pay.html));
+- **A preview session is seeded on first visit** so anyone can explore without
+  credentials; logging out drops into a real sign-in/registration screen backed by the
+  same store.
+- **Payments** open a **simulated** checkout page ([`public/checkout.html`](public/checkout.html));
   nothing is ever charged and no request leaves the browser.
 
-Reset all demo data anytime from the browser console:
+Reset all local data anytime from the browser console:
 
 ```js
-window.__meridianDemoReset()
+window.__luminaReset()
 ```
 
 The original Node/Express back end is kept under **[`backend/`](backend/)** as a **reference**
 implementation (JWT auth, security headers, input hardening, data models, service layer,
-pipeline integration). It is **not used** by this demo - `server.js` only serves the static
+pipeline integration). It is **not used** by this build - `server.js` only serves the static
 front-end - and all real credentials, domains, and tenant identifiers have been removed.
 
 ---
@@ -220,7 +221,7 @@ front-end - and all real credentials, domains, and tenant identifiers have been 
 | --- | --- |
 | Front-end | Vanilla JavaScript (no framework), component-style modular CSS design system, responsive layouts, light/dark theme |
 | UI libraries | SweetAlert2 (dialogs), QRCode.js (guest-pass QR), jsQR (QR scanning) |
-| Demo layer | Client-side `fetch` mock + `localStorage` store (no backend needed) |
+| Mock layer | Client-side `fetch` mock + `localStorage` store (no backend needed) |
 | Reference back end | Node.js, Express, Helmet, JWT, Mongoose (kept for reference only) |
 | Hosting | Static deploy on Vercel |
 
@@ -246,20 +247,20 @@ static host - the app needs no server-side runtime.
 
 ```
 the-lumina/
-├── public/                     # the entire demo (this is what gets deployed)
+├── public/                     # the entire app (this is what gets deployed)
 │   ├── index.html              # landing page → 3 portals
 │   ├── portal.html             # resident portal
 │   ├── management.html         # management console
 │   ├── guardhouse-portal.html  # guardhouse station
-│   ├── demo-pay.html           # simulated payment page
+│   ├── checkout.html           # simulated payment page
 │   ├── css/                    # modular design system (portal / management / shared)
 │   ├── js/
 │   │   ├── portal.controller.js
 │   │   ├── management.controller.js
 │   │   ├── guardhouse.controller.js
-│   │   └── demo-backend.js     # ← client-side mock API + seed data
+│   │   └── client-backend.js   # ← client-side mock API + seed data
 │   └── asset/                  # facility imagery, logo
-├── backend/                    # reference Node/Express implementation (not used by the demo)
+├── backend/                    # reference Node/Express implementation (not used by this build)
 │   ├── server.js               # serves the static front-end only
 │   ├── controllers/  models/  routes/  services/  config/  middleware/
 │   └── .env.example
@@ -273,8 +274,8 @@ the-lumina/
 
 - This repository is an **independent portfolio copy**. It is not connected to, and never
   communicates with, any production deployment or third-party service.
-- Demo data lives only in the visitor's browser and resets when storage is cleared.
+- Data lives only in your browser and resets when storage is cleared.
 
 ---
 
-<p align="center"><em>Built by Brixsonn Romero · Portfolio demo</em></p>
+<p align="center"><em>Built by Brixsonn Romero · Portfolio project</em></p>

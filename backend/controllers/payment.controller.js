@@ -8,15 +8,15 @@ const dbReady = () => mongoose.connection.readyState === 1;
 
 // Shared secret the payment provider (Wibiz/GHL) must present on the success
 // webhook. This is what proves a confirmation came from a REAL, completed payment
-// rather than a forged request. Set MERIDIAN_PAYMENT_WEBHOOK_SECRET in the env and
-// configure the GHL/Wibiz webhook to send it (header x-meridian-webhook-secret, or a
+// rather than a forged request. Set LUMINA_PAYMENT_WEBHOOK_SECRET in the env and
+// configure the GHL/Wibiz webhook to send it (header x-lumina-webhook-secret, or a
 // `secret` field in the body). Fails CLOSED: with no secret configured, confirmations
 // are rejected — a booking can never be confirmed by an unauthenticated caller.
-const WEBHOOK_SECRET = process.env.MERIDIAN_PAYMENT_WEBHOOK_SECRET || '';
+const WEBHOOK_SECRET = process.env.LUMINA_PAYMENT_WEBHOOK_SECRET || '';
 
 function verifyWebhookSecret(req) {
   if (!WEBHOOK_SECRET) return false;                         // not configured → reject all
-  const provided = String(req.get('x-meridian-webhook-secret') || (req.body && req.body.secret) || '');
+  const provided = String(req.get('x-lumina-webhook-secret') || (req.body && req.body.secret) || '');
   if (!provided) return false;
   const a = Buffer.from(provided), b = Buffer.from(WEBHOOK_SECRET);
   return a.length === b.length && crypto.timingSafeEqual(a, b);  // constant-time compare
@@ -25,14 +25,14 @@ function verifyWebhookSecret(req) {
 // Deposit amounts (SGD) per deposit-required facility + move. Override via env.
 // Move is collected as one payment: SGD 200 admin fee + SGD 2000 refundable deposit
 // = SGD 2200 total. On completion the SGD 2000 deposit is refunded (MOVE_REFUNDABLE).
-const MOVE_ADMIN_FEE  = Number(process.env.MERIDIAN_MOVE_ADMIN_FEE  || 200);
-const MOVE_REFUNDABLE = Number(process.env.MERIDIAN_MOVE_REFUNDABLE || 2000);
+const MOVE_ADMIN_FEE  = Number(process.env.LUMINA_MOVE_ADMIN_FEE  || 200);
+const MOVE_REFUNDABLE = Number(process.env.LUMINA_MOVE_REFUNDABLE || 2000);
 const DEPOSITS = {
-  bbq:      Number(process.env.MERIDIAN_DEPOSIT_BBQ      || 200),
-  pool:     Number(process.env.MERIDIAN_DEPOSIT_POOL     || 200),
-  verandah: Number(process.env.MERIDIAN_DEPOSIT_VERANDAH || 600),
-  move:     Number(process.env.MERIDIAN_DEPOSIT_MOVE     || (MOVE_ADMIN_FEE + MOVE_REFUNDABLE)),
-  default:  Number(process.env.MERIDIAN_DEPOSIT_DEFAULT  || 50),
+  bbq:      Number(process.env.LUMINA_DEPOSIT_BBQ      || 200),
+  pool:     Number(process.env.LUMINA_DEPOSIT_POOL     || 200),
+  verandah: Number(process.env.LUMINA_DEPOSIT_VERANDAH || 600),
+  move:     Number(process.env.LUMINA_DEPOSIT_MOVE     || (MOVE_ADMIN_FEE + MOVE_REFUNDABLE)),
+  default:  Number(process.env.LUMINA_DEPOSIT_DEFAULT  || 50),
 };
 
 const fmt = (p) => ({

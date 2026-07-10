@@ -4,7 +4,7 @@ const Defect     = require('../models/defect.model');
 
 const dbReady = () => mongoose.connection.readyState === 1;
 
-const DEFECT_WEBHOOK = process.env.MERIDIAN_WEBHOOK_DEFECT || '';
+const DEFECT_WEBHOOK = process.env.LUMINA_WEBHOOK_DEFECT || '';
 
 // POST /api/defect — resident submits a defect report.
 async function submitDefect(req, res) {

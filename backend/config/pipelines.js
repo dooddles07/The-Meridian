@@ -1,71 +1,71 @@
-// PORTFOLIO DEMO: all IDs below are placeholders — the original tenant's CRM
-// identifiers have been removed. This file is reference only; the demo doesn't
+// PORTFOLIO PROJECT: all IDs below are placeholders — the original tenant's CRM
+// identifiers have been removed. This file is reference only; this build doesn't
 // talk to any CRM.
 
 const env = (k, d) => process.env[k] || d;
 
 const PIPELINES = {
   defect: {
-    id:   env('MERIDIAN_PIPELINE_DEFECT', 'demo-pipeline-defect'),
+    id:   env('LUMINA_PIPELINE_DEFECT', 'local-pipeline-defect'),
     name: 'Defect Tracking',
     stages: {
-      'Reported':     'demo-defect-reported',
-      'Acknowledged': 'demo-defect-acknowledged',
-      'In Progress':  'demo-defect-in-progress',
-      'Resolved':     'demo-defect-resolved',
-      'Closed':       'demo-defect-closed',
+      'Reported':     'local-defect-reported',
+      'Acknowledged': 'local-defect-acknowledged',
+      'In Progress':  'local-defect-in-progress',
+      'Resolved':     'local-defect-resolved',
+      'Closed':       'local-defect-closed',
     },
   },
   facility: {
-    id:   env('MERIDIAN_PIPELINE_FACILITY', 'demo-pipeline-facility'),
+    id:   env('LUMINA_PIPELINE_FACILITY', 'local-pipeline-facility'),
     name: 'Facility Bookings',
     stages: {
-      'Deposit Pending': 'demo-facility-deposit-pending',
-      'Confirmed':       'demo-facility-confirmed',
-      'Completed':       'demo-facility-completed',
-      'No-Show':         'demo-facility-no-show',
-      'Cancelled':       'demo-facility-cancelled',
+      'Deposit Pending': 'local-facility-deposit-pending',
+      'Confirmed':       'local-facility-confirmed',
+      'Completed':       'local-facility-completed',
+      'No-Show':         'local-facility-no-show',
+      'Cancelled':       'local-facility-cancelled',
     },
   },
   feedback: {
-    id:   env('MERIDIAN_PIPELINE_FEEDBACK', 'demo-pipeline-feedback'),
+    id:   env('LUMINA_PIPELINE_FEEDBACK', 'local-pipeline-feedback'),
     name: 'Feedback',
     stages: {
-      'Submitted':    'demo-feedback-submitted',
-      'Under Review': 'demo-feedback-under-review',
-      'Resolved':     'demo-feedback-resolved',
-      'Closed':       'demo-feedback-closed',
+      'Submitted':    'local-feedback-submitted',
+      'Under Review': 'local-feedback-under-review',
+      'Resolved':     'local-feedback-resolved',
+      'Closed':       'local-feedback-closed',
     },
   },
   guest: {
-    id:   env('MERIDIAN_PIPELINE_GUEST', 'demo-pipeline-guest'),
+    id:   env('LUMINA_PIPELINE_GUEST', 'local-pipeline-guest'),
     name: 'Guest Registrations',
     stages: {
-      'Registered':  'demo-guest-registered',
-      'Checked In':  'demo-guest-checked-in',
-      'Checked Out': 'demo-guest-checked-out',
-      'Departed':    'demo-guest-departed',
-      'Closed':      'demo-guest-closed',
+      'Registered':  'local-guest-registered',
+      'Checked In':  'local-guest-checked-in',
+      'Checked Out': 'local-guest-checked-out',
+      'Departed':    'local-guest-departed',
+      'Closed':      'local-guest-closed',
     },
   },
   move: {
-    id:   env('MERIDIAN_PIPELINE_MOVE', 'demo-pipeline-move'),
+    id:   env('LUMINA_PIPELINE_MOVE', 'local-pipeline-move'),
     name: 'Move-In / Move-Out',
     stages: {
-      'Deposit Pending':  'demo-move-deposit-pending',
-      'Confirmed':        'demo-move-confirmed',
-      'Completed':        'demo-move-completed',
-      'Deposit Refunded': 'demo-move-deposit-refunded',
+      'Deposit Pending':  'local-move-deposit-pending',
+      'Confirmed':        'local-move-confirmed',
+      'Completed':        'local-move-completed',
+      'Deposit Refunded': 'local-move-deposit-refunded',
     },
   },
   parcel: {
-    id:   env('MERIDIAN_PIPELINE_PARCEL', 'demo-pipeline-parcel'),
+    id:   env('LUMINA_PIPELINE_PARCEL', 'local-pipeline-parcel'),
     name: 'Parcel Tracking',
     stages: {
-      'Received':               'demo-parcel-received',
-      'Notified':               'demo-parcel-notified',
-      'Collected':              'demo-parcel-collected',
-      'Uncollected / Returned': 'demo-parcel-returned',
+      'Received':               'local-parcel-received',
+      'Notified':               'local-parcel-notified',
+      'Collected':              'local-parcel-collected',
+      'Uncollected / Returned': 'local-parcel-returned',
     },
   },
 };

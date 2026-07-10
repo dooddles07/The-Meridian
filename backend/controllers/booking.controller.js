@@ -117,30 +117,30 @@ async function overlayGhlStage(rows) {
 
 // Calendar IDs per facility — hardcoded defaults, overridable via Railway env vars.
 const CALENDARS = {
-  pool:       process.env.MERIDIAN_CAL_POOL       || 'demo-cal-pool',
-  tennis:     process.env.MERIDIAN_CAL_TENNIS     || 'demo-cal-tennis',
-  squash:     process.env.MERIDIAN_CAL_SQUASH     || 'demo-cal-squash',
-  basketball: process.env.MERIDIAN_CAL_BASKETBALL || 'demo-cal-basketball',
-  gym:        process.env.MERIDIAN_CAL_GYM        || 'demo-cal-gym',
-  fitness:    process.env.MERIDIAN_CAL_FITNESS    || 'demo-cal-fitness',
-  bbq:        process.env.MERIDIAN_CAL_BBQ        || 'demo-cal-bbq',
-  verandah:   process.env.MERIDIAN_CAL_VERANDAH   || 'demo-cal-verandah',
-  lift:       process.env.MERIDIAN_CAL_LIFT       || 'demo-cal-lift',
+  pool:       process.env.LUMINA_CAL_POOL       || 'local-cal-pool',
+  tennis:     process.env.LUMINA_CAL_TENNIS     || 'local-cal-tennis',
+  squash:     process.env.LUMINA_CAL_SQUASH     || 'local-cal-squash',
+  basketball: process.env.LUMINA_CAL_BASKETBALL || 'local-cal-basketball',
+  gym:        process.env.LUMINA_CAL_GYM        || 'local-cal-gym',
+  fitness:    process.env.LUMINA_CAL_FITNESS    || 'local-cal-fitness',
+  bbq:        process.env.LUMINA_CAL_BBQ        || 'local-cal-bbq',
+  verandah:   process.env.LUMINA_CAL_VERANDAH   || 'local-cal-verandah',
+  lift:       process.env.LUMINA_CAL_LIFT       || 'local-cal-lift',
 };
 
 // Contact custom-field IDs (verified from GHL) the booking writes back so the
 // workflow + opportunity get clean, structured data.
 const FIELD = {
-  ghlAppointmentId: 'demo-field-appointment-id',
-  bookingPax:       'demo-field-booking-pax',
-  guestCount:       'demo-field-guest-count',
-  bookingDate:      'demo-field-booking-date',
+  ghlAppointmentId: 'local-field-appointment-id',
+  bookingPax:       'local-field-booking-pax',
+  guestCount:       'local-field-guest-count',
+  bookingDate:      'local-field-booking-date',
 };
 
 const DEPOSIT_FACILITIES = new Set(['verandah', 'bbq', 'pool']);
 
 // GHL Inbound Webhook that triggers the Facility Bookings workflow.
-const FACILITY_WEBHOOK = process.env.MERIDIAN_WEBHOOK_FACILITY || '';
+const FACILITY_WEBHOOK = process.env.LUMINA_WEBHOOK_FACILITY || '';
 
 // Parse "9:15 AM" → total minutes.
 function parseTime(str) {
@@ -246,7 +246,7 @@ async function resolveContactId({ contact_id, member_email, member_name, member_
 // instead (env override wins; otherwise cache the calendar's first team member).
 const _calUserCache = {};
 async function resolveAssignedUserId(calendarId) {
-  if (process.env.MERIDIAN_BOOKING_USER) return process.env.MERIDIAN_BOOKING_USER;
+  if (process.env.LUMINA_BOOKING_USER) return process.env.LUMINA_BOOKING_USER;
   if (_calUserCache[calendarId]) return _calUserCache[calendarId];
   try {
     const data    = await ghl.ghlGet(`/calendars/${calendarId}`, { version: '2021-04-15' });
@@ -334,7 +334,7 @@ async function createBooking(req, res) {
   if (!assignedUserId) {
     return res.status(400).json({
       success: false,
-      message: 'No team member is assigned to this facility calendar. Set MERIDIAN_BOOKING_USER or add a team member to the calendar in GHL.',
+      message: 'No team member is assigned to this facility calendar. Set LUMINA_BOOKING_USER or add a team member to the calendar in GHL.',
     });
   }
 
@@ -357,7 +357,7 @@ async function createBooking(req, res) {
     endTime:           times.endTime,
     title,
     appointmentStatus: 'confirmed',
-    address:           'The Meridian, Singapore',
+    address:           'The Lumina, Singapore',
     // The portal's client-generated slots don't match GHL's own calendar slot grid,
     // so without these flags GHL rejects the time as "no longer available." The
     // portal is the source of truth for availability, so instruct GHL to honor the
@@ -459,7 +459,7 @@ async function createBooking(req, res) {
         console.warn('[booking] webhook failed (non-fatal):', e.response?.data?.message || e.message);
       }
     } else {
-      console.warn('[booking] MERIDIAN_WEBHOOK_FACILITY not set — booking NOT connected to the pipeline.');
+      console.warn('[booking] LUMINA_WEBHOOK_FACILITY not set — booking NOT connected to the pipeline.');
     }
 
     return res.json({ success: true, message: 'Booking confirmed.', appointmentId, calendarId, pipelineConnected });

@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || '';
 
 // Fail fast. A missing/short secret — or the old hardcoded dev value — means tokens
 // could be forged, so we must not boot. Exit with a clear, actionable message.
-if (JWT_SECRET.length < MIN_JWT_LEN || JWT_SECRET === 'meridian-dev-secret') {
+if (JWT_SECRET.length < MIN_JWT_LEN || JWT_SECRET === 'lumina-dev-secret') {
   console.error(
     '\n[FATAL] JWT_SECRET is missing, too short, or using the insecure default.\n' +
     `        Set JWT_SECRET to a random string of at least ${MIN_JWT_LEN} characters.\n` +
@@ -19,14 +19,14 @@ if (JWT_SECRET.length < MIN_JWT_LEN || JWT_SECRET === 'meridian-dev-secret') {
 }
 
 // Signs/verifies in one place so options never drift. Every token is bound to this
-// issuer + audience and carries a version claim; bumping MERIDIAN_TOKEN_VERSION
+// issuer + audience and carries a version claim; bumping LUMINA_TOKEN_VERSION
 // instantly invalidates all existing tokens (a global revocation / logout lever).
 const jwt = require('jsonwebtoken');
 
-const JWT_ISSUER    = 'meridian-portal';
-const JWT_AUDIENCE  = 'meridian-app';
-const TOKEN_VERSION = Number(process.env.MERIDIAN_TOKEN_VERSION || 1);
-const TOKEN_TTL     = process.env.MERIDIAN_TOKEN_TTL || '8h';
+const JWT_ISSUER    = 'lumina-portal';
+const JWT_AUDIENCE  = 'lumina-app';
+const TOKEN_VERSION = Number(process.env.LUMINA_TOKEN_VERSION || 1);
+const TOKEN_TTL     = process.env.LUMINA_TOKEN_TTL || '8h';
 
 function signToken(payload) {
   return jwt.sign(
