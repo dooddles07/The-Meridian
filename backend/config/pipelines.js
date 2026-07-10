@@ -1,8 +1,5 @@
-// config/pipelines.js
-// Maps the app's logical pipeline keys to CRM pipeline + stage IDs.
-//
-// PORTFOLIO DEMO: all IDs below are placeholders — the original tenant's real CRM
-// identifiers have been removed. This file is reference only; the demo does not
+// PORTFOLIO DEMO: all IDs below are placeholders — the original tenant's CRM
+// identifiers have been removed. This file is reference only; the demo doesn't
 // talk to any CRM.
 
 const env = (k, d) => process.env[k] || d;
@@ -73,7 +70,6 @@ const PIPELINES = {
   },
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const getPipeline  = (key) => PIPELINES[key] || null;
 const getStageId   = (key, stageName) => { const p = PIPELINES[key]; return p ? (p.stages[stageName] || null) : null; };
 const firstStageId = (key) => { const p = PIPELINES[key]; return p ? Object.values(p.stages)[0] : null; };

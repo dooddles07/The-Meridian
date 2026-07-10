@@ -1,4 +1,4 @@
-/* ── Booking List Items ────────────────────────────────────────────────────── */
+/* Booking List Items */
 .booking-row {
   display: flex;
   align-items: center;
@@ -40,7 +40,7 @@
 }
 .booking-cancel-btn:hover { border-color: var(--red); color: var(--red); }
 
-/* ── Notice List Items (dashboard + notices view) ─────────────────────────── */
+/* Notice List Items (dashboard + notices view) */
 .notice-row {
   padding: 11px 16px;
   border-bottom: 1px solid var(--border);
@@ -65,7 +65,7 @@
 .notice-sub   { font-size: 0.75rem; color: var(--muted); }
 .notice-date  { font-size: 0.625rem; color: var(--gold); margin-top: 4px; }
 
-/* ── Facility Grid ────────────────────────────────────────────────────────── */
+/* Facility Grid */
 .facility-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

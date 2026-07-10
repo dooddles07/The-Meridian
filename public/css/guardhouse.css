@@ -1,16 +1,12 @@
-/* guardhouse.css — Guardhouse QR Verification Portal
-   Dark, high-contrast, WCAG AA compliant.
-   Built for a monitor/tablet in a guardhouse booth.
-
-   Contrast audit (WCAG AA: 4.5:1 body copy, 3:1 large text):
+/* Contrast audit (WCAG AA: 4.5:1 body copy, 3:1 large text):
    --text    #e8e0d0  on --bg   #0c0b09  → 14.1:1 ✓
    --text-dim #c2b49a  on --card #1a1814  →  8.2:1 ✓
-   --muted   #9e9080  on --card #1a1814  →  5.5:1 ✓  (was #7a7060 = 3.6:1 ✗)
+   --muted   #9e9080  on --card #1a1814  →  5.5:1 ✓
    --gold    #a5a3f5  on --bg   #0c0b09  →  8.6:1 ✓
    --green   #2ecc8a  on --bg   #0c0b09  →  9.5:1 ✓
    --red     #e05555  on --bg   #0c0b09  →  5.4:1 ✓
    --orange  #e8933a  on --bg   #0c0b09  →  8.3:1 ✓
-   --blue    #4c8fd9  on --bg   #0c0b09  →  6.0:1 ✓                          */
+   --blue    #4c8fd9  on --bg   #0c0b09  →  6.0:1 ✓ */
 
 :root {
   --bg:        #0c0b09;
@@ -70,7 +66,7 @@ body {
   outline-offset: 2px;
 }
 
-/* ── Login screen ─────────────────────────────────────────────────────────── */
+/* Login screen */
 .gh-login-wrap {
   min-height: 100vh; display: flex;
   align-items: center; justify-content: center;
@@ -126,7 +122,7 @@ body {
   font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 1.4rem;
 }
 
-/* ── Topbar ────────────────────────────────────────────────────────────────── */
+/* Topbar */
 .gh-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.9rem 1.8rem;
@@ -161,10 +157,10 @@ body {
 }
 .gh-logout-btn:hover { color: var(--text); border-color: var(--muted); }
 
-/* ── Layout ────────────────────────────────────────────────────────────────── */
+/* Layout */
 .gh-body { display: grid; grid-template-columns: 400px 1fr; flex: 1; min-height: 0; }
 
-/* ── Scanner panel (left) ──────────────────────────────────────────────────── */
+/* Scanner panel (left) */
 .gh-scanner {
   background: var(--surface); border-right: 1px solid var(--border);
   display: flex; flex-direction: column; padding: 1.4rem;
@@ -194,7 +190,6 @@ body {
 .gh-finder-idle svg { opacity: 0.4; }
 .gh-finder-idle-text { font-size: 0.82rem; letter-spacing: 0.06em; }
 
-/* Corner brackets overlay */
 .gh-brackets { position: absolute; inset: 0; pointer-events: none; }
 .gh-brackets::before, .gh-brackets::after,
 .gh-brackets-b::before, .gh-brackets-b::after {
@@ -207,7 +202,6 @@ body {
 .gh-brackets-b::before { bottom: 14px; left: 14px;  border-width: 0 0 2px 2px; }
 .gh-brackets-b::after  { bottom: 14px; right: 14px; border-width: 0 2px 2px 0; }
 
-/* Scan line */
 .gh-scanline {
   position: absolute; left: 10%; right: 10%; height: 2px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
@@ -229,7 +223,6 @@ body {
 .gh-cam-btn.stop   { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
 .gh-cam-btn.stop:hover { background: #4d1b1b; }
 
-/* Manual entry */
 .gh-manual { display: flex; gap: 0.6rem; }
 .gh-input {
   flex: 1; background: var(--card); border: 1px solid var(--border-hi);
@@ -256,7 +249,7 @@ body {
 
 .gh-hint { font-size: 0.76rem; color: var(--muted); margin-top: 0.45rem; line-height: 1.5; }
 
-/* ── Result card ────────────────────────────────────────────────────────────── */
+/* Result card */
 .gh-result {
   border: 1px solid var(--border-hi);
   overflow: hidden; flex-shrink: 0;
@@ -325,7 +318,7 @@ body {
 .gh-action.log   { background: var(--card); color: var(--text-dim); border: 1px solid var(--border-hi); }
 .gh-action.log:hover   { border-color: var(--muted); color: var(--text); }
 
-/* ── Right panel (log) ──────────────────────────────────────────────────────── */
+/* Right panel (log) */
 .gh-logs { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .gh-logs .gh-log-panel { flex: 1 1 50%; min-height: 0; }
 .gh-logs .gh-log-panel + .gh-log-panel { border-top: 2px solid var(--border); }
@@ -395,7 +388,7 @@ body {
 .gh-entry-tag.orange { background: rgba(232,147,58,0.12);      color: var(--orange); border: 1px solid rgba(232,147,58,.25); }
 .gh-entry-time { font-size: 0.74rem; color: var(--muted); white-space: nowrap; margin-top: 0.25rem; flex-shrink: 0; }
 
-/* ── Toast ─────────────────────────────────────────────────────────────────── */
+/* Toast */
 #ghToast {
   position: fixed; bottom: 1.6rem; left: 50%; transform: translateX(-50%);
   padding: 0.85rem 1.8rem; font-size: 0.86rem; z-index: 9999;
@@ -407,7 +400,7 @@ body {
 #ghToast.ok   { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 #ghToast.err  { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
 
-/* ── Parcel checker ─────────────────────────────────────────────────────────── */
+/* Parcel checker */
 .gh-parcel { padding-top: 1.2rem; border-top: 1px solid var(--border); }
 .gh-parcel-result { margin-top: 0.8rem; }
 .gh-parcel-line { font-size: 0.82rem; color: var(--muted); padding: 0.4rem 0; }
@@ -464,7 +457,7 @@ body {
 .gh-parcel-override:hover:not(:disabled) { border-color: var(--gold); background: rgba(129,140,248,0.12); }
 .gh-parcel-override:disabled { opacity: 0.5; cursor: progress; }
 
-/* ── Responsive ─────────────────────────────────────────────────────────────── */
+/* Responsive */
 @media (max-width: 1100px) {
   .gh-body { grid-template-columns: 360px 1fr; }
 }

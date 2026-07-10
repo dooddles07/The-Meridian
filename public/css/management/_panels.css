@@ -1,4 +1,4 @@
-/* ── Panel ────────────────────────────────────────────────────────────────── */
+/* Panel */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -23,7 +23,7 @@
 }
 .panel-meta { font-size: 0.6875rem; color: var(--muted); }
 
-/* ── Section Head ─────────────────────────────────────────────────────────── */
+/* Section Head */
 .section-head {
   display: flex;
   align-items: center;
@@ -43,7 +43,7 @@
 }
 .section-meta { font-size: 0.6875rem; color: var(--muted); }
 
-/* ── Summary Row ──────────────────────────────────────────────────────────── */
+/* Summary Row */
 .summary-row {
   display: flex;
   flex-wrap: wrap;
@@ -79,7 +79,7 @@
   margin-top: 4px;
 }
 
-/* ── Filter Bar ───────────────────────────────────────────────────────────── */
+/* Filter Bar */
 .filter-bar {
   display: flex;
   gap: 8px;
@@ -101,10 +101,10 @@
 .filter-input:focus, .filter-select:focus { border-color: var(--gold); }
 .filter-select { cursor: pointer; }
 
-/* ── Right Column ─────────────────────────────────────────────────────────── */
+/* Right Column */
 .right-col { display: flex; flex-direction: column; gap: 14px; }
 
-/* ── Pinned Notices ───────────────────────────────────────────────────────── */
+/* Pinned Notices */
 .pinned-item {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);

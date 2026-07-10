@@ -1,8 +1,8 @@
-/* ── Defect photo thumbnail ────────────────────────────────────────────────── */
+/* Defect photo thumbnail */
 .defect-thumb { width:44px; height:44px; object-fit:cover; border-radius:5px; cursor:zoom-in; border:1px solid var(--border); transition:opacity .15s; display:block; }
 .defect-thumb:hover { opacity:0.8; }
 
-/* ── Data Table ───────────────────────────────────────────────────────────── */
+/* Data Table */
 table { width: 100%; border-collapse: collapse; }
 /* Scroll wrapper injected by JS — carries the visual border/bg/radius so that
    border-radius renders correctly (display:table ignores it with border-collapse:collapse) */
@@ -46,7 +46,7 @@ table { width: 100%; border-collapse: collapse; }
   font-size: 0.8125rem;
 }
 
-/* ── Status Badges ────────────────────────────────────────────────────────── */
+/* Status Badges */
 .badge {
   display: inline-block;
   font-size: 0.5rem;
@@ -80,7 +80,7 @@ table { width: 100%; border-collapse: collapse; }
 .badge-under-review          { background: rgba(74,122,216,0.15); color: var(--blue); }
 .badge-default     { background: rgba(112,104,88,0.15); color: var(--muted); }
 
-/* ── Urgency Badges ───────────────────────────────────────────────────────── */
+/* Urgency Badges */
 .badge-emergency { background: rgba(192,57,43,0.12); color: #c0392b; }
 .badge-urgent    { background: rgba(211,84,0,0.12);  color: #d35400; }
 .badge-routine   { background: rgba(112,104,88,0.12); color: var(--muted); }
@@ -90,7 +90,7 @@ table { width: 100%; border-collapse: collapse; }
 .row-urgency-urgent    { border-left: 3px solid #d35400; }
 .row-urgency-routine   { border-left: 3px solid transparent; }
 
-/* ── Booking stage action dropdown ────────────────────────────────────────── */
+/* Booking stage action dropdown */
 .bk-stage-select {
   font-size: 0.7rem;
   padding: 4px 8px;
@@ -106,7 +106,7 @@ table { width: 100%; border-collapse: collapse; }
 .bk-syncing { color: var(--gold); font-style: italic; animation: bk-pulse 1.4s ease-in-out infinite; }
 @keyframes bk-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-/* ── Tags ─────────────────────────────────────────────────────────────────── */
+/* Tags */
 .tag {
   display: inline-block;
   font-size: 0.5rem;
@@ -121,7 +121,7 @@ table { width: 100%; border-collapse: collapse; }
 .tag-complaint{ border-color: rgba(212,120,72,0.4); color: var(--orange); }
 .tag-parcel   { border-color: rgba(192,56,40,0.4);  color: var(--red); }
 
-/* ── View All Link ────────────────────────────────────────────────────────── */
+/* View All Link */
 .view-all-link {
   font-size: 0.5625rem;
   letter-spacing: 0.08em;
@@ -133,7 +133,7 @@ table { width: 100%; border-collapse: collapse; }
 }
 .view-all-link:hover { opacity: 0.7; }
 
-/* ── Parcel table ─────────────────────────────────────────────────────────── */
+/* Parcel table */
 #parcelsTable { min-width: 700px; }
 
 /* Parcel stage select needs room for "Uncollected / Returned" */

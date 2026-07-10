@@ -1,4 +1,4 @@
-/* ── Main ─────────────────────────────────────────────────────────────────── */
+/* Main */
 .main {
   margin-left: var(--sidebar-w);
   display: flex;
@@ -6,7 +6,7 @@
   min-height: 100vh;
 }
 
-/* ── Topbar ───────────────────────────────────────────────────────────────── */
+/* Topbar */
 .topbar {
   display: flex;
   align-items: center;
@@ -23,7 +23,7 @@
 .topbar__date { font-size: 0.75rem; color: var(--muted); }
 .topbar__right { display: flex; align-items: center; gap: 14px; }
 
-/* ── Theme switch ────────────────────────────────────────────────────────── */
+/* Theme switch */
 .theme-switch {
   display: inline-flex;
   align-items: center;
@@ -122,12 +122,12 @@
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 @keyframes spin   { to { transform: rotate(360deg); } }
 
-/* ── Light mode — softer topbar shadow ───────────────────────────────────── */
+/* Light mode — softer topbar shadow */
 [data-theme="light"] .topbar {
   box-shadow: 0 1px 0 rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.06);
 }
 
-/* ── Content ──────────────────────────────────────────────────────────────── */
+/* Content */
 .content {
   flex: 1;
   padding: var(--pad);
@@ -138,7 +138,7 @@
 .view { display: none; }
 .view.active { display: block; }
 
-/* ── Page Title ───────────────────────────────────────────────────────────── */
+/* Page Title */
 .page-title {
   font-family: var(--serif);
   font-size: 2.125rem;

@@ -1,15 +1,10 @@
-/* inbox.css — Conversations component
-   Tokens consumed (both portals define all of these):
+/* Tokens consumed (both portals define all of these):
    --bg, --surface, --surface-2, --text, --text-2, --muted, --faint
    --gold, --gold-lt, --gold-dk, --border, --border-2, --green
    --sans, --serif, --shadow-sm, --shadow-md, --shadow-lg
-   --radius-sm, --radius-md, --radius-pill, --pad               */
+   --radius-sm, --radius-md, --radius-pill, --pad */
 
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   VIEWPORT TAKEOVER
-   When the messages view is active, strip .content padding and fill height.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* Viewport takeover — when the messages view is active, strip .content padding and fill height */
 .content:has(#view-messages.active) {
   flex: none;
   padding: 0;
@@ -38,9 +33,7 @@ div#view-messages.view {
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SIDEBAR
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* Sidebar */
 .inbox__sidebar {
   width: 320px;
   flex-shrink: 0;
@@ -51,7 +44,7 @@ div#view-messages.view {
   overflow: hidden;
 }
 
-/* ── Sidebar header ─────────────────────────────────────────────────────── */
+/* Sidebar header */
 .inbox__sidebar-head {
   display: flex;
   align-items: center;
@@ -96,7 +89,7 @@ div#view-messages.view {
   font-variation-settings: 'wght' 400, 'opsz' 20;
 }
 
-/* ── Search ─────────────────────────────────────────────────────────────── */
+/* Search */
 .inbox__search-wrap {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
@@ -124,7 +117,7 @@ div#view-messages.view {
 }
 .inbox__search::placeholder { color: var(--faint); }
 
-/* ── Filter tabs (management only) ─────────────────────────────────────── */
+/* Filter tabs (management only) */
 .inbox__filters {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -148,7 +141,7 @@ div#view-messages.view {
 .inbox__filter-tab:hover { color: var(--text-2); }
 .inbox__filter-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 
-/* ── Conversation list ──────────────────────────────────────────────────── */
+/* Conversation list */
 .inbox__list {
   flex: 1;
   overflow-y: auto;
@@ -290,9 +283,7 @@ div#view-messages.view {
 .inbox__list-empty-cta:hover { opacity: 0.75; }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   THREAD PANEL
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* Thread panel */
 .inbox__thread {
   flex: 1;
   display: flex;
@@ -302,7 +293,7 @@ div#view-messages.view {
   background: var(--bg);
 }
 
-/* ── Thread header ──────────────────────────────────────────────────────── */
+/* Thread header */
 .inbox__thread-header {
   display: flex;
   align-items: center;
@@ -404,7 +395,7 @@ div#view-messages.view {
   font-variation-settings: 'wght' 300, 'opsz' 20;
 }
 
-/* ── Messages area ──────────────────────────────────────────────────────── */
+/* Messages area */
 .inbox__messages {
   flex: 1;
   min-height: 0;
@@ -442,7 +433,7 @@ div#view-messages.view {
 .inbox__msg--out + .inbox__msg--in,
 .inbox__msg--in  + .inbox__msg--out { margin-top: 12px; }
 
-/* ── Bubbles ────────────────────────────────────────────────────────────── */
+/* Bubbles */
 .inbox__msg-bubble {
   padding: 10px 15px;
   font-size: 0.8125rem;
@@ -461,7 +452,6 @@ div#view-messages.view {
   box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 3px 10px rgba(0,0,0,0.05);
 }
 
-/* Outgoing — gold tint */
 .inbox__msg--out .inbox__msg-bubble {
   background: var(--gold-lt);
   border: 1px solid var(--border-2);
@@ -477,7 +467,6 @@ div#view-messages.view {
   border-color: rgba(49, 46, 129, 0.28);
 }
 
-/* Timestamp */
 .inbox__msg-time {
   display: flex;
   align-items: center;
@@ -520,7 +509,7 @@ div#view-messages.view {
 }
 .inbox__no-thread p { font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
 
-/* ── Compose bar ────────────────────────────────────────────────────────── */
+/* Compose bar */
 .inbox__compose {
   display: flex;
   align-items: flex-end;
@@ -584,9 +573,7 @@ div#view-messages.view {
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   NEW CONVERSATION MODAL
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* New conversation modal */
 .inbox-modal {
   position: fixed;
   inset: 0;
@@ -722,9 +709,7 @@ div#view-messages.view {
 .inbox-modal__send:hover { opacity: 0.88; }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* Responsive */
 @media (max-width: 1000px) { .inbox__sidebar { width: 280px; } }
 @media (max-width: 800px)  { .inbox__sidebar { width: 240px; } }
 

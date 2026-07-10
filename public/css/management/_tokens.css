@@ -1,8 +1,8 @@
-/* ── Reset ────────────────────────────────────────────────────────────────── */
+/* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 button, input, select, textarea { font: inherit; }
 
-/* ── Design Tokens ────────────────────────────────────────────────────────── */
+/* Design Tokens */
 :root {
   /* Backgrounds — dark warm parchment (evil twin of member portal #f4f0eb) */
   --bg:        #0c0b09;
@@ -16,8 +16,8 @@ button, input, select, textarea { font: inherit; }
   /* Text — warm off-white hierarchy (all ≥4.5:1 on --bg #0c0b09) */
   --text:      #e0d5be;   /* 13.5:1 ✓ */
   --text-2:    #a8a090;   /*  7.6:1 ✓ */
-  --muted:     #8a8070;   /*  5.1:1 ✓  (was #706858 @ 3.57:1 — fixed) */
-  --faint:     #857b6b;   /*  4.7:1 ✓  (was #484038 @ 1.94:1 — fixed) */
+  --muted:     #8a8070;   /*  5.1:1 ✓ */
+  --faint:     #857b6b;   /*  4.7:1 ✓ */
 
   /* Gold — same warm family as member portal */
   --gold:      #a5a3f5;   /*  7.9:1 ✓ */
@@ -26,7 +26,7 @@ button, input, select, textarea { font: inherit; }
 
   /* Status */
   --green:     #4a9e68;   /*  6.0:1 ✓ */
-  --red:       #dc4232;   /*  4.6:1 ✓  (was #c03828 @ 3.60:1 — fixed) */
+  --red:       #dc4232;   /*  4.6:1 ✓ */
   --blue:      #4a7ad8;   /*  4.7:1 ✓ */
   --orange:    #d47848;   /*  6.2:1 ✓ */
   --purple:    #8a6ad8;   /*  4.8:1 ✓ */
@@ -48,7 +48,7 @@ button, input, select, textarea { font: inherit; }
   --pad:       26px;
 }
 
-/* ── Base ─────────────────────────────────────────────────────────────────── */
+/* Base */
 html { font-size: 20px; }
 body {
   background:
@@ -63,7 +63,7 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 
-/* ── Film grain overlay ───────────────────────────────────────────────────── */
+/* Film grain overlay */
 body::before {
   content: '';
   position: fixed;
@@ -82,14 +82,14 @@ html { scrollbar-width: auto; scrollbar-color: var(--faint) transparent; }
 ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
 
-/* ── Keyboard focus ring (low-vision / keyboard nav) ──────────────────────── */
+/* Keyboard focus ring (low-vision / keyboard nav) */
 :focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ── Light mode overrides ─────────────────────────────────────────────────── */
+/* Light mode overrides */
 [data-theme="light"] {
   --bg:        #f4f0eb;
   --surface:   #ffffff;

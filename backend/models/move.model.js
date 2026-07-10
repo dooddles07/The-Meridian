@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
-// Resident move-in/out request detail — the full submission the resident typed.
-// Mongo is the source of truth (shared across devices + both portals), replacing
-// the old per-browser localStorage mirror.
+// Resident move-in/out request detail — the resident's full submission. Mongo is
+// the source of truth (shared across devices/portals, replacing the old
+// localStorage mirror).
 const schema = new mongoose.Schema({
   contact_id: { type: String, default: '', index: true },
   email:      { type: String, default: '', lowercase: true, trim: true, index: true },

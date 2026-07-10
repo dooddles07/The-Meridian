@@ -1,7 +1,6 @@
-// config/secrets.js
 // Single, validated source for security-critical secrets. Loaded at boot via the
-// auth modules; if a required secret is missing or weak the process refuses to start
-// rather than silently falling back to a known/insecure default (finding C-03).
+// auth modules; if a required secret is missing or weak, the process refuses to
+// start rather than silently falling back to a known/insecure default.
 
 const MIN_JWT_LEN = 32;
 
@@ -19,9 +18,8 @@ if (JWT_SECRET.length < MIN_JWT_LEN || JWT_SECRET === 'meridian-dev-secret') {
   process.exit(1);
 }
 
-// ── JWT lifecycle (M-03) ──────────────────────────────────────────────────────
-// One place to sign and verify tokens so options never drift. Every token is bound
-// to this issuer + audience and carries a version claim; bumping MERIDIAN_TOKEN_VERSION
+// Signs/verifies in one place so options never drift. Every token is bound to this
+// issuer + audience and carries a version claim; bumping MERIDIAN_TOKEN_VERSION
 // instantly invalidates all existing tokens (a global revocation / logout lever).
 const jwt = require('jsonwebtoken');
 
@@ -38,8 +36,7 @@ function signToken(payload) {
   );
 }
 
-// Verifies signature, expiry, issuer and audience, then the version claim. Throws on
-// any mismatch (callers already treat a throw as "session invalid → 401").
+// Throws on any mismatch — callers already treat a throw as "session invalid → 401".
 function verifyToken(token) {
   const payload = jwt.verify(token, JWT_SECRET, { issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
   if (Number(payload.ver) !== TOKEN_VERSION) {

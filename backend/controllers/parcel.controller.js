@@ -68,7 +68,7 @@ async function notifyParcel(req, res) {
     console.log(`[parcel] webhook fired for ${parcel_reference}${courier ? ' via ' + courier : ''}${authorized_collector ? ' auth:' + authorized_collector : ''} for #${resident_unit}`);
 
     // Persist the full submission to Mongo (resident-facing source of truth across
-    // devices + both portals — replaces the old localStorage mirror). Non-fatal.
+    // devices + both portals). Non-fatal.
     if (dbReady() && (resident_contact_id || resident_email)) {
       Parcel.create({
         contact_id:           resident_contact_id || '',

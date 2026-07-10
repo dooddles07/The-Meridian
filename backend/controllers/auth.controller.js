@@ -22,13 +22,12 @@ async function residentLogin(req, res) {
   const cleanEmail = model.clean(account.email);
   const normUnit   = model.normalizeUnit(account.unit);
 
-  // Auto-render the account into GHL: create-or-update the contact by email,
-  // sync name + unit, and persist the resulting contact ID. Self-healing —
-  // a deleted/recreated contact is recreated here on next login.
+  // Create-or-update the GHL contact by email and persist its id. Self-healing —
+  // a deleted/recreated contact is restored here on next login.
   const contact_id = await residents.ensureContact(account);
 
-  // Issue a signed session token. Every resident API call must present this; the
-  // backend trusts the identity baked into it, never identifiers from the request.
+  // Every resident API call must present this token; the backend trusts the
+  // identity baked into it, never identifiers from the request.
   const token = signToken({ role: 'resident', contact_id: contact_id || '', email: cleanEmail.toLowerCase(), unit: normUnit, name });
 
   return res.json({

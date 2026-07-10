@@ -1,9 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   The Lumina — Landing / portal directory
-   Shares the app's design language: Cormorant Garamond + Tenor Sans, indigo on
-   warm ivory (light) / near-black (dark), film grain, soft radial indigo glow.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -85,7 +79,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 6px;
 }
 
-/* ── Shell ─────────────────────────────────────────────────────────────────── */
+/* Shell */
 .wrap {
   position: relative;
   z-index: 1;
@@ -96,7 +90,7 @@ a { color: inherit; text-decoration: none; }
   padding: clamp(20px, 5vw, 40px) clamp(16px, 5vw, 40px) 32px;
 }
 
-/* ── Theme toggle (top-right) ──────────────────────────────────────────────── */
+/* Theme toggle (top-right) */
 .theme-toggle {
   position: fixed;
   top: 16px;
@@ -126,7 +120,7 @@ a { color: inherit; text-decoration: none; }
 [data-theme="dark"] .theme-toggle .tt-sun { display: inline; }
 [data-theme="dark"] .theme-toggle .tt-moon { display: none; }
 
-/* ── Hero ──────────────────────────────────────────────────────────────────── */
+/* Hero */
 .hero {
   width: 100%;
   max-width: 680px;
@@ -162,7 +156,6 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.6;
 }
 
-/* Trust indicators under the hero */
 .badges {
   display: flex;
   flex-wrap: wrap;
@@ -191,7 +184,7 @@ a { color: inherit; text-decoration: none; }
 .badge--ok .material-symbols-outlined { color: var(--green); }
 .badge--demo .material-symbols-outlined { color: var(--gold); }
 
-/* ── Portal directory ──────────────────────────────────────────────────────── */
+/* Portal directory */
 .directory {
   width: 100%;
   max-width: 1060px;
@@ -314,7 +307,7 @@ a { color: inherit; text-decoration: none; }
 [data-theme="dark"] .portal:hover .portal__cta { background: var(--gold-dk); color: #0c0b09; }
 .portal__cta .material-symbols-outlined { font-size: 18px; }
 
-/* ── Footer ────────────────────────────────────────────────────────────────── */
+/* Footer */
 .foot {
   width: 100%;
   max-width: 1060px;
@@ -333,7 +326,7 @@ a { color: inherit; text-decoration: none; }
 .foot__note .material-symbols-outlined { font-size: 17px; color: var(--gold); flex-shrink: 0; }
 .foot__by em { font-style: italic; color: var(--gold); }
 
-/* ── Motion ────────────────────────────────────────────────────────────────── */
+/* Motion */
 @keyframes rise {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -344,7 +337,7 @@ a { color: inherit; text-decoration: none; }
   .portal:hover, .portal:focus-visible { transform: none; }
 }
 
-/* ── Responsive ────────────────────────────────────────────────────────────── */
+/* Responsive */
 @media (max-width: 900px) {
   .directory { grid-template-columns: 1fr; max-width: 520px; }
   .portal { padding: 22px 20px; }

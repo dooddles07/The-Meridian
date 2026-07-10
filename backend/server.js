@@ -1,15 +1,7 @@
-// server.js
-// The Meridian — Portal (PORTFOLIO DEMO BUILD)
-//
-// This demo runs FULLY CLIENT-SIDE with no external connections: no database,
-// no CRM/GHL, no webhooks, no auth server. This Node process only serves the
-// static frontend in ../public. All API calls the frontend makes are intercepted
-// in the browser by public/js/demo-backend.js and answered from seeded, in-browser
-// (localStorage) data — so nothing ever leaves the machine and no real workflow
-// can be triggered.
-//
-// The original, full backend implementation is kept under ./controllers, ./models,
-// ./routes and ./services as reference (it is NOT mounted here). See README.
+// PORTFOLIO DEMO: runs fully client-side. This process only serves the static
+// frontend in ../public — all API calls are intercepted in-browser by
+// public/js/demo-backend.js. The real backend (./controllers, ./models, ./routes,
+// ./services) is kept as reference only and is not mounted here.
 
 require('dotenv').config();
 
@@ -23,10 +15,8 @@ const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 
-// ── Security headers ──────────────────────────────────────────────────────────
-// Kept from the production build to show intent. CSP allows the app's own inline
-// scripts/styles, the CDN libraries (jsDelivr), Google Fonts and QR images. No
-// external app/API hosts are allowed — the demo talks to nothing but itself.
+// CSP allows only self, jsDelivr, Google Fonts and the QR image API — no other
+// external hosts, since the demo talks to nothing but itself.
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
@@ -49,19 +39,15 @@ app.use(helmet({
 // Same-origin only; the demo has no cross-origin API surface.
 app.use(cors({ origin: false }));
 
-// ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.status(200).json({ success: true, message: 'The Meridian demo is running.', timestamp: new Date().toISOString() });
 });
 
-// ── No live API ─────────────────────────────────────────────────────────────
-// The demo has no server-side API. Any /api/* request that slips past the browser
-// mock (public/js/demo-backend.js) gets a clear JSON 404 rather than the SPA HTML.
+// Any /api/* request that slips past the browser mock gets a JSON 404 instead of the SPA HTML.
 app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'This is a static demo — the API runs entirely in the browser (see public/js/demo-backend.js).' });
 });
 
-// ── Static frontend ─────────────────────────────────────────────────────────
 const PUBLIC_DIR = path.join(__dirname, '../public');
 app.use(express.static(PUBLIC_DIR));
 

@@ -20,11 +20,9 @@ async function registerGuest(req, res) {
   // Unique guest reference code for every registration, e.g. GST-20260620-4821.
   const reference = `GST-${(visit_date || '').replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-  // Build the guest-pass QR. The encoded payload matches what the Guardhouse
-  // verify portal scans for: MERIDIAN-GUEST / Ref / Host Unit / Visitor / Date.
-  // QR encodes ONLY the reference. The guardhouse looks up the full
-  // registration in GHL by this reference (single source of truth) — the visit
-  // date is also embedded in the reference (GST-YYYYMMDD-####) for date-gating.
+  // QR encodes ONLY the reference — the guardhouse looks up the full registration
+  // in GHL by this reference (single source of truth); the visit date is also
+  // embedded in the reference (GST-YYYYMMDD-####) for date-gating.
   const qr_url = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${encodeURIComponent(reference)}`;
 
   // Canonical guest opportunity name the workflow uses. Format the guardhouse

@@ -5,8 +5,8 @@ const Move = require('../models/move.model');
 const dbReady = () => mongoose.connection.readyState === 1;
 
 // GHL Inbound Webhook that triggers the "Move-In/Move-Out — New" workflow, which
-// OWNS opportunity creation (single Create-or-Update, duplicates OFF). The backend
-// no longer creates the opp itself — doing both would produce duplicate cards.
+// owns opportunity creation (single Create-or-Update, duplicates off) — creating
+// the opp here too would produce duplicate cards.
 const MOVE_WEBHOOK = process.env.MERIDIAN_WEBHOOK_MOVE || '';
 
 // POST /api/move — submit a move-in/move-out request for the logged-in resident.
@@ -21,7 +21,7 @@ async function submitMove(req, res) {
   }
 
   const unitTag = unit ? ` (#${String(unit).replace(/^#/, '')})` : '';
-  // Canonical opportunity name the workflow uses — professional + parseable.
+  // Canonical opportunity name the workflow uses.
   const oppName = `${move_type} — ${name || 'Resident'}${unitTag} · ${move_date} ${move_time}`;
 
   try {
@@ -38,7 +38,7 @@ async function submitMove(req, res) {
     console.log(`[move] ${move_type} for #${unit} on ${move_date} ${move_time} (contact ${contact_id})`);
 
     // Persist the full submission to Mongo (resident-facing source of truth across
-    // devices + both portals — replaces the old localStorage mirror). Non-fatal.
+    // devices + both portals). Non-fatal.
     if (dbReady() && (contact_id || email)) {
       Move.create({
         contact_id: contact_id || '',

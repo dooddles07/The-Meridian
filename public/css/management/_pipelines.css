@@ -1,4 +1,3 @@
-/* ── Defect Summary Cells ─────────────────────────────────────────────────── */
 .defect-summary-cells { display: flex; }
 .defect-summary-cells .stage-cell {
   border: 1px solid var(--border);
@@ -10,7 +9,6 @@
 }
 .defect-summary-cells .stage-cell:last-child { border-right: 1px solid var(--border); }
 
-/* ── Pipelines ────────────────────────────────────────────────────────────── */
 .pipelines-section { margin-top: 20px; }
 .pipeline-block { margin-bottom: 12px; }
 .pipeline-block-title {
@@ -33,7 +31,6 @@
   overflow: hidden;
 }
 
-/* ── Stage Cells ──────────────────────────────────────────────────────────── */
 .stage-cell {
   flex: 1;
   padding: 14px 10px;

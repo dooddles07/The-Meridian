@@ -1,13 +1,12 @@
-// services/ghl.service.js
-// Shared GoHighLevel (LeadConnector) API client. One place for base URL, auth,
-// and version headers so every controller talks to GHL the same way.
+// Shared GoHighLevel (LeadConnector) client — one place for base URL, auth, and
+// version headers so every controller talks to GHL the same way.
 
 const axios  = require('axios');
 const crypto = require('crypto');
 
 const BASE     = process.env.GHL_API_BASE_URL || 'https://services.leadconnectorhq.com';
 const KEY      = process.env.GHL_API_KEY || '';
-const LOCATION = process.env.GHL_LOCATION_ID || '';   // no hardcoded tenant id (M-08)
+const LOCATION = process.env.GHL_LOCATION_ID || '';   // no hardcoded tenant id
 
 if (KEY && !LOCATION) {
   console.warn('[ghl] GHL_API_KEY is set but GHL_LOCATION_ID is missing — GHL features stay disabled until it is set.');
@@ -49,13 +48,13 @@ async function ghlDelete(path, { version } = {}) {
   return data;
 }
 
-// POST to an absolute GHL Inbound Webhook URL (no auth header — webhooks are
-// triggered by URL). Used to fire workflows with structured data.
+// Posts to an absolute GHL Inbound Webhook URL — no auth header, since webhooks
+// are triggered by URL alone.
 async function postWebhook(url, body) {
   if (!url) return null;
   // Attach an idempotency key + timestamp so duplicate/retried fires can be deduped
-  // downstream (M-07). The key is derived from the event + a stable natural reference
-  // (so the same logical event yields the same key); falls back to a random id.
+  // downstream. The key is derived from the event + a stable natural reference (so
+  // the same logical event yields the same key); falls back to a random id.
   const payload = { ...body };
   if (!payload.idempotency_key) {
     const basis = payload.reference || payload.appointment_id || payload.parcel_reference || payload.opp_name || '';
@@ -71,8 +70,7 @@ async function postWebhook(url, body) {
   return data;
 }
 
-// Create or update a contact by email (GHL dedupes on email). Returns the
-// contact object (with .id). Used to auto-render accounts into GHL.
+// Create or update a contact by email — GHL dedupes on email.
 async function upsertContact({ email, firstName, lastName, customFields } = {}) {
   const body = { locationId: LOCATION, email };
   if (firstName)    body.firstName    = firstName;
@@ -82,9 +80,9 @@ async function upsertContact({ email, firstName, lastName, customFields } = {}) 
   return data.contact || data;
 }
 
-// Resolve a contact's current GHL ID by email (self-healing — survives
-// contact deletion/recreation). Returns the ID string, or null if not found
-// or GHL is unavailable. Never throws.
+// Resolve a contact's current GHL ID by email — self-healing, since it re-looks-up
+// by email rather than trusting a stored id (survives contact deletion/recreation).
+// Returns null if not found or GHL is unavailable; never throws.
 async function findContactIdByEmail(email) {
   if (!email || !isConfigured()) return null;
   try {

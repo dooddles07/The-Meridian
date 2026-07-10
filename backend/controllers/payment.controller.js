@@ -69,13 +69,11 @@ async function myPayments(req, res) {
   }
 }
 
-// POST /api/payments/pay-deposit — resident pays a booking/move deposit.
-// For Verandah, fee_label ('booking_fee' or 'deposit') is required. Each fee is
-// recorded individually; GHL advances to Confirmed only when both fees are on record.
-// For all other facilities and moves, behaves as before (single fee → Confirmed).
+// POST /api/payments/pay-deposit — resident pays a booking/move deposit. Verandah's
+// booking fee + refundable deposit are now a single combined payment; other
+// facilities and moves use a single fee → Confirmed.
 // Body: { pipeline, opportunity_id, facility_key?, fee_label?, fee_amount?,
 //         description, contact_id, email, name, unit }
-// Verandah's booking fee + refundable deposit are now one combined payment.
 const VERANDAH_FEE_AMOUNTS = { deposit: 600 };
 const VERANDAH_FEE_LABELS  = ['deposit'];
 
@@ -111,7 +109,7 @@ async function payDeposit(req, res) {
   const isVerandahFee = facility_key === 'verandah' && VERANDAH_FEE_LABELS.includes(fee_label);
 
   if (isVerandahFee) {
-    // Verandah partial-payment path: record this fee, confirm GHL only when both are present.
+    // Verandah fee path: record this fee, confirm GHL once all required fees are present.
     const amount = VERANDAH_FEE_AMOUNTS[fee_label];
     try {
       if (dbReady()) {
@@ -125,7 +123,7 @@ async function payDeposit(req, res) {
             opportunity_id, fee_label, paid_at: new Date(),
           });
         }
-        // Confirm GHL only when both fees are recorded.
+        // Confirm GHL once all required fees are recorded.
         const paidFees = await Payment.find({ opportunity_id, fee_label: { $in: VERANDAH_FEE_LABELS } }).lean();
         const paidLabels = new Set(paidFees.map(f => f.fee_label));
         const bothPaid = VERANDAH_FEE_LABELS.every(l => paidLabels.has(l));
@@ -170,8 +168,8 @@ async function payDeposit(req, res) {
 
 // POST /api/payments/confirm — called by GHL payment-link success workflow.
 // Finds the Deposit Pending facility opp for the contact, records the fee to DB,
-// and moves GHL stage to Confirmed (Verandah: only when both fees are recorded).
-// Body: { contact_id, fee_label }  ('booking_fee' | 'deposit' | '' )
+// and moves GHL stage to Confirmed once all required fees are recorded.
+// Body: { contact_id, fee_label }
 // GHL workflow: Inbound Webhook action → POST this URL with the fields above.
 async function confirmPayment(req, res) {
   // A confirmation = a booking gets marked paid and advanced. Only the payment

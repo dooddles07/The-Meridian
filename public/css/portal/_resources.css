@@ -1,12 +1,9 @@
-/* ── Resources view — residents portal ────────────────────────────────────── */
-
 .res-intro {
   font-size: 0.8125rem;
   color: var(--muted);
   margin-bottom: 1.2rem;
 }
 
-/* Category group */
 .res-group {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -38,7 +35,6 @@
   color: var(--muted);
 }
 
-/* Individual document rows */
 .res-group-items { padding: 4px 0; }
 
 .res-item {
@@ -75,7 +71,6 @@
   text-overflow: ellipsis;
 }
 
-/* Download button */
 .res-download-btn {
   display: inline-flex;
   align-items: center;

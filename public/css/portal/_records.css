@@ -1,4 +1,4 @@
-/* ── Status Badges ────────────────────────────────────────────────────────── */
+/* Status Badges */
 .sbadge {
   display: inline-block;
   font-size: 0.5rem;
@@ -20,7 +20,7 @@
 .sbadge-cancelled   { background: #f9dcdc; color: #b3261e; }
 .sbadge-default     { background: var(--surface-2); color: var(--muted); }
 
-/* ── My Bookings row actions ──────────────────────────────────────────────── */
+/* My Bookings row actions */
 .data-table .bk-edit,
 .data-table .bk-cancel { display: inline; margin-top: 0; }
 .bk-edit {
@@ -32,7 +32,7 @@
 .bk-edit:hover { text-decoration: underline; }
 .bk-locked-note { color: var(--muted); font-size: 0.6875rem; }
 
-/* ── Data Table ───────────────────────────────────────────────────────────── */
+/* Data Table */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -64,7 +64,7 @@
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: var(--bg); }
 
-/* ── Expandable Record Items ──────────────────────────────────────────────── */
+/* Expandable Record Items */
 .rec-item { border-bottom: 1px solid var(--border); }
 .rec-item:last-child { border-bottom: none; }
 .rec-summary {
@@ -179,7 +179,7 @@ details[open] > .rec-summary .rec-chevron { transform: rotate(90deg); }
   line-height: 1.5;
 }
 
-/* ── Notices & AGM Cards ──────────────────────────────────────────────────── */
+/* Notices & AGM Cards */
 .ann-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -218,7 +218,7 @@ details[open] > .rec-summary .rec-chevron { transform: rotate(90deg); }
   color: var(--faint);
 }
 
-/* ── Move In/Out ──────────────────────────────────────────────────────────── */
+/* Move In/Out */
 .move-note {
   background: #fffaed;
   border: 1px solid #cdccf0;

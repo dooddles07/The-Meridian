@@ -1,4 +1,3 @@
-/* ── Toast ────────────────────────────────────────────────────────────────── */
 #toast {
   position: fixed;
   top: 20px;
@@ -16,7 +15,6 @@
 #toast.ok  { background: var(--green); color: #fff; }
 #toast.err { background: var(--red);   color: #fff; }
 
-/* ── Loading Overlay ──────────────────────────────────────────────────────── */
 #loadingOverlay {
   position: fixed;
   inset: 0;

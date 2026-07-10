@@ -9,24 +9,24 @@
 
   const $ = id => document.getElementById(id);
 
-  // ── Session gate ──────────────────────────────────────────────────────────
+  // Session gate
   const token = sessionStorage.getItem('mgmtToken') || localStorage.getItem('mgmtToken');
   let USER = {};
   try { USER = JSON.parse(sessionStorage.getItem('mgmtUser') || localStorage.getItem('mgmtUser') || '{}'); } catch {}
   if (!token) { window.location.href = 'management-login.html'; return; }
 
-  // ── Hide the full-screen loading overlay (covers everything by default) ────
+  // Hide the full-screen loading overlay (covers everything by default)
   const overlay = $('loadingOverlay');
   if (overlay) { overlay.style.opacity = '0'; setTimeout(() => { overlay.style.display = 'none'; }, 420); }
 
-  // ── Identity + date ────────────────────────────────────────────────────────
+  // Identity + date
   if (USER.username && $('userName'))   $('userName').textContent = USER.username;
   if (USER.username && $('userAvatar')) $('userAvatar').textContent = USER.username[0].toUpperCase();
   $('topbarDate').textContent = new Date().toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Singapore',
   });
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
+  // Toast
   let _t;
   function toast(msg, isErr) {
     const el = $('toast'); if (!el) return;
@@ -34,7 +34,7 @@
     clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3500);
   }
 
-  // ── Mobile sidebar toggle ─────────────────────────────────────────────────────
+  // Mobile sidebar toggle
   const sidebar        = document.querySelector('.sidebar');
   const sidebarOverlay = $('sidebarOverlay');
   const sidebarToggle  = $('sidebarToggle');
@@ -48,7 +48,7 @@
   });
   sidebarOverlay?.addEventListener('click', closeSidebar);
 
-  // ── Theme toggle ─────────────────────────────────────────────────────────────
+  // Theme toggle
   (function initTheme() {
     const KEY = 'meridian-portal-theme';
     function syncToggleUI(theme) {
@@ -67,7 +67,7 @@
     });
   })();
 
-  // ── Table scroll wrappers (enables horizontal scroll without breaking full-width columns) ──
+  // Table scroll wrappers (enables horizontal scroll without breaking full-width columns)
   document.querySelectorAll('table.data-table').forEach(t => {
     const w = document.createElement('div');
     w.className = 'table-scroll';
@@ -75,7 +75,7 @@
     w.appendChild(t);
   });
 
-  // ── View / tab switching ─────────────────────────────────────────────────────
+  // View / tab switching
   function navigate(view) {
     document.querySelectorAll('.nav__item').forEach(el => el.classList.toggle('active', el.dataset.view === view));
     document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + view));
@@ -86,7 +86,7 @@
   document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.view)));
   navigate(localStorage.getItem('mgmtLastView') || 'dashboard');
 
-  // ── Dashboard date tabs ───────────────────────────────────────────────────────
+  // Dashboard date tabs
   let _dashPeriod = 'today';
   const dateTabs = $('dashDateTabs');
   if (dateTabs) {
@@ -100,7 +100,7 @@
     });
   }
 
-  // ── Buttons (validate + feedback; data not wired) ─────────────────────────────
+  // Buttons (validate + feedback; data not wired)
   bind('refreshBtn', () => {
     const b = $('refreshBtn'); if (!b) return;
     b.disabled = true; b.textContent = '⟲ Refreshing…';
@@ -108,7 +108,7 @@
       .then(() => toast('Data refreshed.'))
       .finally(() => { b.disabled = false; b.textContent = '⟲ REFRESH'; });
   });
-  // ── Announcement event date/time controls ────────────────────────────────────
+  // Announcement event date/time controls
   // Time dropdowns: 30-min slots, value "HH:MM" (24h), label 12h. The Lumina runs
   // on Asia/Singapore, so we anchor the combined instant to +08:00 on submit.
   const SGT_OFFSET = '+08:00';
@@ -155,7 +155,6 @@
   if ($('annCategory')) $('annCategory').addEventListener('change', syncAnnCategoryFields);
   syncAnnCategoryFields();
 
-  // "Other" venue checkbox - show/hide the free-text input
   if ($('annBlockOther')) {
     $('annBlockOther').addEventListener('change', () => {
       if ($('annVenueOther')) $('annVenueOther').style.display = $('annBlockOther').checked ? '' : 'none';
@@ -224,9 +223,7 @@
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
   if ($('guestDate')) { $('guestDate').value = today; $('guestDate').min = today; }
 
-  // Announcements: block past dates in every announcement date picker.
   ['annEventDate', 'annStartDate', 'annEndDate'].forEach(id => { if ($(id)) $(id).min = today; });
-  // Maintenance end can't be earlier than the chosen start date.
   if ($('annStartDate') && $('annEndDate')) {
     $('annStartDate').addEventListener('change', () => {
       $('annEndDate').min = $('annStartDate').value || today;
@@ -234,13 +231,12 @@
     });
   }
 
-  // ── Facility bookings - all residents, live from GHL ──────────────────────────
+  // Facility bookings - all residents, live from GHL
   function bkDateLabel(iso) {
     if (!iso) return ' - ';
     return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
   }
   function bkBadge(status) {
-    // Map each Facility Bookings pipeline stage to a colour.
     const map = {
       'Deposit Pending': 'badge-submitted',    // amber
       'Confirmed':       'badge-confirmed',    // green
@@ -251,8 +247,7 @@
     const cls = map[status] || 'badge-default';
     return `<span class="badge ${cls}">${esc(status || 'Confirmed')}</span>`;
   }
-  // Build the per-row stage dropdown. Disabled (with a hint) when the booking has
-  // no linked pipeline opportunity yet.
+  // Disabled (with a hint) when the booking has no linked pipeline opportunity yet.
   function bkStageSelect(b, stages) {
     if (!b.oppId) {
       return `<span class="bk-stage-none bk-syncing" title="Pipeline opportunity not yet created - auto-refreshing in a few seconds.">Syncing…</span>`;
@@ -277,7 +272,6 @@
     const items  = data.items  || [];
     const stages = data.stages || ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'];
 
-    // Full schedule with stage + action.
     const body = $('bookingsBody');
     if (body) {
       body.innerHTML = items.length
@@ -367,11 +361,10 @@
     if ($('refreshNote')) $('refreshNote').textContent = `Live · updated ${stamp}`;
   }
   loadBookings().catch(e => console.error('[mgmt bookings]', e));
-  // Refresh the bookings when the user opens the Facility Bookings view.
   document.querySelectorAll('[data-view="bookings"]').forEach(el =>
     el.addEventListener('click', () => loadBookings().catch(e => console.error('[mgmt bookings]', e))));
 
-  // ── Live facility bookings ────────────────────────────────────────────────────
+  // Live facility bookings
   // New bookings (and resident-side stage changes) appear without a manual page
   // refresh: poll fast while the Bookings view is open, plus a slower global cadence
   // so the dashboard KPIs stay fresh on other views. A tick is skipped when the
@@ -389,7 +382,7 @@
     _bkPolling = true;
     try { await loadBookings(true); } catch {} finally { _bkPolling = false; }
   }
-  // Honors the (previously unused) "Auto-refresh" setting for the global cadence.
+  // Honors the "Auto-refresh" setting for the global cadence.
   const _bkSecs = Math.max(30, parseInt(localStorage.getItem('mgmtRefreshSecs'), 10) || 90);
   setInterval(() => { if ($('view-bookings')?.classList.contains('active')) _pollBookings(); }, 15000);
   setInterval(_pollBookings, _bkSecs * 1000);
@@ -401,7 +394,7 @@
     }
   });
 
-  // ── Registered guests - all residents, live from GHL ──────────────────────────
+  // Registered guests - all residents, live from GHL
   function gBadge(stage) {
     const map = {
       'Registered':  'badge-submitted',     // amber (new)
@@ -498,7 +491,7 @@
   document.querySelectorAll('[data-view="guests"]').forEach(el =>
     el.addEventListener('click', () => loadGuests().catch(e => console.error('[mgmt guests]', e))));
 
-  // ── Generic pipeline panels (defect / parcel / move / feedback) ───────────────
+  // Generic pipeline panels (defect / parcel / move / feedback)
   function oppBadge(stage) {
     const slug = String(stage || '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
     return `<span class="badge badge-${slug || 'default'}">${esc(stage || '')}</span>`;
@@ -640,7 +633,7 @@
     const inRange = d => !!d && d >= start && d <= end;
     const label = _periodLabel[_dashPeriod] || 'Today';
 
-    // ── Bookings: active (Confirmed / Deposit Pending) within the date window ──
+    // Bookings: active (Confirmed / Deposit Pending) within the date window
     const ACTIVE_BK = new Set(['Confirmed', 'Deposit Pending']);
     const bkFiltered = _allBookings.filter(b => inRange(b.date || '') && ACTIVE_BK.has(b.stage));
     if ($('kpiBookings')) $('kpiBookings').textContent = bkFiltered.length;
@@ -660,26 +653,26 @@
         : `<tr class="empty-row"><td colspan="4">No bookings for ${label.toLowerCase()}.</td></tr>`;
     }
 
-    // ── Guest Passes: filter by visit date ────────────────────────────────
+    // Guest Passes: filter by visit date
     const gFiltered = _allGuests.filter(g => inRange(g.visitDate || ''));
     if ($('kpiGuests')) $('kpiGuests').textContent = gFiltered.length;
     const gSub = $('kpiGuests')?.closest('.kpi-card')?.querySelector('.kpi-sub');
     const gActive = _allGuests.filter(g => !['Checked Out','Departed','Closed'].includes(g.stage)).length;
     if (gSub) gSub.textContent = `${gActive} active total`;
 
-    // ── Defects: open items created in period ────────────────────────────
+    // Defects: open items created in period
     if (_pipeSnap.defect) {
       const n = _pipeSnap.defect.items.filter(it => !PIPE_DONE.has(it.stage) && inRange((it.createdAt || '').slice(0,10))).length;
       if ($('kpiDefects')) $('kpiDefects').textContent = n;
     }
 
-    // ── Parcels: pending items created in period ──────────────────────────
+    // Parcels: pending items created in period
     if (_pipeSnap.parcel) {
       const n = _pipeSnap.parcel.items.filter(it => !PIPE_DONE.has(it.stage) && inRange((it.createdAt || '').slice(0,10))).length;
       if ($('kpiParcels')) $('kpiParcels').textContent = n;
     }
 
-    // ── Feedback: open items created in period ────────────────────────────
+    // Feedback: open items created in period
     if (_pipeSnap.feedback) {
       const n = _pipeSnap.feedback.items.filter(it => !PIPE_DONE.has(it.stage) && inRange((it.createdAt || '').slice(0,10))).length;
       if ($('kpiFeedback')) $('kpiFeedback').textContent = n;
@@ -932,7 +925,7 @@
   document.querySelectorAll('[data-view="feedback"]').forEach(el =>
     el.addEventListener('click', () => loadFeedback().catch(e => console.error('[mgmt feedback]', e))));
 
-  // ── Resident contacts (the account directory) ─────────────────────────────────
+  // Resident contacts (the account directory)
   async function loadContacts() {
     const body = $('contactsBody'); if (!body) return;
     const res  = await fetch('/api/management/residents', { headers: { Authorization: `Bearer ${token}` } });
@@ -971,7 +964,7 @@
   document.querySelectorAll('[data-view="contacts"]').forEach(el =>
     el.addEventListener('click', () => loadContacts().catch(e => console.error('[mgmt contacts]', e))));
 
-  // ── Announcements (published to resident Notices) ─────────────────────────────
+  // Announcements (published to resident Notices)
   function annDate(iso) {
     return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
   }
@@ -1039,8 +1032,7 @@
         } catch { toast('Connection error.', true); b.disabled = false; }
       }));
 
-      // ── Unpin toggle ──────────────────────────────────────────────────────
-      // Ensure the confirmation modal exists in the DOM.
+      // Unpin toggle
       let unpinModal = document.getElementById('annUnpinModal');
       if (!unpinModal) {
         unpinModal = document.createElement('div');
@@ -1081,14 +1073,11 @@
             const d = await r.json();
             if (!d.success) { toast(d.message || 'Unpin failed.', true); return; }
           } catch { toast('Connection error.', true); return; }
-          // Mutate local state.
           const rec = _annItems.find(a => a.id === id);
           if (rec) rec.pinned = false;
-          // DOM: remove pinned class and unpin button from the ann-list item.
           annEl.classList.remove('ann-item--pinned');
           const unpinBtn = annEl.querySelector('.ann-unpin-btn');
           if (unpinBtn) unpinBtn.remove();
-          // DOM: remove from pinnedNotices widget.
           const pn = $('pinnedNotices');
           if (pn) {
             const pnItem = pn.querySelector(`[data-ann-id="${CSS.escape(id)}"]`);
@@ -1169,7 +1158,7 @@
   document.querySelectorAll('[data-view="announcements"]').forEach(el =>
     el.addEventListener('click', () => loadAnnouncements().catch(e => console.error('[mgmt announcements]', e))));
 
-  // ── Resident (host) typeahead search ───────────────────────────────────────
+  // Resident (host) typeahead search
   let _host = null; // { id, name, unit, email }
   let _searchTimer = null;
   const searchInput = $('guestResidentSearch');
@@ -1325,7 +1314,7 @@
     else { box.style.display = 'none'; }
   });
 
-  // ── Payments (deposits + history across all residents) ─────────────────────────
+  // Payments (deposits + history across all residents)
   function payDate(iso) {
     return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
   }
@@ -1341,9 +1330,8 @@
         fetch('/api/management/opportunities?pipeline=move', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
         fetch('/api/management/payments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
       ]);
-      // Pending deposits. Facilities retired "Requested" (deposit bookings sit at
-      // "Deposit Pending" until paid). The Move pipeline still starts at "Requested",
-      // so a move owes a deposit while at either stage.
+      // Pending deposits: facility bookings sit at "Deposit Pending" until paid; the
+      // Move pipeline starts at "Requested", so a move owes a deposit at either stage.
       const DEPOSIT_FACS = ['bbq', 'pool', 'verandah'];
       const FACILITY_PENDING = ['Deposit Pending'];
       const MOVE_PENDING     = ['Requested', 'Deposit Pending'];
@@ -1420,7 +1408,7 @@
   document.querySelectorAll('[data-view="payments"]').forEach(el =>
     el.addEventListener('click', () => loadPaymentsPanel().catch(e => console.error('[mgmt payments]', e))));
 
-  // ── Live payments ─────────────────────────────────────────────────────────────
+  // Live payments
   // Pending deposits + history refresh without a manual reload: poll fast while the
   // Payments view is open, plus the same global cadence as bookings. A tick is skipped
   // while a "Mark as Paid" action is in flight so it isn't disrupted, and overlapping
@@ -1438,7 +1426,7 @@
     if (document.visibilityState === 'visible' && $('view-payments')?.classList.contains('active')) _pollPayments();
   });
 
-  // ── Live panels: guests / defects / parcels / move / feedback / announcements ──
+  // Live panels: guests / defects / parcels / move / feedback / announcements
   // While a view is open, silently re-run its loader so resident submissions and stage
   // changes appear without a manual reload. Skips a tick while the manager is mid-
   // interaction (a focused field, or an in-flight stage update) and re-applies any
@@ -1469,7 +1457,7 @@
   _livePanelMgmt('view-feedback',      loadFeedback);
   _livePanelMgmt('view-announcements', loadAnnouncements);
 
-  // ── Resident messages - wired to the shared inbox design (inbox.css) ────────────
+  // Resident messages - wired to the shared inbox design (inbox.css)
   let _mgmtConvoId = null, _mgmtConvoName = '', _mgmtConvoResolved = false;
   let _mgmtConvos = [], _mgmtFilter = 'all', _mgmtSearch = '';
   function mgmtClock(iso) {
@@ -1598,11 +1586,9 @@
           msgsEl.dataset.sig = String(msgs.length);
         }
       }
-      // Enable + focus the reply composer.
       const ta = $('mgmtCompose'), btn = $('mgmtSendBtn');
       if (ta)  { ta.disabled = false; ta.placeholder = `Reply to ${_mgmtConvoName}…`; }
       if (btn) btn.disabled = false;
-      // Resolve/reopen button reflects the conversation's current state.
       _mgmtConvoResolved = !!c.resolved;
       const rBtn = $('mgmtResolveBtn'), rLabel = $('mgmtResolveLabel');
       if (rBtn) {
@@ -1638,7 +1624,6 @@
   if ($('mgmtCompose')) {
     $('mgmtCompose').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } });
   }
-  // Mark resolved / reopen the open conversation.
   if ($('mgmtResolveBtn')) {
     $('mgmtResolveBtn').addEventListener('click', async () => {
       if (!_mgmtConvoId) return;
@@ -1662,7 +1647,7 @@
     });
   }
 
-  // New-message composer modal (teammate's modal markup; open/close handled inline).
+  // New-message composer modal (open/close handled inline)
   async function loadMessageResidents() {
     const sel = $('mgmtConvoResident');
     if (!sel || sel.dataset.loaded === '1') return;
@@ -1746,7 +1731,7 @@
     if (_mgmtConvoId) openConversation(_mgmtConvoId, true).catch(() => {});
   }, 7000);
 
-  // ── Resources ─────────────────────────────────────────────────────────────────
+  // Resources
   const RES_CAT_ICONS = {
     'By-Laws':           'gavel',
     'Fire Safety':       'local_fire_department',
@@ -1937,7 +1922,7 @@
     });
   });
 
-  // ── Stage modal close ─────────────────────────────────────────────────────────
+  // Stage modal close
   const stageModal = $('stageSelectorModal');
   if (stageModal) {
     bind('stageModalClose', () => stageModal.classList.remove('open'));
@@ -1945,7 +1930,7 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') stageModal.classList.remove('open'); });
   }
 
-  // ── Logout ─────────────────────────────────────────────────────────────────────
+  // Logout
   bind('logoutBtn', () => {
     ['mgmtToken', 'mgmtUser', 'mgmtLastView', 'mgmtDataSnapshot'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
     window.location.href = 'index.html';

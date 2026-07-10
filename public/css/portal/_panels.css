@@ -1,4 +1,4 @@
-/* ── Panels ───────────────────────────────────────────────────────────────── */
+/* Panels */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -57,7 +57,7 @@
 }
 .panel-link:hover { background: var(--bg); }
 
-/* ── Payment Grid ─────────────────────────────────────────────────────────── */
+/* Payment Grid */
 .payment-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -65,7 +65,7 @@
   margin-bottom: 1.4rem;
 }
 
-/* ── Panel Refresh Button ─────────────────────────────────────────────────── */
+/* Panel Refresh Button */
 .panel-refresh {
   display: inline-flex;
   align-items: center;
@@ -88,7 +88,7 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .panel-refresh.spinning .material-symbols-outlined { animation: spin 0.7s linear infinite; }
 
-/* ── Notice Banner ────────────────────────────────────────────────────────── */
+/* Notice Banner */
 .notice-banner {
   display: flex;
   align-items: flex-start;
@@ -124,7 +124,7 @@
   border-left-color: var(--gold);
 }
 
-/* ── Announcement Cards ────────────────────────────────────────────────────── */
+/* Announcement Cards */
 .ann-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -202,7 +202,7 @@
   margin-bottom: 10px;
 }
 .ann-card__event-icon { font-size: 1rem; font-variation-settings: 'FILL' 1, 'wght' 400, 'opsz' 20; }
-/* ── Notices empty state ──────────────────────────────────────────────────── */
+/* Notices empty state */
 .notices-empty { text-align: center; padding: 56px 24px; }
 .notices-empty__icon {
   font-size: 2.25rem;

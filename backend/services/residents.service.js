@@ -6,7 +6,7 @@ const { RESIDENTS, normalizeUnit, clean } = require('../models/auth.model');
 const UNIT_FIELD = 'demo-field-unit';
 const dbReady    = () => mongoose.connection.readyState === 1;
 
-// Seed the DB from the configured account list (idempotent upsert by email).
+// Idempotent upsert by email — safe to reseed without duplicating accounts.
 async function seed() {
   if (!dbReady()) return;
   try {
@@ -39,8 +39,7 @@ async function findResident(email, unit) {
   return RESIDENTS.find(x => clean(x.email).toLowerCase() === e && normalizeUnit(x.unit) === n) || null;
 }
 
-// Ensure the account has a live GHL contact (create or update by email), sync
-// name + unit, persist the resulting contact ID back to the DB. Returns the ID.
+// Creates/updates the GHL contact for this account and persists the id back to the DB.
 async function ensureContact(account) {
   if (!account || !account.email || !ghl.isConfigured()) return account?.ghl_contact_id || '';
   const parts = clean(account.name).split(/\s+/).filter(Boolean);

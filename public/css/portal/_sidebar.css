@@ -1,4 +1,4 @@
-/* ── Sidebar — BEM block: .sidebar ────────────────────────────────────────── */
+/* Sidebar */
 .sidebar {
   width: var(--sidebar-w);
   background: linear-gradient(180deg, #1a1715 0%, var(--sidebar) 14%, var(--sidebar) 100%);

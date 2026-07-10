@@ -1,4 +1,4 @@
-/* ── Booking Modal ────────────────────────────────────────────────────────── */
+/* Booking Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -61,7 +61,7 @@
 .modal-body { flex: 1; overflow-y: auto; }
 .modal-body iframe { width: 100%; min-height: clamp(360px, 70vh, 600px); border: none; display: block; }
 
-/* ── In-modal Booking Form ────────────────────────────────────────────────── */
+/* In-modal Booking Form */
 .bk { display: flex; flex-direction: column; }
 .bk-banner {
   height: 160px;

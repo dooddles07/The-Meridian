@@ -1,4 +1,3 @@
-// controllers/pipeline.controller.js
 const { PIPELINES } = require('../config/pipelines');
 const ghl = require('../services/ghl.service');
 

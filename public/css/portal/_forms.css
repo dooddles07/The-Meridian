@@ -1,4 +1,4 @@
-/* ── Stage Counters ───────────────────────────────────────────────────────── */
+/* Stage Counters */
 .stage-row {
   display: flex;
   border: 1px solid var(--border);
@@ -32,7 +32,7 @@
   font-weight: 600;
 }
 
-/* ── Forms ────────────────────────────────────────────────────────────────── */
+/* Forms */
 .form-layout {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -191,7 +191,7 @@
   line-height: 1.3;
 }
 
-/* ── Buttons ──────────────────────────────────────────────────────────────── */
+/* Buttons */
 .btn-dark {
   display: inline-flex;
   align-items: center;
@@ -235,7 +235,7 @@
 }
 .btn-outline:hover { border-color: var(--text); color: var(--text); }
 
-/* ── Parcel & Move layouts ────────────────────────────────────────────────── */
+/* Parcel & Move layouts */
 .parcel-layout {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -286,7 +286,7 @@
 .collapsible-panel[open] > summary .cp-toggle { transform: rotate(180deg); }
 .collapsible-panel__body { padding: 10px 16px 14px; }
 
-/* ── Guest bottom row (guests | rules) ───────────────────────────────────── */
+/* Guest bottom row (guests | rules) */
 .guest-bottom-row {
   display: grid;
   grid-template-columns: 1fr 280px;
@@ -295,7 +295,7 @@
   align-items: start;
 }
 
-/* ── Rules Panel ──────────────────────────────────────────────────────────── */
+/* Rules Panel */
 .rules-panel {
   background: var(--surface);
   border: 1px solid var(--border);

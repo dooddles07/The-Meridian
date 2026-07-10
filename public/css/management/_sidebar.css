@@ -1,7 +1,6 @@
-/* ── Shell ────────────────────────────────────────────────────────────────── */
 .shell { min-height: 100vh; }
 
-/* ── Sidebar — BEM block: .sidebar ───────────────────────────────────────── */
+/* Sidebar */
 .sidebar {
   width: var(--sidebar-w);
   background: linear-gradient(180deg, #1c1a16 0%, var(--surface) 18%, var(--surface) 100%);
@@ -205,7 +204,7 @@
   background: rgba(0,0,0,0.6);
 }
 
-/* ── Light mode — keep management sidebar dark ────────────────────────────── */
+/* Light mode — keep management sidebar dark */
 [data-theme="light"] .sidebar {
   background: linear-gradient(180deg, #1c1a16 0%, #151310 18%, #151310 100%);
   border-right-color: rgba(255,255,255,0.07);

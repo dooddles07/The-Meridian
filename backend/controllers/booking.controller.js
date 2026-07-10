@@ -3,12 +3,10 @@ const ghl = require('../services/ghl.service');
 const { getPipeline } = require('../config/pipelines');
 const Booking = require('../models/booking.model');
 
-// Bookings are persisted in MongoDB (the resident-facing source of truth). Guard
-// every DB call — Mongo is non-fatal, so a booking action never fails just because
-// the DB is briefly unavailable (GHL still gets the appointment/opportunity).
+// Bookings persist in MongoDB (resident-facing source of truth). Mongo is non-fatal —
+// a DB hiccup must never fail a booking action; GHL still gets the appointment/opportunity.
 const mongoReady = () => mongoose.connection && mongoose.connection.readyState === 1;
 
-// Map a persisted Booking document → the row shape both portals' frontends expect.
 function bookingDocToRow(d) {
   return {
     id:           d.ghlAppointmentId || String(d._id),
@@ -29,10 +27,9 @@ function bookingDocToRow(d) {
   };
 }
 
-// Overlay the live GHL facility-pipeline stage onto Mongo booking rows, so a stage
-// move made in management (which updates the GHL opportunity) reflects in both
-// portals. Best-effort: on any GHL failure the rows keep their stored Mongo status.
-// A row already marked "Cancelled" stays Cancelled (its slot/appointment is gone).
+// Overlay the live GHL pipeline stage onto Mongo booking rows so a management stage
+// move reflects in both portals. Best-effort: on GHL failure, rows keep their stored
+// Mongo status. A row already "Cancelled" stays Cancelled (its appointment is gone).
 async function overlayGhlStage(rows) {
   if (!rows.length || !ghl.isConfigured()) return rows;
   const fp = getPipeline('facility');
@@ -54,11 +51,10 @@ async function overlayGhlStage(rows) {
     console.warn('[bookings] stage overlay failed (keeping stored status):', e.response?.data?.message || e.message);
     return rows;
   }
-  // A deposit-facility booking is only genuinely "Confirmed" once its deposit is on
-  // record. The GHL "Facility Booking — New" workflow can create/leave the opportunity
-  // at "Confirmed" before any payment, which would wrongly drop the booking into
-  // Payment History instead of "Pending Deposit". So for deposit facilities we hold
-  // the row at "Deposit Pending" until a paid Payment is found for its opportunity.
+  // A deposit facility is only "Confirmed" once its deposit is on record — the GHL
+  // workflow can leave the opportunity at "Confirmed" pre-payment, which would wrongly
+  // surface it in Payment History. Hold at "Deposit Pending" until a paid Payment is
+  // found for the opportunity.
   const paidRefs = new Set();
   if (rows.some(r => DEPOSIT_FACILITIES.has(r.facilityKey)) && mongoReady()) {
     try {
@@ -73,8 +69,8 @@ async function overlayGhlStage(rows) {
       console.warn('[bookings] payment lookup failed (treating deposits as unpaid):', e.message);
     }
   }
-  // Payment references embed the opportunity id tail (DEP-<tail>[-FEE]); also match the
-  // raw opportunity_id, so both resident-paid and webhook-confirmed payments are found.
+  // Payment references embed the opportunity id tail (DEP-<tail>[-FEE]); also match
+  // the raw opportunity_id so both resident-paid and webhook payments are found.
   const depositPaid = (oppId) => {
     if (!oppId) return false;
     if (paidRefs.has(String(oppId))) return true;
@@ -89,8 +85,8 @@ async function overlayGhlStage(rows) {
     used.add(opp.oppId); usedByContact.set(r.contactId, used);
     r.oppId = opp.oppId;
     let stage = opp.stage;
-    // Don't show an unpaid deposit booking as Confirmed/Completed — keep it pending
-    // so the resident still sees the "Pay Deposit" card.
+    // Don't show an unpaid deposit booking as Confirmed/Completed — the resident
+    // still needs to see the "Pay Deposit" card.
     if (DEPOSIT_FACILITIES.has(r.facilityKey) && ['Confirmed', 'Completed'].includes(stage) && !depositPaid(opp.oppId)) {
       stage = 'Deposit Pending';
     }
@@ -133,7 +129,7 @@ const CALENDARS = {
 };
 
 // Contact custom-field IDs (verified from GHL) the booking writes back so the
-// Facility Bookings workflow + opportunity have clean, structured data.
+// workflow + opportunity get clean, structured data.
 const FIELD = {
   ghlAppointmentId: 'demo-field-appointment-id',
   bookingPax:       'demo-field-booking-pax',
@@ -141,7 +137,6 @@ const FIELD = {
   bookingDate:      'demo-field-booking-date',
 };
 
-// Facilities that require a refundable deposit before confirmation.
 const DEPOSIT_FACILITIES = new Set(['verandah', 'bbq', 'pool']);
 
 // GHL Inbound Webhook that triggers the Facility Bookings workflow.
@@ -173,10 +168,8 @@ function sgtMinutes(ms) {
   return h * 60 + m;
 }
 
-// Fetch confirmed appointments for a calendar on a given SGT date and return their
-// busy time ranges (epoch ms). GHL is the shared source of truth, so this blocks
-// double-booking across ALL residents. Used by the availability endpoint and the
-// authoritative overlap guard in createBooking.
+// Busy ranges (epoch ms) for a calendar on an SGT date. GHL is the shared source of
+// truth, so this blocks double-booking across all residents.
 async function getBusyRanges(calendarId, date, excludeId = '') {
   const startMs = new Date(`${date}T00:00:00+08:00`).getTime();
   const endMs   = new Date(`${date}T23:59:59+08:00`).getTime();
@@ -187,18 +180,16 @@ async function getBusyRanges(calendarId, date, excludeId = '') {
   const events = data.events || (Array.isArray(data) ? data : []);
   return events
     .filter(e => String(e.appointmentStatus || e.status || '').toLowerCase() !== 'cancelled')
-    // When editing, exclude the booking's own appointment so its current slot
-    // isn't reported as busy against itself.
+    // Exclude the booking's own appointment when editing, so its slot isn't
+    // reported as busy against itself.
     .filter(e => !excludeId || String(e.id) !== String(excludeId))
     .map(e => ({ startMs: new Date(e.startTime).getTime(), endMs: new Date(e.endTime).getTime() }))
     .filter(r => Number.isFinite(r.startMs) && Number.isFinite(r.endMs));
 }
 
-// Community events (Announcements with blocked_facilities) can reserve a facility
-// for a time window. Return those windows for a facility on an SGT date as
-// minute-of-day ranges, so the availability endpoint can disable them exactly like
-// booked slots. Mirrors the authoritative event guard in createBooking. Sourced
-// from Mongo, so it applies independently of GHL availability.
+// Minute-of-day ranges where a community event (Announcement with blocked_facilities)
+// reserves a facility on an SGT date. Sourced from Mongo, so it applies independently
+// of GHL availability.
 async function getEventBlockRanges(facilityKey, date) {
   const mongoose = require('mongoose');
   if (mongoose.connection.readyState !== 1) return [];
@@ -220,17 +211,10 @@ async function getEventBlockRanges(facilityKey, date) {
   }).filter(Boolean);
 }
 
-// Resolve a GHL contact id for THIS location from the backend account data.
-// Residents authenticate against the backend account list (auth.model.js) — they
-// may not exist in GHL at all, or may carry a stale/placeholder ghl_contact_id.
-// So we upsert by email to guarantee a valid contact for this location before
-// booking, rather than trusting whatever contact_id the portal session sends.
-// GHL appointments require a valid contactId, so this is what makes a resident
-// bookable without being pre-existing in the GHL contact list.
+// Resolve a GHL contact id for this location from the backend account data. Residents
+// may not exist in GHL, or carry a stale contact_id — upsert by email to guarantee a
+// valid, current contact before booking, rather than trusting the portal's session id.
 async function resolveContactId({ contact_id, member_email, member_name, member_unit }) {
-  // Identity is keyed by EMAIL — never the (possibly stale) stored/session contact_id.
-  // The GHL contact is created lazily here on first action and is the SAME contact the
-  // resident portal resolves on read, so bookings always show up for every resident.
   if (member_email) {
     try {
       const parts     = String(member_name || '').trim().split(/\s+/).filter(Boolean);
@@ -257,12 +241,9 @@ async function resolveContactId({ contact_id, member_email, member_name, member_
   return contact_id || null;
 }
 
-// GHL appointments require an assignedUserId (the staff/team member who owns the
-// slot) — a resident is a contact, not a GHL user, so it can't be the assignee.
-// Resolve the calendar's configured team member instead. An env override
-// (MERIDIAN_BOOKING_USER) wins; otherwise we read the calendar once and cache
-// its first team member. The resident is still tied to the booking via contactId
-// and the appointment title.
+// GHL appointments require an assignedUserId — a resident is a contact, not a GHL
+// user, so it can't be the assignee. Resolve the calendar's configured team member
+// instead (env override wins; otherwise cache the calendar's first team member).
 const _calUserCache = {};
 async function resolveAssignedUserId(calendarId) {
   if (process.env.MERIDIAN_BOOKING_USER) return process.env.MERIDIAN_BOOKING_USER;
@@ -307,10 +288,8 @@ async function createBooking(req, res) {
   try { times = toISO(date, slot); }
   catch { return res.status(400).json({ success: false, message: 'Invalid date or slot format.' }); }
 
-  // Authoritative double-booking guard — reject if the requested range overlaps an
-  // existing appointment on this calendar/date. Protects against stale UIs and two
-  // residents booking the same slot at once. Two ranges overlap when each starts
-  // before the other ends.
+  // Authoritative double-booking guard: reject if the requested range overlaps an
+  // existing appointment. Two ranges overlap when each starts before the other ends.
   try {
     const reqStart = new Date(times.startTime).getTime();
     const reqEnd   = new Date(times.endTime).getTime();
@@ -348,11 +327,8 @@ async function createBooking(req, res) {
     console.warn('[booking] event block check failed (proceeding):', e.message);
   }
 
-  // Always resolve a fresh, valid GHL contact for this location from the backend
-  // account data — never trust the (possibly stale) contact_id the portal sends.
   const resolvedContactId = await resolveContactId({ contact_id, member_email, member_name, member_unit });
 
-  // Calendar appointments require an assigned team member (GHL user).
   const assignedUserId = await resolveAssignedUserId(calendarId);
   console.log(`[booking] assignedUserId=${assignedUserId || 'NULL'} calendarId=${calendarId}`);
   if (!assignedUserId) {
@@ -382,13 +358,10 @@ async function createBooking(req, res) {
     title,
     appointmentStatus: 'confirmed',
     address:           'The Meridian, Singapore',
-    // The portal generates its own slots client-side (15-min start intervals,
-    // facility-specific open/close hours) which do NOT match the GHL calendar's
-    // configured slot interval/duration/availability window. Without these flags
-    // GHL validates the requested time against its own free slots and rejects it
-    // with "The slot you have selected is no longer available." The portal is the
-    // source of truth for availability here, so we instruct GHL to honor the exact
-    // times we send rather than its own slot grid.
+    // The portal's client-generated slots don't match GHL's own calendar slot grid,
+    // so without these flags GHL rejects the time as "no longer available." The
+    // portal is the source of truth for availability, so instruct GHL to honor the
+    // exact times sent rather than validate against its own grid.
     ignoreFreeSlotValidation: true,
     ignoreDateRange:          true,
     assignedUserId,
@@ -403,8 +376,8 @@ async function createBooking(req, res) {
     const appointmentId = data.id || data.appointment?.id || null;
 
     if (!appointmentId) {
-      // GHL returned HTTP 2xx but the response carries no appointment id — the slot
-      // or calendar config was rejected silently rather than with a 4xx status.
+      // GHL returned 2xx but no appointment id — the slot/calendar config was
+      // rejected silently rather than with a 4xx.
       const reason = data.message || data.msg || data.error || 'GHL did not return an appointment ID.';
       console.error('[booking] GHL silent rejection. Payload:', JSON.stringify(data).slice(0, 500));
       const e = new Error(String(reason));
@@ -414,9 +387,9 @@ async function createBooking(req, res) {
 
     console.log(`[booking] Created GHL appointment ${appointmentId} for ${facilityKey} on ${date}`);
 
-    // Persist the booking in MongoDB — the resident-facing source of truth (shared
-    // across devices + both portals, unlike the old per-browser localStorage).
-    // Non-fatal: the GHL appointment already exists, so a DB hiccup must not fail it.
+    // Persist to MongoDB (resident-facing source of truth across devices + both
+    // portals). Non-fatal — the GHL appointment already exists, so a DB hiccup
+    // must not fail the booking.
     if (mongoReady()) {
       try {
         await Booking.create({
@@ -460,11 +433,10 @@ async function createBooking(req, res) {
       }
     }
 
-    // The "Facility Booking — New" workflow OWNS opportunity creation (a single
-    // Create-or-Update with duplicates OFF → exactly ONE card per booking). The
-    // backend no longer creates the opp here — doing both produced two cards at
-    // Deposit Pending. We pass the canonical opp name so the workflow names the
-    // card consistently (the resident portal parses date/slot/pax from it).
+    // The "Facility Booking — New" workflow owns opportunity creation (single
+    // Create-or-Update, duplicates off — exactly one card per booking); creating
+    // it here too produced duplicate Deposit Pending cards. Pass the canonical opp
+    // name so the workflow names the card consistently for parsing.
     const needsDeposit = DEPOSIT_FACILITIES.has(facilityKey);
 
     // Fire the GHL inbound webhook that drives the Facility Bookings workflow
@@ -531,9 +503,8 @@ async function getAvailability(req, res) {
   }
 }
 
-// Friendly facility labels for the management bookings list (also the set of
-// calendars treated as "facilities" — excludes the 'lift' calendar, which is the
-// Move panel's domain).
+// Friendly facility labels for the management bookings list — also the set of
+// calendars treated as "facilities" (excludes 'lift', the Move panel's domain).
 const FACILITY_NAMES = {
   pool: 'Swimming Pool', tennis: 'Tennis Court', squash: 'Squash Court',
   basketball: 'Basketball Court', gym: 'Gymnasium', fitness: 'Fitness Room',
@@ -547,8 +518,8 @@ function fmtSgtTime(ms) {
   }).format(new Date(ms));
 }
 
-// Parse a GHL calendar event → structured booking row. Appointment titles are
-// "<Facility> — <Resident> (#<unit>)" and notes carry "Pax: N" (see createBooking).
+// Parse a GHL calendar event into a structured booking row. Appointment titles are
+// "<Facility> — <Resident> (#<unit>)"; notes carry "Pax: N".
 function parseBookingEvent(e, facilityKey) {
   const startMs = new Date(e.startTime).getTime();
   const endMs   = new Date(e.endTime).getTime();
@@ -573,10 +544,9 @@ function parseBookingEvent(e, facilityKey) {
     end:       fmtSgtTime(endMs),
     slot:      `${fmtSgtTime(startMs)} – ${fmtSgtTime(endMs)}`,
     startMs, endMs,
-    // Pipeline stage (the real, management-controlled status) and the linked GHL
-    // opportunity id are filled in by getAllBookings. The calendar appointment's
-    // own status is NOT used — it's always "confirmed" and not the booking lifecycle.
-    // Default to Confirmed; the overlay below corrects unmatched deposit bookings.
+    // The calendar appointment's own status is always "confirmed" and isn't the real
+    // booking lifecycle — the actual pipeline stage is overlaid separately. Default
+    // to Confirmed here; unmatched deposit bookings are corrected below.
     stage:     'Confirmed',
     stageId:   null,
     oppId:     null,
@@ -584,10 +554,9 @@ function parseBookingEvent(e, facilityKey) {
   };
 }
 
-// Reconstruct a booking row from a Facility Bookings opportunity whose calendar
-// appointment was DELETED on cancellation (so it no longer appears as a calendar
-// event). The opp name is the canonical "<Facility> — <YYYY-MM-DD> <start> (#unit) ·
-// N pax" set in createBooking. Best-effort; returns null if the date can't be parsed.
+// Reconstruct a booking row from a Facility opportunity whose calendar appointment
+// was deleted on cancellation. Parses the canonical opp name "<Facility> —
+// <YYYY-MM-DD> <start> (#unit) · N pax". Best-effort; null if the date can't parse.
 function oppToBookingRow(opp, contactId) {
   const name  = String(opp.name || '');
   const dateM = name.match(/(\d{4}-\d{2}-\d{2})/);
@@ -633,9 +602,8 @@ function pickOpp(candidates, booking) {
   const fac = booking.facility.toLowerCase();
   const DONE = new Set(['Confirmed', 'Completed', 'No-Show', 'Cancelled']);
   const prefer = o => !DONE.has(o.stage);
-  // Strict match: opp name contains BOTH the facility and the booking date.
-  // This prevents an older booking from consuming a newer opp that matches only
-  // by facility name (greedy date-sorted assignment would otherwise steal the opp).
+  // Strict match: opp name contains BOTH facility and date — prevents an older
+  // booking from stealing a newer opp that matches only on facility name.
   if (booking.date) {
     const strict = candidates.filter(o => {
       const n = (o.name || '').toLowerCase();
@@ -643,7 +611,7 @@ function pickOpp(candidates, booking) {
     });
     if (strict.length) return strict.find(prefer) || strict[0];
   }
-  // Loose fallback: facility OR date (original behaviour for opps without a date in their name).
+  // Loose fallback: facility OR date, for opps whose name lacks a date.
   const matched = candidates.filter(o => {
     const n = (o.name || '').toLowerCase();
     return n.includes(fac) || (booking.date && n.includes(booking.date));
@@ -674,7 +642,6 @@ async function findFreshFacilityOpp({ fp, contactId, facilityKey, facilityName }
       .filter(o => {
         if (!o.createdAt || (Date.now() - new Date(o.createdAt).getTime()) >= FRESH_MS) return false;
         const n = String(o.name || '').toLowerCase();
-        // Reject opps that clearly belong to a different deposit facility.
         return !OTHER_FAC_KEYWORDS.some(k => n.includes(k));
       })
       .sort((a, b) => {
@@ -711,8 +678,8 @@ async function resolveLiveFacilityStage(fp, stageName) {
 // Adopt the GHL auto-created opportunity if present (re-stage + rename), else
 // create one ourselves. Guarantees exactly one opportunity per booking.
 async function adoptOrCreateFacilityOpp({ fp, stageId, oppName, facilityKey, facilityName, contactId, targetStage }) {
-  // Authoritative stage id from live GHL (the configured one may be stale, which
-  // would otherwise leave the booking stuck at whatever stage the workflow set).
+  // Authoritative stage id from live GHL — the configured one may be stale, which
+  // would otherwise leave the booking stuck wherever the workflow set it.
   const live = await resolveLiveFacilityStage(fp, targetStage);
   const plId = live ? live.pipelineId : fp.id;
   const stId = live ? live.stageId : stageId;
@@ -734,7 +701,6 @@ async function adoptOrCreateFacilityOpp({ fp, stageId, oppName, facilityKey, fac
       console.warn('[booking] adopt opp failed, will create:', e.response?.data?.message || e.message);
     }
   }
-  // No auto-created opp found — create one ourselves.
   const oppBody = (pl, st) => ({
     pipelineId: pl, locationId: ghl.LOCATION, pipelineStageId: st,
     name: oppName, status: 'open', ...(contactId ? { contactId } : {}),
@@ -778,10 +744,10 @@ async function adoptOrCreateFacilityOpp({ fp, stageId, oppName, facilityKey, fac
   }
 }
 
-// Core: gather facility bookings (calendar appointments) and overlay each with its
-// real pipeline stage + linked opportunity id. Optionally scope to one contact.
-// Returns { items, stages }. The appointment carries the schedule; the opportunity
-// carries the lifecycle stage (Requested → Confirmed → …) that management controls.
+// Gather facility bookings (calendar appointments) and overlay each with its real
+// pipeline stage + linked opportunity id. Optionally scope to one contact. The
+// appointment carries the schedule; the opportunity carries the lifecycle stage
+// that management controls.
 async function collectBookings({ fwdDays = 90, backDays = 1, contactId = '' } = {}) {
   const startMs = Date.now() - Math.min(Math.max(backDays, 1), 365) * 24 * 60 * 60 * 1000;
   const endMs   = Date.now() + Math.min(Math.max(fwdDays, 1), 365) * 24 * 60 * 60 * 1000;
@@ -832,8 +798,8 @@ async function collectBookings({ fwdDays = 90, backDays = 1, contactId = '' } = 
     console.warn('[bookings] opportunity overlay failed:', e.response?.data?.message || e.message);
   }
 
-  // Two-phase assignment: exact facility+date matches first, then loose fallback.
-  // Prevents older bookings from consuming a new opp that shares only the facility name.
+  // Two-phase assignment: exact facility+date match first, then loose fallback —
+  // prevents an older booking from consuming a new opp that shares only the facility.
   const usedByContact = new Map();
   const assignBk = (bk, opp) => {
     bk.stage = opp.stage; bk.stageId = opp.stageId; bk.oppId = opp.oppId;
@@ -861,12 +827,10 @@ async function collectBookings({ fwdDays = 90, backDays = 1, contactId = '' } = 
     }
   }
 
-  // Cancelled bookings have had their calendar appointment DELETED (to free the slot),
-  // so they no longer appear as calendar events. Re-surface them from their Cancelled
-  // opportunity (rebuilt from the opp name) so the management table still lists them as
-  // Cancelled. Only for the management view (no contactId) — the resident portal keeps
-  // its own cancelled bookings locally. Scoped to the same date window; "Cancelled" is
-  // the only stage whose appointment we delete, so other stages still have their event.
+  // A cancelled booking's calendar appointment is deleted (to free the slot), so it no
+  // longer appears as an event. Re-surface it from its Cancelled opportunity here so
+  // the management table still lists it. "Cancelled" is the only stage whose
+  // appointment we delete, so other stages still have their event.
   if (!contactId) {
     const usedOppIds = new Set();
     usedByContact.forEach(set => set.forEach(oid => usedOppIds.add(oid)));
@@ -909,10 +873,9 @@ async function getAllBookings(req, res) {
   }
 }
 
-// GET /api/booking/mine?contact_id=&email=[&quick=1] — the resident's own bookings with
-// their live pipeline stage. quick=1 skips the email→contactId GHL lookup and uses a
-// tight date window; used by the confirmation-polling loop to avoid 502s from large
-// GHL requests on every retry.
+// GET /api/booking/mine?contact_id=&email=[&quick=1] — resident's own bookings with
+// their live pipeline stage. quick=1 skips the email→contactId lookup and uses a
+// tight date window, to avoid 502s from large GHL requests on frequent polling.
 async function getMyBookings(req, res) {
   const quick = req.query.quick === '1';
   const email = String(req.query.email || '').trim().toLowerCase();
@@ -958,10 +921,9 @@ async function getMyBookings(req, res) {
   }
 }
 
-// Maps a facility stage to the contact tag that fires the "Facility Booking —
-// Status Change" workflow (which sends the resident the matching email). The
-// portal moves the stage directly; this tag is what triggers the email — without
-// it, a management stage change in the portal would be silent to the resident.
+// Maps a facility stage to the contact tag that fires the "Status Change" workflow
+// (which emails the resident). The portal moves the stage directly — without this
+// tag, a stage change here would be silent to the resident.
 const STAGE_TAG = {
   'Confirmed': 'booking-confirmed',
   'Completed': 'booking-completed',
@@ -1112,13 +1074,11 @@ async function updateBooking(req, res) {
   }
 }
 
-// DELETE /api/booking/:id — cancel a GHL calendar appointment.
-// Move the resident's matching Facility Bookings opportunity to "Cancelled" so the
-// pipeline mirrors the cancellation (and the Status-Change workflow emails them).
-// Identity is the SIGNED contact_id — the opp is resolved from the resident's own
-// opportunities, so a forged opp_id hint that isn't theirs is ignored (no IDOR).
-// Fully non-fatal: a pipeline hiccup here must never throw. Returns true if the
-// opportunity is at "Cancelled" (moved now or already there), false otherwise.
+// DELETE /api/booking/:id — cancel a GHL calendar appointment and move the matching
+// Facility Bookings opportunity to "Cancelled" (the Status-Change workflow emails the
+// resident). Identity is the signed contact_id — the opp is resolved from the
+// resident's own opportunities, so a forged opp_id hint is ignored (no IDOR). Fully
+// non-fatal: returns true if the opportunity ends up at "Cancelled".
 async function moveBookingOppToCancelled({ contactId, facilityName, date, oppHint }) {
   if (!contactId) { console.warn('[booking] cancel: no contact_id — skipping pipeline move'); return false; }
   const fp = getPipeline('facility');
@@ -1135,7 +1095,7 @@ async function moveBookingOppToCancelled({ contactId, facilityName, date, oppHin
       }));
 
     // Use the client's opp hint only if it genuinely belongs to this resident;
-    // otherwise match by facility/date (pickOpp needs a non-empty facility to be safe).
+    // otherwise match by facility/date.
     let target = oppHint && candidates.find(o => o.oppId === oppHint);
     if (!target && facilityName) target = pickOpp(candidates, { facility: facilityName, date: date || '' });
     if (!target) { console.warn('[booking] cancel: no matching opportunity to move to Cancelled'); return false; }
@@ -1164,15 +1124,14 @@ async function cancelBooking(req, res) {
   const { id } = req.params;
   if (!id) return res.status(400).json({ success: false, message: 'Appointment ID required.' });
 
-  // Identity is the verified token (injected by requireResident), never the request.
+  // Identity from the verified token, never the request.
   const contactId    = (req.resident && req.resident.contact_id) || req.query.contact_id || '';
   const facilityName = req.query.facility || req.query.facilityName || '';
   const date         = req.query.date || '';
   const oppHint      = req.query.opp_id || '';
 
-  // 1) Mark the Mongo booking "Cancelled" — the source of truth for BOTH portals.
-  //    The row is KEPT (not deleted) so it stays visible as Cancelled in My Bookings
-  //    and in the management table even though its calendar appointment is removed.
+  // 1) Mark the Mongo booking "Cancelled" (source of truth for both portals). The row
+  //    is kept, not deleted, so it stays visible even after its appointment is removed.
   let mongoCancelled = false;
   if (mongoReady()) {
     try {

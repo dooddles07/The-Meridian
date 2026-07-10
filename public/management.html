@@ -38,7 +38,6 @@
 </head>
 <body>
 
-<!-- ── Loading overlay ───────────────────────────────────────────────────────── -->
 <div id="loadingOverlay" style="
   position:fixed;inset:0;z-index:9000;
   background:#080808;
@@ -64,7 +63,6 @@
 
 <div class="shell">
 
-  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
   <aside class="sidebar">
     <div class="sidebar__brand">
       <div class="sidebar__logo">The <em>Lumina</em></div>
@@ -142,7 +140,6 @@
     </div>
   </aside>
 
-  <!-- ── Main ─────────────────────────────────────────────────────────────── -->
   <div class="main">
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <header class="topbar">
@@ -166,7 +163,6 @@
 
     <div class="content">
 
-      <!-- ── Dashboard ─────────────────────────────────────────────────────── -->
       <div id="view-dashboard" class="view active">
         <div class="page-title">Dashboard <em>Overview</em></div>
 
@@ -227,7 +223,6 @@
         </div>
       </div>
 
-      <!-- ── Facility Bookings ──────────────────────────────────────────────── -->
       <div id="view-bookings" class="view">
         <div class="page-title">Facility <em>Bookings</em></div>
         <div class="summary-row" id="bookingSummary"></div>
@@ -248,7 +243,6 @@
         </table>
       </div>
 
-      <!-- ── Guest Registration ─────────────────────────────────────────────── -->
       <div id="view-guests" class="view">
         <div class="page-title">Guest <em>Registration</em></div>
         <div class="guest-layout">
@@ -341,7 +335,6 @@
         </div>
       </div>
 
-      <!-- ── Defect Tracking ────────────────────────────────────────────────── -->
       <div id="view-defects" class="view">
         <div class="page-title">Defect <em>Tracking</em></div>
         <div class="summary-row" id="defectSummary"></div>
@@ -367,7 +360,6 @@
         </table>
       </div>
 
-      <!-- ── Parcel Management ──────────────────────────────────────────────── -->
       <div id="view-parcels" class="view">
         <div class="page-title">Parcel <em>Management</em></div>
         <div class="summary-row" id="parcelSummary"></div>
@@ -387,7 +379,6 @@
         </table>
       </div>
 
-      <!-- ── Move-In / Move-Out ─────────────────────────────────────────────── -->
       <div id="view-move" class="view">
         <div class="page-title">Move-In / <em>Move-Out</em></div>
         <p class="section-meta" style="margin-bottom:1rem;font-size:0.7rem;text-align:right;color:var(--muted)">Stage moves update Quantum directly</p>
@@ -408,7 +399,6 @@
         </table>
       </div>
 
-      <!-- ── Feedback & Complaints ──────────────────────────────────────────── -->
       <div id="view-feedback" class="view">
         <div class="page-title">Feedback &amp; <em>Complaints</em></div>
         <div class="summary-row" id="feedbackSummary"></div>
@@ -434,7 +424,6 @@
         </table>
       </div>
 
-      <!-- ── Resident Contacts ──────────────────────────────────────────────── -->
       <div id="view-contacts" class="view">
         <div class="page-title">Resident <em>Contacts</em></div>
         <div class="filter-bar">
@@ -452,7 +441,6 @@
         </table>
       </div>
 
-      <!-- ── Payments ───────────────────────────────────────────────────────── -->
       <div id="view-payments" class="view">
         <div class="page-title">Payments</div>
         <div class="section-head">
@@ -473,11 +461,9 @@
         </table>
       </div>
 
-      <!-- ── Resources ─────────────────────────────────────────────────────── -->
       <div id="view-resources" class="view">
         <div class="page-title">Resources</div>
 
-        <!-- Upload form -->
         <div class="panel res-upload-panel">
           <div class="panel-head">
             <span class="panel-title">Upload Document</span>
@@ -518,7 +504,6 @@
           </div>
         </div>
 
-        <!-- Shared with Residents -->
         <div class="res-section" id="resSecResident">
           <div class="res-section-head" data-res-section="resSecResident">
             <span class="res-section-title">Shared with Residents</span>
@@ -529,7 +514,6 @@
           </div>
         </div>
 
-        <!-- Management Only -->
         <div class="res-section" id="resSecPrivate">
           <div class="res-section-head" data-res-section="resSecPrivate">
             <span class="res-section-title">Management Only</span>
@@ -541,7 +525,6 @@
         </div>
       </div>
 
-      <!-- ── Announcements ──────────────────────────────────────────────────── -->
       <div id="view-announcements" class="view">
         <div class="page-title"><em>Announcements</em></div>
         <div class="ann-layout">
@@ -631,11 +614,9 @@
         </div>
       </div>
 
-      <!-- ── Messages / Inbox ──────────────────────────────────────────────── -->
       <div id="view-messages" class="view">
         <div class="inbox" id="mgmtInbox">
 
-          <!-- Sidebar: all resident conversations -->
           <aside class="inbox__sidebar">
             <div class="inbox__sidebar-head">
               <h2 class="inbox__title">Messages</h2>
@@ -657,7 +638,6 @@
             </div>
           </aside>
 
-          <!-- Thread panel -->
           <div class="inbox__thread" id="mgmtThread">
             <div class="inbox__thread-header">
               <button class="inbox__back-btn" id="mgmtInboxBack" aria-label="Back to conversations">
@@ -700,7 +680,6 @@
   </div><!-- /main -->
 </div><!-- /shell -->
 
-<!-- ── Message Resident Modal ──────────────────────────────────────────────── -->
 <div class="inbox-modal" id="mgmtInboxNewModal" style="display:none" role="dialog" aria-modal="true" aria-label="Message resident">
   <div class="inbox-modal__backdrop" id="mgmtInboxModalBackdrop"></div>
   <div class="inbox-modal__box">
@@ -732,7 +711,6 @@
   </div>
 </div>
 
-<!-- ── Stage Selector Modal ───────────────────────────────────────────────── -->
 <div id="stageSelectorModal" class="modal-overlay">
   <div class="stage-modal-box">
     <div class="stage-modal-head">

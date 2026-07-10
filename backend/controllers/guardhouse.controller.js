@@ -62,9 +62,8 @@ const ACTION_TAG = {
   depart:   'guest-departed',
 };
 // POST /api/guardhouse/checkin  body: { contact_id, action }
-// Tags the host contact with the action tag. The "Guest Registrations — Status
-// Change" workflow reacts to the tag and moves the guest opportunity's stage +
-// emails the host. (The workflow owns the stage move; the guardhouse just tags.)
+// Tags the host contact; the "Guest Registrations — Status Change" workflow reacts
+// to the tag, moves the guest opportunity's stage, and emails the host.
 async function checkin(req, res) {
   const { contact_id, action } = req.body || {};
   const tag = ACTION_TAG[action] || 'guest-checked-in';
@@ -87,11 +86,8 @@ async function checkin(req, res) {
   }
 }
 
-// ── Parcel checker ────────────────────────────────────────────────────────────
-// The guardhouse looks up a parcel by reference, then sets its status.
-// A guardhouse action tags the host contact; the "Parcel — Status Change" workflow
-// reacts to the tag and moves the opportunity stage + emails the resident (the
-// workflow owns the stage move).
+// Parcel checker — a guardhouse action tags the host contact; the "Parcel — Status
+// Change" workflow reacts to the tag, moves the opportunity stage, and emails the resident.
 const PARCEL_STATUS_TAG = {
   received:    'parcel-notified',   // received & holding → notify resident it's ready
   hold:        'parcel-notified',   // legacy alias
@@ -147,8 +143,7 @@ async function parcelLookup(req, res) {
 
 // POST /api/guardhouse/parcel/status  body: { opportunity_id?, reference?, status }
 // status: 'hold' | 'collected' | 'uncollected'
-// Tags the host contact so the "Parcel — Status Change" workflow moves the stage +
-// emails. The workflow owns the stage move (no direct stage write here).
+// Tags the host contact; the workflow owns the stage move (no direct write here).
 async function parcelStatus(req, res) {
   const { opportunity_id, reference, status } = req.body || {};
   const tag = PARCEL_STATUS_TAG[status];
@@ -183,9 +178,8 @@ async function parcelStatus(req, res) {
   }
 }
 
-// ── Shared activity log ─────────────────────────────────────────────────────────
-// Start of the current day in Singapore time — the log is a "today" feed that resets
-// naturally at SGT midnight (older rows stay in the DB as an audit trail).
+// Shared activity log — a "today" feed that resets naturally at SGT midnight
+// (older rows stay in the DB as an audit trail).
 function sgtDayStart() {
   const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
   return new Date(`${day}T00:00:00+08:00`);

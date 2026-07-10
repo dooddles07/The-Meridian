@@ -32,8 +32,7 @@ const fmtConversation = (c) => ({
   resolved:             !!c.resolved,
 });
 
-// Find the resident's single thread by contact_id (preferred) or email. Optionally
-// create it, seeding the resident's identity fields.
+// Find the resident's single thread by contact_id (preferred) or email.
 async function findConversation({ contact_id, email }) {
   const or = [];
   if (contact_id) or.push({ contact_id });
@@ -69,7 +68,7 @@ function fireWebhook(payload) {
     console.warn('[messages] webhook failed (non-fatal):', e.response?.data?.message || e.message));
 }
 
-// ── Resident side ─────────────────────────────────────────────────────────────
+// Resident side
 
 // POST /api/messages — resident sends a message to management.
 async function sendMessage(req, res) {
@@ -129,7 +128,7 @@ async function myUnread(req, res) {
   }
 }
 
-// ── Management side ─────────────────────────────────────────────────────────────
+// Management side
 
 // GET /api/management/messages — all conversations, newest activity first.
 async function listConversations(req, res) {

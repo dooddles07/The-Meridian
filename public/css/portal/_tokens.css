@@ -1,8 +1,8 @@
-/* ── Reset ────────────────────────────────────────────────────────────────── */
+/* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 button, input, select, textarea { font: inherit; }
 
-/* ── Design Tokens ────────────────────────────────────────────────────────── */
+/* Design Tokens */
 :root {
   --bg:        #f4f0eb;
   --surface:   #ffffff;
@@ -17,7 +17,7 @@ button, input, select, textarea { font: inherit; }
   --text:      #14110f;   /* 16.7:1 ✓ */
   --text-2:    #3f3832;   /* 10.3:1 ✓ */
   --muted:     #5a514a;   /*  6.9:1 ✓ */
-  --faint:     #706860;   /*  4.9:1 ✓  (was #7a7067 @ 4.3:1 — fixed) */
+  --faint:     #706860;   /*  4.9:1 ✓ */
 
   /* Gold — passes 4.5:1 on both bg and white */
   --gold:      #312e81;   /* 10.1:1 on bg, 11.4:1 on white ✓ */
@@ -48,7 +48,7 @@ button, input, select, textarea { font: inherit; }
   --pad:         28px;
 }
 
-/* ── Base ─────────────────────────────────────────────────────────────────── */
+/* Base */
 html { font-size: 20px; }
 body {
   background:
@@ -62,7 +62,7 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 
-/* ── Film grain overlay ───────────────────────────────────────────────────── */
+/* Film grain overlay */
 body::before {
   content: '';
   position: fixed;
@@ -81,14 +81,14 @@ html { scrollbar-width: auto; scrollbar-color: var(--border-2) transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
 
-/* ── Keyboard focus ring (low-vision / keyboard nav) ──────────────────────── */
+/* Keyboard focus ring (low-vision / keyboard nav) */
 :focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ── Dark mode overrides ──────────────────────────────────────────────────── */
+/* Dark mode overrides */
 [data-theme="dark"] {
   --bg:        #0c0b09;
   --surface:   #151310;

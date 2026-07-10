@@ -1,8 +1,8 @@
-/* ── Shell ────────────────────────────────────────────────────────────────── */
+/* Shell */
 #portal-shell { display: none; min-height: 100vh; }
 .shell { min-height: 100vh; }
 
-/* ── Main ─────────────────────────────────────────────────────────────────── */
+/* Main */
 .main {
   margin-left: var(--sidebar-w);
   display: flex;
@@ -10,7 +10,7 @@
   min-height: 100vh;
 }
 
-/* ── Topbar ───────────────────────────────────────────────────────────────── */
+/* Topbar */
 .topbar {
   display: flex;
   align-items: center;
@@ -26,7 +26,7 @@
 }
 .topbar-left { display: flex; align-items: center; gap: 12px; }
 .topbar-date { font-size: 0.75rem; color: var(--muted); }
-/* ── Theme switch ────────────────────────────────────────────────────────── */
+/* Theme switch */
 .theme-switch {
   display: inline-flex;
   align-items: center;
@@ -68,7 +68,7 @@
 [data-theme="light"] .theme-switch__icon:last-child { opacity: 0.35; }
 [data-theme="dark"] .theme-switch__icon:first-child { opacity: 0.35; }
 
-/* ── Content ──────────────────────────────────────────────────────────────── */
+/* Content */
 .content {
   flex: 1;
   padding: var(--pad);
@@ -79,7 +79,7 @@
 .view { display: none; }
 .view.active { display: block; }
 
-/* ── Page Title ───────────────────────────────────────────────────────────── */
+/* Page Title */
 .page-title {
   font-family: var(--serif);
   font-size: 2.125rem;
@@ -91,7 +91,7 @@
 }
 .page-title em { font-style: italic; color: var(--gold); font-weight: 400; }
 
-/* ── Utility label ────────────────────────────────────────────────────────── */
+/* Utility label */
 .u-label {
   font-size: 0.5625rem;
   letter-spacing: 0.12em;

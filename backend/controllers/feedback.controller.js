@@ -4,11 +4,9 @@ const Feedback = require('../models/feedback.model');
 
 const dbReady = () => mongoose.connection.readyState === 1;
 
-// GHL Inbound Webhook that triggers the "Feedback — New" workflow, which OWNS
-// opportunity creation. The backend builds the type-prefixed reference + canonical
-// name and fires the webhook; it no longer creates the opp itself (that produced a
-// card with no acknowledgement email / management notice, since the workflow that
-// sends those was never triggered).
+// GHL Inbound Webhook that triggers the "Feedback — New" workflow, which owns
+// opportunity creation. Creating the opp directly here skipped the workflow, so no
+// acknowledgement email or management notice ever fired.
 const FEEDBACK_WEBHOOK = process.env.MERIDIAN_WEBHOOK_FEEDBACK || '';
 
 // POST /api/feedback — resident submits feedback, a complaint, or a suggestion.
@@ -53,7 +51,7 @@ async function submitFeedback(req, res) {
     console.log(`[feedback] ${t} (${reference}) by #${resident_unit} — ${category}`);
 
     // Persist the full submission to Mongo (resident-facing source of truth across
-    // devices + both portals — replaces the old localStorage mirror). Non-fatal.
+    // devices + both portals). Non-fatal.
     if (dbReady() && (resident_contact_id || resident_email)) {
       Feedback.create({
         contact_id:    resident_contact_id || '',

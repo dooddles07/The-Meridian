@@ -54,8 +54,8 @@ async function registerGuest(req, res) {
   const facilityTag = link_facility ? ` · ${link_facility}` : '';
   const opp_name    = `${reference} — ${visitor_name}${unitTag}${facilityTag}`;
 
-  // Auto-render the resident (host) into GHL: ensure the contact exists and is
-  // up to date by email, so the account is created in GHL if it wasn't already.
+  // Ensure the host contact exists and is current in GHL by email, creating it
+  // if it wasn't already.
   let hostId = host_contact_id;
   if (host_email) {
     try {

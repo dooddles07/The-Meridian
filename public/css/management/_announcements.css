@@ -1,4 +1,4 @@
-/* ── Announcements ────────────────────────────────────────────────────────── */
+/* Announcements */
 .ann-item {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -80,7 +80,7 @@
 }
 .ann-delete:hover { opacity: 0.7; }
 
-/* ── Unpin button ─────────────────────────────────────────────────────────── */
+/* Unpin button */
 .ann-unpin-btn {
   background: none;
   border: none;
@@ -96,7 +96,7 @@
 .ann-unpin-btn:hover { background: rgba(129,140,248,0.12); }
 .ann-unpin-btn:hover .ann-pin { opacity: 0.55; }
 
-/* ── Unpin confirmation modal ─────────────────────────────────────────────── */
+/* Unpin confirmation modal */
 #annUnpinModal {
   display: none;
   position: fixed;

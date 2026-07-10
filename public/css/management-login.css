@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 15px; }
 
-/* ── Tokens ───────────────────────────────────────────────────────────────── */
+/* Tokens */
 :root {
   --bg:        #080808;
   --card-bg:   transparent;
@@ -135,7 +135,7 @@ body {
   letter-spacing: 0.1em;
 }
 
-/* ── Theme switch ─────────────────────────────────────────────────────────── */
+/* Theme switch */
 .theme-switch {
   display: inline-flex;
   align-items: center;

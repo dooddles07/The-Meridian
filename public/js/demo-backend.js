@@ -1,4 +1,4 @@
-/* =============================================================================
+/*
  * demo-backend.js - PORTFOLIO DEMO
  *
  * Makes The Lumina portal run with ZERO backend and ZERO external connections.
@@ -14,11 +14,11 @@
  * appears in the management table; a guest registration is findable at the
  * guardhouse). Data lives only in this browser and resets if you clear storage
  * or call window.__meridianDemoReset().
- * ========================================================================== */
+ */
 (function () {
   'use strict';
 
-  // ── Demo identities (used to auto-enter each portal) ────────────────────────
+  // Demo identities (used to auto-enter each portal)
   var DEMO_MEMBER = { name: 'Brixsonn Romero', initials: 'BR', email: 'brixsonn.romero@example.com', unit: '12-09', type: 'Owner', contact_id: 'demo-contact-1' };
   var MGMT_USER   = { username: 'management', role: 'management', displayName: 'Management' };
   var GH_USER     = { username: 'guardhouse', role: 'guardhouse', displayName: 'Guardhouse' };
@@ -37,7 +37,7 @@
   }
   seedSession();
 
-  // ── Stage vocabularies (mirror config/pipelines.js) ─────────────────────────
+  // Stage vocabularies (mirror config/pipelines.js)
   var STAGES = {
     facility: ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'],
     guest:    ['Registered', 'Checked In', 'Checked Out', 'Departed', 'Closed'],
@@ -52,7 +52,7 @@
   };
   var DEPOSIT_FACILITIES = { bbq: true, pool: true, verandah: true };
 
-  // ── Store ───────────────────────────────────────────────────────────────────
+  // Store
   var DB_KEY = 'meridian_demo_db_v2';
   var db = load();
   if (!db) { db = seedDB(); persist(); }
@@ -164,7 +164,7 @@
     }
   }
 
-  // ── Response helpers ─────────────────────────────────────────────────────────
+  // Response helpers
   function J(body, status) {
     return new Response(JSON.stringify(body), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
   }
@@ -192,7 +192,7 @@
     return false;
   }
 
-  // ── Router ────────────────────────────────────────────────────────────────────
+  // Router
   function handle(rawUrl, opts) {
     var u = new URL(rawUrl, location.origin);
     var p = u.pathname.replace(/\/+$/, '') || u.pathname; // trim trailing slash (but keep "/api")
@@ -202,19 +202,19 @@
     if (opts.body) { try { body = JSON.parse(opts.body); } catch (e) { body = {}; } }
     var m; // regex capture holder
 
-    // ---- AUTH (no-op success; portals are auto-entered anyway) ---------------
+    // AUTH (no-op success; portals are auto-entered anyway)
     if (p === '/api/auth/resident/login')   return ok({ token: 'demo-token', member: DEMO_MEMBER });
     if (p === '/api/auth/management/login')  return ok({ token: 'demo-token', user: MGMT_USER });
     if (p === '/api/auth/guardhouse/login')  return ok({ token: 'demo-token', user: GH_USER });
 
-    // ---- PIPELINES -----------------------------------------------------------
+    // PIPELINES
     if (p === '/api/pipelines') {
       var out = {}; Object.keys(PIPELINE_IDS).forEach(function (k) { out[k] = { id: PIPELINE_IDS[k], name: k, stages: STAGES[k] }; });
       return ok({ count: Object.keys(out).length, pipelines: out });
     }
     if (p === '/api/pipelines/verify') return ok({ allOk: true, report: {} });
 
-    // ---- BOOKING -------------------------------------------------------------
+    // BOOKING
     if (p === '/api/booking/availability') return ok({ busy: [] });
     if (p === '/api/booking/opp-stage')    return ok({ stage: 'Confirmed' });
     if (p === '/api/booking/mine') {
@@ -246,14 +246,14 @@
       return ok({ message: 'Booking cancelled.', mongoCancelled: true, oppMoved: true, apptCancelled: true });
     }
 
-    // ---- OPPORTUNITIES (resident "My …") -------------------------------------
+    // OPPORTUNITIES (resident "My …")
     if (p === '/api/opportunities') {
       var kind = qs.get('pipeline') || 'guest';
       var items = collectionFor(kind).map(function (it) { return toOpp(kind, it); });
       return ok({ items: items, total: items.length });
     }
 
-    // ---- ANNOUNCEMENTS / RSVP / MESSAGES (resident) --------------------------
+    // ANNOUNCEMENTS / RSVP / MESSAGES (resident)
     if (p === '/api/announcements') return ok({ announcements: db.announcements });
 
     if (p === '/api/rsvp' && method === 'POST') {
@@ -284,7 +284,7 @@
       return ok({ message: msg });
     }
 
-    // ---- PAYMENTS ------------------------------------------------------------
+    // PAYMENTS
     if (p === '/api/payments/mine') return ok({ payments: db.payments });
     if (p === '/api/payments/pay-deposit' && method === 'POST') {
       var amt = body.fee_amount || (body.facility_key === 'verandah' ? 600 : body.pipeline === 'move' ? 2200 : 200);
@@ -297,7 +297,7 @@
     }
     if (p === '/api/payments/confirm' && method === 'POST') return ok({ message: 'Booking confirmed.' });
 
-    // ---- RESIDENT SUBMISSIONS + "mine" lists ---------------------------------
+    // RESIDENT SUBMISSIONS + "mine" lists
     if (p === '/api/guest' && method === 'POST') {
       var gref = guestRef(body.visit_date);
       db.guests.unshift({ oppId: uid('demo-opp'), contactId: body.host_contact_id || DEMO_MEMBER.contact_id, reference: gref, visitor: body.visitor_name, visitorEmail: body.visitor_email, visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type, host: body.host_name || DEMO_MEMBER.name, unit: body.host_unit || DEMO_MEMBER.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
@@ -333,14 +333,14 @@
     if (p === '/api/move/mine')     return ok({ items: db.moves.map(function (x) { return { move_type: x.move_type, move_date: x.move_date, move_time: x.move_time, notes: x.notes, ts: x.ts }; }) });
     if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
 
-    // ---- RESOURCES (resident) ------------------------------------------------
+    // RESOURCES (resident)
     if (p === '/api/resources') return ok({ resources: db.resources.map(stripFile) });
     if ((m = p.match(/^\/api\/resources\/([^/]+)\/download$/)) && method === 'GET') {
       var rr = db.resources.find(function (x) { return x.id === decodeURIComponent(m[1]); });
       return rr ? ok({ file_data: rr.file_data, file_name: rr.file_name, file_type: rr.file_type }) : J({ success: false, message: 'Not found.' }, 404);
     }
 
-    // ---- GUARDHOUSE ----------------------------------------------------------
+    // GUARDHOUSE
     if (p === '/api/guardhouse/lookup') {
       var ref = (qs.get('reference') || qs.get('ref') || '').trim();
       var g = db.guests.find(function (x) { return x.reference === ref; });
@@ -382,7 +382,7 @@
       return ok();
     }
 
-    // ---- MANAGEMENT ----------------------------------------------------------
+    // MANAGEMENT
     if (p === '/api/management/contacts/search') {
       var q = (qs.get('q') || '').toLowerCase();
       var contacts = db.residents.filter(function (r) { return (r.name + r.email + r.unit).toLowerCase().indexOf(q) !== -1; })
@@ -493,7 +493,7 @@
       return ok();
     }
 
-    // ---- Fallback ------------------------------------------------------------
+    // Fallback
     console.warn('[demo-backend] unhandled route:', method, p);
     return J({ success: true, items: [], message: 'Demo: route not implemented.' }, 200);
   }
@@ -506,7 +506,7 @@
     return { id: String(e._id), cat: e.cat, key: e.key, type: e.type, label: e.label, name: e.name, meta: e.meta, time: new Date(e.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) };
   }
 
-  // ── fetch override ────────────────────────────────────────────────────────────
+  // fetch override
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};

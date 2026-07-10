@@ -21,7 +21,7 @@ async function submitDefect(req, res) {
   }
 
   const catDisplay = secondaryCategory ? `${category} + ${secondaryCategory}` : category;
-  // Canonical opportunity name the workflow uses (professional + scannable).
+  // Canonical opportunity name the workflow uses.
   const unitTag  = resident_unit ? ` (#${String(resident_unit).replace(/^#/, '')})` : '';
   const opp_name = `[${urgency || 'Routine'}] ${catDisplay || 'Defect'} — ${location || 'Unit'}${unitTag}`;
 
@@ -41,9 +41,8 @@ async function submitDefect(req, res) {
       resident_contact_id: resident_contact_id || '',
     });
 
-    // Persist the full submission to Mongo (the resident-facing source of truth,
-    // shared across devices + both portals — replaces the old localStorage mirror).
-    // Also lets the management portal show the photo alongside the GHL opp.
+    // Persist the full submission to Mongo (resident-facing source of truth across
+    // devices + both portals) — also lets management show the photo alongside the opp.
     if (dbReady() && (resident_contact_id || resident_email)) {
       Defect.create({
         contact_id:  resident_contact_id || '',
@@ -68,7 +67,7 @@ async function submitDefect(req, res) {
 
 // GET /api/defect/mine — the logged-in resident's own defect submissions (full text),
 // newest first. Identity comes from the signed token (middleware overwrites query).
-// Used by the portal to recover the full description/details the GHL opp name omits.
+// Recovers the full description/details that the GHL opp name omits.
 async function listMine(req, res) {
   const contact_id = String(req.query.contact_id || '').trim();
   const email      = String(req.query.email || '').trim().toLowerCase();

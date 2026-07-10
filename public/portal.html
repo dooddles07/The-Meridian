@@ -130,7 +130,7 @@
 </head>
 <body>
 
-<!-- ── LOGIN ──────────────────────────────────────────────────────────────── -->
+<!-- Login screen -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-brand">The <em>Lumina</em></div>
@@ -147,8 +147,6 @@
     <p class="login-err" id="loginErr"></p>
     <button class="btn-login" id="loginBtn">Access Resident Portal</button>
     <div class="login-footer">
-      <!-- <span>Trouble signing in? <a href="#">Contact management office</a></span><br> -->
-      <!-- <a href="https://wa.me/6565001941" target="_blank" class="wa-link">🟢 WhatsApp support</a> -->
       <button class="theme-switch" data-theme-toggle role="switch" aria-label="Toggle colour scheme">
         <span class="material-symbols-outlined theme-switch__icon">light_mode</span>
         <span class="theme-switch__track"><span class="theme-switch__thumb"></span></span>
@@ -159,7 +157,7 @@
   </div>
 </div>
 
-<!-- ── PORTAL ─────────────────────────────────────────────────────────────── -->
+<!-- Main portal -->
 <div id="portal-shell">
   <div class="shell">
 
@@ -215,7 +213,6 @@
 
       <div class="content">
 
-        <!-- ── Dashboard ──────────────────────────────────────────────────── -->
         <div id="view-dashboard" class="view active">
           <div id="noticeBanner" style="display:none"></div>
           <div id="parcelNoticeBanner" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;background:rgba(49,46,129,0.08);border-left:3px solid var(--gold,#312e81);display:flex;align-items:center;gap:10px;font-size:0.875rem;cursor:pointer" data-view="parcels">
@@ -281,7 +278,6 @@
           </div>
         </div>
 
-        <!-- ── Facility Booking ────────────────────────────────────────────── -->
         <div id="view-booking" class="view">
           <div class="page-title">Facility <em>Booking</em></div>
           <div class="facility-grid" id="facilityGrid">
@@ -307,7 +303,6 @@
           </div>
         </div>
 
-        <!-- ── Guest & Visitors ───────────────────────────────────────────── -->
         <div id="view-guests" class="view">
           <div class="page-title">Guest <em>&amp; Visitor Registration</em></div>
           <div class="form-section">
@@ -389,7 +384,6 @@
           </div>
         </div>
 
-        <!-- ── Defect Reports ──────────────────────────────────────────────── -->
         <div id="view-defects" class="view">
           <div class="page-title">Defect <em>Reporting</em></div>
           <div class="stage-row" id="defectStages"></div>
@@ -447,7 +441,6 @@
                       <span class="material-symbols-outlined urgency-icon">build_circle</span>
                       <span class="urgency-text">
                         <strong>Routine</strong>
-                        <!-- <small>Can wait for regular maintenance</small> -->
                       </span>
                     </span>
                   </label>
@@ -457,7 +450,6 @@
                       <span class="material-symbols-outlined urgency-icon">warning</span>
                       <span class="urgency-text">
                         <strong>Urgent</strong>
-                        <!-- <small>Safety risk or affects multiple units</small> -->
                       </span>
                     </span>
                   </label>
@@ -467,7 +459,6 @@
                       <span class="material-symbols-outlined urgency-icon">crisis_alert</span>
                       <span class="urgency-text">
                         <strong>Emergency</strong>
-                        <!-- <small>Immediate danger or severe water/gas damage</small> -->
                       </span>
                     </span>
                   </label>
@@ -504,7 +495,6 @@
           </div>
         </div>
 
-        <!-- ── Parcel Management ───────────────────────────────────────────── -->
         <div id="view-parcels" class="view">
           <div class="page-title">Parcel <em>Management</em></div>
           <div class="parcel-layout">
@@ -545,7 +535,6 @@
           </div>
         </div>
 
-        <!-- ── Move In / Out ──────────────────────────────────────────────── -->
         <div id="view-move" class="view">
           <div class="page-title">Move-In / <em>Move-Out</em></div>
           <div class="move-info-row">
@@ -629,7 +618,6 @@
           </div>
         </div>
 
-        <!-- ── Feedback ────────────────────────────────────────────────────── -->
         <div id="view-feedback" class="view">
           <div class="page-title"><em>Feedback</em> &amp; Complaints</div>
           <div class="form-layout">
@@ -718,7 +706,6 @@
           </div>
         </div>
 
-        <!-- ── Notices & AGM ───────────────────────────────────────────────── -->
         <div id="view-notices" class="view">
           <div class="page-title">Announcements</div>
           <div id="noticesList">
@@ -730,7 +717,6 @@
           </div>
         </div>
 
-        <!-- ── Payments ───────────────────────────────────────────────────── -->
         <div id="view-payments" class="view">
           <div class="page-title">Payments</div>
 
@@ -746,18 +732,15 @@
           </div>
         </div>
 
-        <!-- ── Resources ─────────────────────────────────────────────────── -->
         <div id="view-resources" class="view">
           <div class="page-title">Resources</div>
           <p class="res-intro">Download by-laws, fire safety guidelines, meeting minutes, and other building documents.</p>
           <div id="resourcesContainer"><div class="panel-empty">Loading…</div></div>
         </div>
 
-        <!-- ── Messages / Inbox ───────────────────────────────────────────── -->
         <div id="view-messages" class="view">
           <div class="inbox" id="memberInbox">
 
-            <!-- Sidebar: conversation list -->
             <aside class="inbox__sidebar">
               <div class="inbox__sidebar-head">
                 <h2 class="inbox__title">Messages</h2>
@@ -765,13 +748,11 @@
                   <span class="material-symbols-outlined">edit_square</span>New
                 </button>
               </div>
-              <!-- Conversations (populated by JS) -->
               <div class="inbox__list" id="inboxList">
                 <div class="inbox__loading" style="padding:1.4rem;font-size:0.82rem;color:var(--text-2,#9a9088)">Loading…</div>
               </div>
             </aside>
 
-            <!-- Thread: message view -->
             <div class="inbox__thread">
               <div class="inbox__thread-header">
                 <button class="inbox__back-btn" id="inboxBackBtn" aria-label="Back to conversations">
@@ -788,7 +769,6 @@
                 <div class="inbox__empty-state" style="margin:auto;text-align:center;color:var(--text-2,#9a9088);font-size:0.85rem;padding:2rem">Loading your messages…</div>
               </div>
 
-              <!-- Compose bar -->
               <div class="inbox__compose">
                 <div class="inbox__compose-inner">
                   <textarea class="inbox__compose-input" id="inboxCompose"
@@ -804,7 +784,6 @@
           </div><!-- /.inbox -->
         </div><!-- /#view-messages -->
 
-        <!-- New Conversation Modal -->
         <div class="inbox-modal" id="inboxNewModal" style="display:none" role="dialog" aria-modal="true" aria-label="New conversation">
           <div class="inbox-modal__backdrop" id="inboxModalBackdrop"></div>
           <div class="inbox-modal__box">
@@ -836,7 +815,6 @@
   </div><!-- /shell -->
 </div><!-- /portal-shell -->
 
-<!-- ── Booking modal ─────────────────────────────────────────────────────── -->
 <div id="bookingModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
@@ -848,7 +826,6 @@
 </div>
 
 
-<!-- ── Payment modal ─────────────────────────────────────────────────────────── -->
 <div id="payModal" class="modal-overlay">
   <div class="modal-box pay-modal-box">
     <div class="modal-header">

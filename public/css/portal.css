@@ -1,8 +1,3 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   The Lumina — Resident Portal
-   Component files live in portal/ — this file is the import orchestrator.
-   ───────────────────────────────────────────────────────────────────────────── */
-
 @import url('portal/_tokens.css');
 @import url('portal/_login.css');
 @import url('portal/_sidebar.css');

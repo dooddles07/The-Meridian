@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
-// Resident parcel notification detail — the full submission the resident typed.
-// Mongo is the source of truth (shared across devices + both portals), replacing
-// the old per-browser localStorage mirror. The GHL opportunity carries only a
-// truncated name, so the description/courier/collector are recovered from here.
+// Resident parcel notification detail — the resident's full submission. Mongo is
+// the source of truth (shared across devices/portals, replacing the old
+// localStorage mirror); the GHL opportunity carries only a truncated name, so the
+// description/courier/collector are recovered from here.
 const schema = new mongoose.Schema({
   contact_id:           { type: String, default: '', index: true },
   email:                { type: String, default: '', lowercase: true, trim: true, index: true },

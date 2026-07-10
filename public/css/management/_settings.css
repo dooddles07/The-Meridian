@@ -1,4 +1,4 @@
-/* ── Loading indicator ────────────────────────────────────────────────────── */
+/* Loading indicator */
 .loading {
   text-align: center;
   padding: 32px;
@@ -6,7 +6,7 @@
   font-size: 0.8125rem;
 }
 
-/* ── Settings ─────────────────────────────────────────────────────────────── */
+/* Settings */
 .settings-section { margin-bottom: 28px; }
 .settings-title {
   font-size: 0.5rem;
@@ -45,7 +45,7 @@
   box-shadow: 0 0 0 3px rgba(129,140,248,0.15);
 }
 
-/* ── Stage Fetch ──────────────────────────────────────────────────────────── */
+/* Stage Fetch */
 .stage-fetch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stage-fetch-box {
   background: var(--surface);
@@ -83,7 +83,7 @@
 .stage-list-item { display: flex; align-items: center; gap: 8px; }
 .stage-list-id { font-family: 'Courier New', monospace; font-size: 0.6875rem; color: var(--gold-dk); }
 
-/* ── Connection Probe ─────────────────────────────────────────────────────── */
+/* Connection Probe */
 .probe-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .btn-probe {
   background: var(--gold);

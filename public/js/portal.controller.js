@@ -16,7 +16,7 @@
   const FINISHED_STATUSES = ['Completed', 'No-Show', 'Cancelled'];
   const isFinished = s => FINISHED_STATUSES.includes(s);
 
-  // ── Authenticated fetch ────────────────────────────────────────────────────
+  // Authenticated fetch
   // The resident session token (set on login) is attached to every same-origin
   // /api/ call. The backend derives identity from this token - the portal no longer
   // proves who it is by sending contact_id/email in the request. Shadows the global
@@ -45,7 +45,7 @@
     window.location.reload();
   }
 
-  // ── Theme toggle ─────────────────────────────────────────────────────────────
+  // Theme toggle
   (function initTheme() {
     const KEY = 'meridian-portal-theme';
     function syncToggleUI(theme) {
@@ -71,7 +71,7 @@
     });
   })();
 
-  // ── Facility catalogue ───────────────────────────────────────────────────────
+  // Facility catalogue
   const FACILITIES = [
     { key: 'pool',       name: 'Swimming Pool',    emoji: '🏊', deposit: true, open: 7,  close: 23, slot: 1, maxPax: 5,  capacity: 'Max 4 guests / unit',  note: 'Children under 12 must be accompanied by an adult resident.',  notePlaceholder: 'e.g. Bringing 2 young children, all are supervised adults present' },
     { key: 'tennis',     name: 'Tennis Court',     emoji: '🎾', open: 7,  close: 23, slot: 1, maxPax: 4,  capacity: 'Max 3 guests',          note: 'Proper non-marking footwear required on court.',               notePlaceholder: 'e.g. Singles match, bringing own rackets and balls' },
@@ -161,7 +161,6 @@
     const nowMins  = isToday ? nowSGTMins() : -1;
     const prevVal  = select.value;
 
-    // Loading state while availability is fetched.
     select.disabled  = true;
     select.innerHTML = `<option value="">checking availability…</option>`;
     if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = 'Checking availability…'; }
@@ -187,7 +186,6 @@
 
     select.innerHTML = `<option value="">choose a time slot</option>` + options;
 
-    // Restore previous selection only if it's still bookable.
     if (prevVal) {
       const start = parseSlotStart(prevVal), end = parseSlotEnd(prevVal);
       const stillBad = (isToday && start <= nowMins) || overlaps(start, end);
@@ -223,7 +221,8 @@
   const getBookings  = () => _bookings;
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
   // The full text a resident typed for defects/parcels/moves/feedback (GHL only keeps
-  // a short opp name) is persisted in the live MongoDB on submit and read back here - // never in localStorage, so it's consistent across every device and both portals.
+  // a short opp name) is persisted in the live MongoDB on submit and read back here -
+  // never in localStorage, so it's consistent across every device and both portals.
   // Returns newest-first rows in the shape renderRecords expects as `saved`.
   const fetchMine = async (type) => {
     if (!member || (!member.contact_id && !member.email)) return [];
@@ -235,7 +234,7 @@
   };
 
 
-  // ── Session / login ──────────────────────────────────────────────────────────
+  // Session / login
   let member = null;
   // NOTE: restoring the session and auto-booting is deferred to the very end of
   // this IIFE (see bottom). bootPortal() reads top-level consts declared further
@@ -344,7 +343,7 @@
     _livePanel('view-dashboard', () => { loadNotices(); syncBookingStatuses(); });
   }
 
-  // ── View switching ───────────────────────────────────────────────────────────
+  // View switching
   function navigate(view) {
     document.querySelectorAll('.sidebar__item').forEach(el => el.classList.toggle('sidebar__item--active', el.dataset.view === view));
     document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + view));
@@ -364,7 +363,7 @@
   }
   document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.view)));
 
-  // ── Facility chooser ─────────────────────────────────────────────────────────
+  // Facility chooser
   function renderFacilities() {
     const grid = $('facilityGrid');
     if (!grid) return;
@@ -384,7 +383,7 @@
     grid.querySelectorAll('[data-fac]').forEach(el => el.addEventListener('click', () => openBooking(el.dataset.fac)));
   }
 
-  // ── Booking modal ──────────────────────────────────────────────────────────
+  // Booking modal
   const modal = $('bookingModal');
   const host  = $('bookingFormHost');
   let _fac = null;
@@ -437,12 +436,10 @@
         </div>
       </div>`;
 
-    // Refresh slots whenever the date changes.
     $('bkDate').addEventListener('change', () => refreshSlots(f));
     $('bkConfirm').addEventListener('click', () => confirmBooking());
     modal.classList.add('open');
 
-    // Pre-fill when editing, then load that date's slots and re-select the booked one.
     if (_editing) {
       $('bkPax').value   = _editing.pax || 1;
       $('bkNotes').value = _editing.notes || '';
@@ -552,7 +549,7 @@
 
     errEl.textContent = '';
 
-    // ── Step 1: Review before submitting ─────────────────────────────────
+    // Step 1: Review before submitting
     if (window.Swal) {
       const { isConfirmed } = await window.Swal.fire({
         title:              editing ? 'Review Your Changes' : 'Review Your Booking',
@@ -568,12 +565,12 @@
       if (!isConfirmed) return;
     }
 
-    // ── Step 2: Submit ────────────────────────────────────────────────────
+    // Step 2: Submit
     btn.disabled    = true;
     btn.textContent = editing ? 'Saving…' : 'Confirming…';
 
     try {
-      // ── Edit an existing booking ──────────────────────────────────────
+      // Edit an existing booking
       if (editing) {
         const res  = await fetch(`/api/booking/${encodeURIComponent(editing.id)}`, {
           method:  'PUT',
@@ -611,7 +608,7 @@
         return;
       }
 
-      // ── Create a new booking ──────────────────────────────────────────
+      // Create a new booking
       const res  = await fetch('/api/booking', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -638,7 +635,7 @@
       const list = getBookings();
       // No-deposit facilities auto-confirm (past dates are blocked and taken slots
       // disabled, so no manual approval is needed). Deposit facilities sit at
-      // "Deposit Pending" until the deposit is paid. The "Requested" stage is retired.
+      // "Deposit Pending" until the deposit is paid.
       // Store the opportunity id so the deposit modal can record per-fee payments
       // against the SAME opp the Payments tab reads from.
       list.push({ id: bookingId, oppId, facilityKey: f.key, facilityName: f.name, emoji: f.emoji, date, slot, pax, notes, ts: Date.now(), status: isDepositFacility(f.key) ? 'Deposit Pending' : 'Confirmed' });
@@ -647,7 +644,6 @@
       closeModal(); renderMyBookings(); renderDashboardBookings();
       syncBookingStatuses(); // reconcile with the server (Mongo) record
 
-      // Deposit facilities → prompt to go to Payments tab. Others → confirm directly.
       if (isDepositFacility(f.key)) {
         if (window.Swal) {
           window.Swal.fire({
@@ -685,8 +681,8 @@
   }
 
   // Quantum payment links per deposit facility / move. Each entry is one or more fees.
-  // DEMO: external payment links removed. "Pay Deposit" opens a local mock payment
-  // page (public/demo-pay.html) in the modal iframe - no external call is made.
+  // "Pay Deposit" opens a local mock payment page (public/demo-pay.html) in the modal
+  // iframe - no external call is made.
   const PAY_LINKS = {
     bbq:  [{ label: 'Refundable Deposit', url: 'demo-pay.html' }],
     pool: [{ label: 'Refundable Deposit', url: 'demo-pay.html' }],
@@ -724,7 +720,7 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
   }
 
-  // ── My Bookings ──────────────────────────────────────────────────────────────
+  // My Bookings
   const UPCOMING_STATUSES = ['Confirmed', 'Deposit Pending'];
   const isUpcoming = s => UPCOMING_STATUSES.includes(s);
 
@@ -912,7 +908,7 @@
     renderMyBookings(); renderDashboardBookings(); populateBookingSelector();
   }
 
-  // ── My Guests & My Defects ───────────────────────────────────────────────────
+  // My Guests & My Defects
   function stageBadge(stage) {
     const map = {
       'Registered':           'sbadge-submitted',
@@ -944,7 +940,7 @@
 
   const REF_RE = /GST-\d{8}-\d{4}/;
 
-  // ── Guest pass QR ────────────────────────────────────────────────────────────
+  // Guest pass QR
   function guestQrUrl(ref) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=14&data=${encodeURIComponent(ref)}`;
   }
@@ -1025,7 +1021,6 @@
         ? new Date(sv.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
         : date;
 
-      // Extract guest reference from name or any custom field value
       let refCode = (REF_RE.exec(item.name) || [])[0] || '';
 
       const fields = (item.customFields || []).map(f => {
@@ -1183,7 +1178,7 @@
     } catch (e) { console.error('[defects]', e); el.innerHTML = '<div class="panel-empty">Connection error loading reports.</div>'; }
   }
 
-  // ── Feedback category filter ─────────────────────────────────────────────────
+  // Feedback category filter
   const FB_CATEGORIES = {
     'Complaint':  ['Noise', 'Cleanliness', 'Security Concern', 'Maintenance Issue', 'Neighbour Dispute', 'Facility Condition', 'Staff Conduct', 'Others'],
     'Feedback':   ['Facilities', 'Management', 'Security', 'Maintenance', 'Staff', 'Community', 'Others'],
@@ -1277,7 +1272,7 @@
     } catch { banner.style.display = 'none'; }
   }
 
-  // ── Notices & AGM (announcements published by management) ─────────────────────
+  // Notices & AGM (announcements published by management)
   function annDate(iso) {
     return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
   }
@@ -1313,7 +1308,6 @@
       return 'general';
     }
 
-    // Fetch resident's existing RSVPs if any events have RSVP enabled.
     let myRsvpMap = {};
     if (items.some(a => a.rsvp_enabled) && member && member.contact_id) {
       try {
@@ -1372,7 +1366,6 @@
             <div class="notices-empty__sub">Management will post building notices, AGM updates, and maintenance alerts here.</div>
           </div>`;
 
-      // Attach RSVP button handlers.
       list.querySelectorAll('.ann-rsvp').forEach(rsvpEl => {
         const annId    = rsvpEl.dataset.annId;
         const yesBtn   = rsvpEl.querySelector('.ann-rsvp__yes');
@@ -1442,7 +1435,7 @@
       }
     }
 
-    // ── Dashboard cards: Upcoming Event (Event category) + Maintenance Alert (Maintenance category) ──
+    // Dashboard cards: Upcoming Event (Event category) + Maintenance Alert (Maintenance category)
     const now = new Date();
     // Soonest announcement of a category whose window hasn't ended yet (upcoming or in progress).
     function nextOf(slug) {
@@ -1464,12 +1457,12 @@
     }
   }
 
-  // ── Payments (read-only history) ───────────────────────────────────────────────
+  // Payments (read-only history)
   // Move is one payment: SGD 200 admin fee + SGD 2000 refundable deposit = SGD 2200.
   // On completion the SGD 2000 deposit is refunded (shown on the Deposit Refunded card).
   const MOVE_REFUNDABLE_DEPOSIT = 2000;
   const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 600, move: 2200, default: 50 };
-  // "Requested" is retired - a deposit is outstanding only while at "Deposit Pending".
+  // A deposit is outstanding only while at "Deposit Pending".
   const DEPOSIT_STAGES = new Set(['Deposit Pending']);
   // Derive the facility key from a GHL opportunity name.
   function _facKeyFromOppName(name) {
@@ -1567,7 +1560,7 @@
     // Two-line header used by all card variants.
     const headerHtml = `<div class="pay-facility-title">${esc(title)}</div>${details ? `<div class="pay-facility-detail">${esc(details)}</div>` : ''}`;
 
-    // ── Verandah pending: two separate fee rows ────────────────────────────────
+    // Verandah pending: two separate fee rows
     if (isPending && isVerandah) {
       const feeRows = VERANDAH_FEES.map(fee => {
         const isPaid = paidFeeSet.has(`${item.id}_${fee.feeLabel}`);
@@ -1592,7 +1585,7 @@
       </div>`;
     }
 
-    // ── All other pending deposits ─────────────────────────────────────────────
+    // All other pending deposits
     if (isPending) {
       return `<div class="pay-due">
         <div class="pay-due__body">${headerHtml}</div>
@@ -1603,7 +1596,7 @@
       </div>`;
     }
 
-    // ── History: Confirmed (paid) or Deposit Refunded ──────────────────────────
+    // History: Confirmed (paid) or Deposit Refunded
     const isRefunded = item.stage === 'Deposit Refunded';
     const baseMeta   = isVerandah ? 'Booking Fee + Refundable Deposit'
                      : key === 'move' ? 'Admin Fee + Refundable Deposit'
@@ -1629,7 +1622,8 @@
   }
 
   // pending/confirmed/refunded are arrays of [item, type] tuples ('facility' | 'move').
-  // Payment History shows paid (Confirmed/Completed) AND Deposit Refunded records - // the latter mainly move-in/out deposits returned after the move completes.
+  // Payment History shows paid (Confirmed/Completed) AND Deposit Refunded records -
+  // the latter mainly move-in/out deposits returned after the move completes.
   function _renderPayBlock(pending, confirmed, refunded, paidFeeSet = new Set()) {
     const historyCount = confirmed.length + refunded.length;
     if (!pending.length && !historyCount)
@@ -1818,7 +1812,7 @@
     if (hint) hint.textContent = 'Updated just now';
   }
 
-  // ── Messages (resident ↔ management) - wired to the shared inbox design ─────────
+  // Messages (resident ↔ management) - wired to the shared inbox design
   function msgQuery() {
     const qs = new URLSearchParams();
     if (member && member.contact_id) qs.set('contact_id', member.contact_id);
@@ -1936,7 +1930,7 @@
       const ix = $('memberInbox'); if (ix) ix.classList.remove('inbox--thread-open');
     });
   }
-  // Compose bar (teammate's design IDs).
+  // Compose bar
   if ($('inboxSendBtn') && $('inboxCompose')) {
     const ta = $('inboxCompose'), btn = $('inboxSendBtn');
     const fire = async () => {
@@ -1970,7 +1964,7 @@
     });
   }
 
-  // ── Feedback helpers + other forms ─────────────────────────────────────────────
+  // Feedback helpers + other forms
   let _t;
   function toast(msg, type) { const el = $('toast'); if (!el) return; el.textContent = msg; el.className = 'show ' + (type || 'ok'); clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3500); }
 
@@ -2009,7 +2003,7 @@
   function setMsg(id, t, err) { const el = $(id); if (el) { el.textContent = t; el.className = 'form-msg' + (err ? ' err' : ''); } }
   function clr(ids) { ids.forEach(id => { const el = $(id); if (el) el.value = ''; }); }
 
-  // ── Inline field validation ──────────────────────────────────────────────────
+  // Inline field validation
   function fieldErr(id, msg) {
     const el = $(id); if (!el) return;
     let span = el.parentElement.querySelector('.inline-err');
@@ -2035,7 +2029,7 @@
   }
   validateInline();
 
-  // ── Move date validation helpers ──────────────────────────────────────────
+  // Move date validation helpers
   function calcMinMoveDate() {
     // Count 7 working days (Mon - Fri) forward from today SGT.
     const parts = todaySGT().split('-').map(Number);
@@ -2059,7 +2053,6 @@
     return '';
   }
 
-  // Set move date min to earliest valid working day (7 working days ahead)
   const moveDateEl = $('moveDate');
   if (moveDateEl) {
     moveDateEl.min   = calcMinMoveDate();
@@ -2195,7 +2188,6 @@
   if ($('gLinkedBooking')) $('gLinkedBooking').addEventListener('change', updateGuestBookingStatus);
   document.querySelectorAll('[data-view="guests"]').forEach(el => el.addEventListener('click', populateBookingSelector));
 
-  // Show/hide urgency escalation notice based on radio selection
   if (document.querySelectorAll('input[name="dUrgency"]').length > 0) {
     document.querySelectorAll('input[name="dUrgency"]').forEach(radio => {
       radio.addEventListener('change', () => {
@@ -2391,7 +2383,7 @@
   });
   bind('fbCancelBtn', () => { clr(['fbDesc', 'fbDate', 'fbTime']); setMsg('fbMsg', ''); });
 
-  // ── Panel refresh buttons ────────────────────────────────────────────────────
+  // Panel refresh buttons
   async function refreshPanel(btnId, loadFn) {
     const btn = $(btnId);
     if (btn) btn.classList.add('spinning');
@@ -2405,7 +2397,7 @@
   bind('refreshFeedback', () => refreshPanel('refreshFeedback', loadMyFeedback));
   bind('refreshPayments', () => refreshPanel('refreshPayments', loadPayments));
 
-  // ── Resources ─────────────────────────────────────────────────────────────
+  // Resources
   const CATEGORY_ICONS = {
     'By-Laws':         'gavel',
     'Fire Safety':     'local_fire_department',
@@ -2506,7 +2498,7 @@
 
   bind('logoutBtn', () => { authToken = null; [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); window.location.href = 'index.html'; });
 
-  // ── Mobile sidebar toggle ────────────────────────────────────────────────
+  // Mobile sidebar toggle
   const _sidebar  = document.querySelector('.sidebar');
   const _overlay  = $('sbOverlay');
   function openSidebar()  { _sidebar.classList.add('sidebar--open'); _overlay.classList.add('sidebar__overlay--open'); document.body.style.overflow = 'hidden'; }

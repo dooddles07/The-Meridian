@@ -98,8 +98,8 @@ function requireResidentOrManagement(req, res, next) {
 
 function errorHandler(err, req, res, _next) {
   // Log the full stack server-side. The 5xx response body is genericised (and given
-  // a reference id) by the response sanitizer in server.js; intentional 4xx messages
-  // are preserved here. (M-01)
+  // a reference id) by the response sanitizer; intentional 4xx messages are preserved
+  // here.
   console.error(`[error] ${req.method} ${req.originalUrl} —`, err.stack || err.message);
   const status = err.status || 500;
   res.status(status).json({
@@ -108,7 +108,7 @@ function errorHandler(err, req, res, _next) {
   });
 }
 
-// Audit trail for privileged actions (L-05). Records every state-changing request
+// Audit trail for privileged actions. Records every state-changing request
 // (POST/PUT/DELETE/PATCH) after it completes — actor from the token, route, target id
 // and resulting status — to an append-only collection. Reads (GET) are skipped.
 // Non-fatal: a logging failure never affects the action.

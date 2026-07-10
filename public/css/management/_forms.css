@@ -1,4 +1,4 @@
-/* ── Buttons ──────────────────────────────────────────────────────────────── */
+/* Buttons */
 .btn-primary {
   background: var(--gold);
   color: #080808;
@@ -66,7 +66,7 @@
   cursor: pointer;
 }
 
-/* ── Form Panel ───────────────────────────────────────────────────────────── */
+/* Form Panel */
 .form-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -127,7 +127,7 @@
 }
 .form-actions { display: flex; gap: 8px; margin-top: 14px; }
 
-/* ── Contact Search ───────────────────────────────────────────────────────── */
+/* Contact Search */
 .search-wrap { position: relative; }
 .search-dropdown {
   position: absolute;
