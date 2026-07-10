@@ -29,6 +29,30 @@
   --red-dim:   #3d1515;
   --orange:    #e8933a;
   --blue:      #4c8fd9;
+  --on-gold:   var(--on-gold);   /* label on accent buttons (dark, since accent is light periwinkle) */
+  --gold-hi:   #8582e4;   /* accent hover */
+}
+
+/* Light theme — honours the choice made on the landing (shared theme key) */
+[data-theme="light"] {
+  --bg:        #f4f0eb;
+  --surface:   #ffffff;
+  --card:      #ffffff;
+  --border:    #e0d8cb;
+  --border-hi: #cfc6ba;
+  --text:      #14110f;
+  --text-dim:  #3f3832;
+  --muted:     #5a514a;
+  --gold:      #312e81;
+  --gold-dim:  #e7e6f5;
+  --gold-hi:   #262261;
+  --on-gold:   #ffffff;   /* label on accent buttons (white, since accent is dark indigo) */
+  --green:     #1f6b45;
+  --green-dim: #e4efe7;
+  --red:       #9f1f16;
+  --red-dim:   #f6e5e3;
+  --orange:    #9a4d12;
+  --blue:      #1f4f8b;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -90,13 +114,13 @@ body {
   font-size: 0.84rem; color: var(--red); min-height: 1.25rem; margin-bottom: 0.6rem;
 }
 .gh-login-submit {
-  width: 100%; background: var(--gold); color: #100d09; border: none;
+  width: 100%; background: var(--gold); color: var(--on-gold); border: none;
   font-family: 'Tenor Sans', sans-serif; font-size: 0.82rem;
   letter-spacing: 0.14em; text-transform: uppercase;
   padding: 1rem; cursor: pointer; transition: background 0.15s;
   min-height: 50px;
 }
-.gh-login-submit:hover  { background: #d4b460; }
+.gh-login-submit:hover  { background: var(--gold-hi); }
 .gh-login-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 .gh-login-footer {
   font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 1.4rem;
@@ -195,12 +219,12 @@ body {
 .gh-cam-btn {
   width: 100%; padding: 0.85rem;
   min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  background: var(--gold); color: #100d09;
+  background: var(--gold); color: var(--on-gold);
   border: none; font-family: 'Tenor Sans', sans-serif;
   font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
   cursor: pointer; transition: background 0.15s;
 }
-.gh-cam-btn:hover { background: #d4b460; }
+.gh-cam-btn:hover { background: var(--gold-hi); }
 .gh-cam-btn .material-symbols-outlined { font-size: 1.1rem; }
 .gh-cam-btn.stop   { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
 .gh-cam-btn.stop:hover { background: #4d1b1b; }
@@ -228,7 +252,7 @@ body {
   letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; white-space: nowrap; transition: all 0.15s;
 }
-.gh-verify-btn:hover { background: var(--gold); color: #100d09; border-color: var(--gold); }
+.gh-verify-btn:hover { background: var(--gold); color: var(--on-gold); border-color: var(--gold); }
 
 .gh-hint { font-size: 0.76rem; color: var(--muted); margin-top: 0.45rem; line-height: 1.5; }
 

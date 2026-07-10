@@ -31,7 +31,7 @@
   </style>
   <script>
     (function(){
-      var t=localStorage.getItem('meridian-mgmt-theme')||'dark';
+      var t=localStorage.getItem('meridian-portal-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
       document.documentElement.dataset.theme=t;
     })();
   </script>
