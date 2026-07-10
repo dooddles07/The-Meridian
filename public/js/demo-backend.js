@@ -25,8 +25,11 @@
 
   function seedSession() {
     try {
-      // Overwrite each load so the fixed demo identity always reflects the current
-      // build (e.g. after a redeploy) without visitors having to clear storage.
+      // Don't clobber a real signup/login session, and don't re-enter automatically
+      // right after an explicit logout — either way, a login/signup click clears
+      // this flag, and the next full reload with no session re-seeds the preview.
+      if (localStorage.getItem('meridian_demo_signed_out') === '1') return;
+      if (localStorage.getItem('meridian_token')) return;
       var mem = JSON.stringify(DEMO_MEMBER);
       localStorage.setItem('meridian_member', mem);   sessionStorage.setItem('meridian_member', mem);
       localStorage.setItem('meridian_token', 'demo-token'); sessionStorage.setItem('meridian_token', 'demo-token');
@@ -108,6 +111,12 @@
         ann('Annual General Meeting 2026', 'All residents are invited to the AGM at the function room. Please RSVP so we can plan seating.', 'Event', { rsvp_enabled: true, eventAt: daysFromNow(14) + 'T19:30:00+08:00', event_venue: 'Function Room' }),
         ann('New Recycling Guidelines', 'Updated recycling bin locations and sorting rules are now in effect across all blocks.', 'General', {}),
       ],
+      // Resident signup/login credentials, keyed by lowercase email. Kept separate
+      // from `residents` (the directory management/guardhouse read) so passwords
+      // never end up in those payloads — mirrors the real backend's separation.
+      residentAuth: {
+        'brixsonn.romero@example.com': { password: 'demo1234', contact_id: 'demo-contact-1' },
+      },
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
         convo(me, [
@@ -170,6 +179,15 @@
   }
   function ok(extra) { return J(Object.assign({ success: true }, extra || {})); }
 
+  // Builds the resident-portal "member" shape from a directory entry, for both
+  // signup and login responses.
+  function memberFor(email) {
+    var r = db.residents.find(function (x) { return x.email === email; });
+    if (!r) return null;
+    var initials = (r.name || '').split(/\s+/).map(function (p) { return p[0] || ''; }).join('').slice(0, 2).toUpperCase() || 'R';
+    return { name: r.name, initials: initials, email: r.email, unit: r.unit, type: r.type || 'Resident', contact_id: r.contact_id };
+  }
+
   // Map a stored collection item → the generic "opportunity" shape the resident
   // "My …" panels and the management pipeline tables consume.
   function oppName(kind, it) {
@@ -202,8 +220,30 @@
     if (opts.body) { try { body = JSON.parse(opts.body); } catch (e) { body = {}; } }
     var m; // regex capture holder
 
-    // AUTH (no-op success; portals are auto-entered anyway)
-    if (p === '/api/auth/resident/login')   return ok({ token: 'demo-token', member: DEMO_MEMBER });
+    // AUTH — resident signup/login are real (checked against the in-browser
+    // residentAuth store) so the feature genuinely works; management/guardhouse
+    // stay no-op since portals are auto-entered anyway.
+    if (p === '/api/auth/resident/signup' && method === 'POST') {
+      var sName = String(body.name || '').trim();
+      var sUnit = String(body.unit || '').trim();
+      var sEmail = String(body.email || '').trim().toLowerCase();
+      var sPassword = String(body.password || '');
+      if (!sName || !sUnit || !sEmail || !sPassword) return J({ success: false, message: 'Name, unit number, email and password are required.' }, 400);
+      if (sPassword.length < 8) return J({ success: false, message: 'Password must be at least 8 characters.' }, 400);
+      if (db.residentAuth[sEmail]) return J({ success: false, message: 'An account with this email already exists. Try signing in instead.' }, 409);
+      var newContactId = uid('contact');
+      db.residentAuth[sEmail] = { password: sPassword, contact_id: newContactId };
+      db.residents.push({ name: sName, unit: sUnit, email: sEmail, phone: '', type: 'Resident', ghlLinked: false, contact_id: newContactId });
+      persist();
+      return ok({ token: 'demo-token-' + newContactId, member: memberFor(sEmail) });
+    }
+    if (p === '/api/auth/resident/login' && method === 'POST') {
+      var lEmail = String(body.email || '').trim().toLowerCase();
+      var lPassword = String(body.password || '');
+      var auth = db.residentAuth[lEmail];
+      if (!auth || auth.password !== lPassword) return J({ success: false, message: 'Invalid email or password.' }, 401);
+      return ok({ token: 'demo-token-' + auth.contact_id, member: memberFor(lEmail) });
+    }
     if (p === '/api/auth/management/login')  return ok({ token: 'demo-token', user: MGMT_USER });
     if (p === '/api/auth/guardhouse/login')  return ok({ token: 'demo-token', user: GH_USER });
 

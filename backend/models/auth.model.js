@@ -82,9 +82,8 @@ function authenticate(list, username, password) {
 
 const findManagement = (username, password) => authenticate(MANAGEMENT, username, password);
 const findGuardhouse = (username, password) => authenticate(GUARDHOUSE, username, password);
-const findResident = (email, unit) => {
-  const e = clean(email).toLowerCase(), n = normalizeUnit(unit);
-  return RESIDENTS.find(r => clean(r.email).toLowerCase() === e && normalizeUnit(r.unit) === n) || null;
-};
 
-module.exports = { findManagement, findResident, findGuardhouse, normalizeUnit, clean, RESIDENTS };
+module.exports = {
+  findManagement, findGuardhouse, normalizeUnit, clean, RESIDENTS,
+  passwordMatches, isBcryptHash, DUMMY_HASH,
+};

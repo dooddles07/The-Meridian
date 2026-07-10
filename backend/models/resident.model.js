@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 // contact is auto-created/updated (upserted) on login and on management actions.
 const residentSchema = new mongoose.Schema({
   email:          { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password:       { type: String, default: '' },
   unit:           { type: String, default: '' },
   name:           { type: String, default: '' },
   residentType:   { type: String, default: 'Resident' },

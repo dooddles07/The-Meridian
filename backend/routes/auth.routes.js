@@ -13,9 +13,15 @@ function validate(req, res, next) {
   }
   next();
 }
-const residentRules = [
+const residentLoginRules = [
+  body('email').optional({ checkFalsy: true }).isString().isLength({ max: 254 }),
+  body('password').optional({ checkFalsy: true }).isString().isLength({ max: 200 }),
+];
+const residentSignupRules = [
+  body('name').optional({ checkFalsy: true }).isString().isLength({ max: 120 }),
   body('email').optional({ checkFalsy: true }).isString().isLength({ max: 254 }),
   body('unit').optional({ checkFalsy: true }).isString().isLength({ max: 20 }),
+  body('password').optional({ checkFalsy: true }).isString().isLength({ min: 8, max: 200 }),
 ];
 const staffRules = [
   body('username').optional({ checkFalsy: true }).isString().isLength({ max: 64 }),
@@ -23,9 +29,9 @@ const staffRules = [
 ];
 
 // Counts per client IP (trust proxy is set in server.js so the real IP is used
-// behind Railway). Staff logins are a high-value password-guessing target so they
-// get a tighter cap; resident login (email+unit) is looser so a shared building IP
-// isn't locked out during normal use.
+// behind Railway). Resident login is now real password auth (not a lookup), so
+// it gets the same cap as staff logins; account creation is capped tighter still
+// since it's a distinct spam/abuse surface from credential guessing.
 const limiterOpts = {
   windowMs: 15 * 60 * 1000,
   standardHeaders: 'draft-7',
@@ -33,9 +39,11 @@ const limiterOpts = {
   message: { success: false, message: 'Too many attempts. Please wait a few minutes and try again.' },
 };
 const staffLoginLimiter    = rateLimit({ ...limiterOpts, limit: 10 });
-const residentLoginLimiter = rateLimit({ ...limiterOpts, limit: 20 });
+const residentLoginLimiter = rateLimit({ ...limiterOpts, limit: 10 });
+const residentSignupLimiter = rateLimit({ ...limiterOpts, windowMs: 60 * 60 * 1000, limit: 5 });
 
-router.post('/resident/login',   residentLoginLimiter, residentRules, validate, controller.residentLogin);
+router.post('/resident/signup', residentSignupLimiter, residentSignupRules, validate, controller.residentSignup);
+router.post('/resident/login',   residentLoginLimiter, residentLoginRules, validate, controller.residentLogin);
 router.post('/management/login', staffLoginLimiter,    staffRules,    validate, controller.managementLogin);
 router.post('/guardhouse/login', staffLoginLimiter,    staffRules,    validate, controller.guardhouseLogin);
 

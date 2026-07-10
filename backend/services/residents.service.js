@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt   = require('bcryptjs');
 const ghl      = require('./ghl.service');
 const Resident = require('../models/resident.model');
 const { RESIDENTS, normalizeUnit, clean } = require('../models/auth.model');
@@ -26,17 +27,47 @@ async function seed() {
   }
 }
 
-// Match an account by email + unit. DB first, falls back to the in-memory seed.
-async function findResident(email, unit) {
+// Look up a self-service resident account by email. Password auth requires the
+// DB (a bcrypt hash can't live safely in the env-JSON fallback list), so this
+// does not fall back to RESIDENTS the way the old lookup + listResidents() do.
+async function findByEmail(email) {
+  if (!dbReady()) return null;
   const e = clean(email).toLowerCase();
-  const n = normalizeUnit(unit);
-  if (dbReady()) {
-    try {
-      const r = await Resident.findOne({ email: e, active: true }).lean();
-      if (r) return normalizeUnit(r.unit) === n ? r : null;
-    } catch (_) { /* fall through to seed */ }
+  try {
+    return await Resident.findOne({ email: e, active: true }).lean();
+  } catch (_) {
+    return null;
   }
-  return RESIDENTS.find(x => clean(x.email).toLowerCase() === e && normalizeUnit(x.unit) === n) || null;
+}
+
+// Self-service signup. Requires the DB — throws a plain Error the controller
+// turns into a 503 rather than pretending to succeed with nowhere to persist to.
+async function createResident({ name, email, unit, password }) {
+  if (!dbReady()) {
+    const e = new Error('Database unavailable — cannot create an account right now.');
+    e.status = 503;
+    throw e;
+  }
+  const cleanEmail = clean(email).toLowerCase();
+  const hash = await bcrypt.hash(clean(password), 12);
+  try {
+    const doc = await Resident.create({
+      email: cleanEmail,
+      password: hash,
+      unit: normalizeUnit(unit),
+      name: clean(name),
+      residentType: 'Resident',
+      active: true,
+    });
+    return doc.toObject();
+  } catch (err) {
+    if (err && err.code === 11000) {
+      const e = new Error('An account with this email already exists.');
+      e.status = 409;
+      throw e;
+    }
+    throw err;
+  }
 }
 
 // Creates/updates the GHL contact for this account and persists the id back to the DB.
@@ -72,4 +103,4 @@ async function listResidents() {
   return RESIDENTS;
 }
 
-module.exports = { seed, findResident, ensureContact, listResidents, dbReady };
+module.exports = { seed, findByEmail, createResident, ensureContact, listResidents, dbReady };

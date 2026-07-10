@@ -35,7 +35,59 @@
   text-align: center;
   margin-bottom: 32px;
 }
-.login-desc { display: none; }
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.login-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.login-tab:hover { color: var(--text); }
+.login-tab--active { color: var(--text); border-bottom-color: var(--gold); }
+
+.login-panel { animation: loginPanelIn 0.18s ease-out; }
+@keyframes loginPanelIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-panel { animation: none; }
+}
+
+.pw-field { position: relative; }
+.pw-field input { padding-right: 40px; }
+.pw-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.pw-toggle:hover { color: var(--text); }
+.pw-toggle .material-symbols-outlined { font-size: 1.125rem; }
+.pw-hint { font-size: 0.6875rem; color: var(--faint); margin-top: 6px; }
+
 .login-field { margin-bottom: 14px; }
 .login-field label {
   display: block;

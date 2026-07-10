@@ -242,29 +242,70 @@
   // "Cannot access 'FB_CATEGORIES' before initialization" error for returning
   // sessions. Everything must be initialized first.
 
+  // Sign In / Register tab switch (WAI-ARIA tabs pattern: Left/Right moves focus + selection)
+  const tabSignIn     = $('tabSignIn');
+  const tabRegister   = $('tabRegister');
+  const panelSignIn   = $('panelSignIn');
+  const panelRegister = $('panelRegister');
+  function selectTab(name) {
+    const toSignIn = name === 'signin';
+    tabSignIn.classList.toggle('login-tab--active', toSignIn);
+    tabRegister.classList.toggle('login-tab--active', !toSignIn);
+    tabSignIn.setAttribute('aria-selected', String(toSignIn));
+    tabRegister.setAttribute('aria-selected', String(!toSignIn));
+    tabSignIn.tabIndex = toSignIn ? 0 : -1;
+    tabRegister.tabIndex = toSignIn ? -1 : 0;
+    panelSignIn.hidden = !toSignIn;
+    panelRegister.hidden = toSignIn;
+    (toSignIn ? $('loginEmail') : $('regName')).focus();
+  }
+  tabSignIn.addEventListener('click', () => selectTab('signin'));
+  tabRegister.addEventListener('click', () => selectTab('register'));
+  [tabSignIn, tabRegister].forEach(tab => {
+    tab.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      selectTab(tab === tabSignIn ? 'register' : 'signin');
+      (tab === tabSignIn ? tabRegister : tabSignIn).focus();
+    });
+  });
+
+  // Password show/hide — shared by every [data-pw-toggle] button
+  document.querySelectorAll('[data-pw-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = $(btn.dataset.pwToggle);
+      const show  = input.type === 'password';
+      input.type  = show ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', String(show));
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      btn.querySelector('.material-symbols-outlined').textContent = show ? 'visibility_off' : 'visibility';
+    });
+  });
+
   $('loginBtn').addEventListener('click', doLogin);
-  $('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  $('loginUnit').addEventListener('keydown',  e => { if (e.key === 'Enter') doLogin(); });
+  $('loginEmail').addEventListener('keydown',    e => { if (e.key === 'Enter') doLogin(); });
+  $('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
   async function doLogin() {
-    const unit  = $('loginUnit').value.trim();
-    const email = $('loginEmail').value.trim().toLowerCase();
+    const email    = $('loginEmail').value.trim().toLowerCase();
+    const password = $('loginPassword').value;
     const errEl = $('loginErr');
     const btn   = $('loginBtn');
-    if (!unit || !email) { errEl.textContent = 'Please enter your unit number and email address.'; return; }
+    if (!email || !password) { errEl.textContent = 'Please enter your email address and password.'; $('loginEmail').focus(); return; }
     errEl.textContent = '';
     btn.disabled = true; btn.textContent = 'Verifying…';
     try {
       const res  = await fetch('/api/auth/resident/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, unit }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!data.success) { errEl.textContent = data.message || 'Details not found.'; return; }
+      if (!data.success) { errEl.textContent = data.message || 'Invalid email or password.'; $('loginPassword').focus(); return; }
       member = data.member;
       authToken = data.token || null;
       _authExpiredHandled = false;
+      try { localStorage.removeItem('meridian_demo_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
       if (authToken) { sessionStorage.setItem(TOKEN_KEY, authToken); localStorage.setItem(TOKEN_KEY, authToken); }
@@ -273,6 +314,55 @@
       errEl.textContent = 'Connection error. Please try again.';
     } finally {
       btn.disabled = false; btn.textContent = 'Access Resident Portal';
+    }
+  }
+
+  $('signupBtn').addEventListener('click', doSignup);
+  ['regName', 'regUnit', 'regEmail', 'regPassword', 'regConfirm'].forEach(id => {
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
+  });
+
+  async function doSignup() {
+    const name     = $('regName').value.trim();
+    const unit     = $('regUnit').value.trim();
+    const email    = $('regEmail').value.trim().toLowerCase();
+    const password = $('regPassword').value;
+    const confirm  = $('regConfirm').value;
+    const errEl = $('signupErr');
+    const btn   = $('signupBtn');
+    if (!name || !unit || !email || !password) { errEl.textContent = 'Please fill in every field.'; return; }
+    if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; $('regPassword').focus(); return; }
+    if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; $('regConfirm').focus(); return; }
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    try {
+      const res  = await fetch('/api/auth/resident/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, unit, email, password }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        errEl.textContent = data.message || 'Unable to create account.';
+        if (/already exists/i.test(data.message || '')) {
+          selectTab('signin');
+          $('loginEmail').value = email;
+          $('loginPassword').focus();
+        }
+        return;
+      }
+      member = data.member;
+      authToken = data.token || null;
+      _authExpiredHandled = false;
+      try { localStorage.removeItem('meridian_demo_signed_out'); } catch {}
+      sessionStorage.setItem(SESS, JSON.stringify(member));
+      localStorage.setItem(SESS, JSON.stringify(member));
+      if (authToken) { sessionStorage.setItem(TOKEN_KEY, authToken); localStorage.setItem(TOKEN_KEY, authToken); }
+      bootPortal();
+    } catch {
+      errEl.textContent = 'Connection error. Please try again.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Register My Unit';
     }
   }
 
@@ -2496,7 +2586,14 @@
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  bind('logoutBtn', () => { authToken = null; [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); window.location.href = 'index.html'; });
+  bind('logoutBtn', () => {
+    authToken = null;
+    [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    // Tells demo-backend.js's auto-login not to re-seed the canned demo session on
+    // the next load — an explicit logout should reach the real sign-in screen.
+    try { localStorage.setItem('meridian_demo_signed_out', '1'); } catch {}
+    window.location.href = 'index.html';
+  });
 
   // Mobile sidebar toggle
   const _sidebar  = document.querySelector('.sidebar');
