@@ -20,9 +20,9 @@ button, input, select, textarea { font: inherit; }
   --faint:     #706860;   /*  4.9:1 ✓  (was #7a7067 @ 4.3:1 — fixed) */
 
   /* Gold — passes 4.5:1 on both bg and white */
-  --gold:      #856728;   /* 4.7:1 on bg, 5.3:1 on white ✓ (was #8f6f2e @ 4.2:1) */
-  --gold-dk:   #6f5420;
-  --gold-lt:   #f0e3c6;
+  --gold:      #312e81;   /* 4.7:1 on bg, 5.3:1 on white ✓ (was #312e81 @ 4.2:1) */
+  --gold-dk:   #262261;
+  --gold-lt:   #e7e6f5;
 
   /* Status colors tuned for contrast */
   --green:     #1f6b45;
@@ -52,7 +52,7 @@ button, input, select, textarea { font: inherit; }
 html { font-size: 20px; }
 body {
   background:
-    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(176,140,56,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(99,102,241,0.07) 0%, transparent 60%),
     var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -99,9 +99,9 @@ html { scrollbar-width: auto; scrollbar-color: var(--border-2) transparent; }
   --text-2:    #a8a090;
   --muted:     #8a8070;
   --faint:     #857b6b;
-  --gold:      #c4a040;
-  --gold-dk:   #8a6c28;
-  --gold-lt:   rgba(196,160,64,0.12);
+  --gold:      #a5a3f5;
+  --gold-dk:   #8582e4;
+  --gold-lt:   rgba(129,140,248,0.12);
   --green:     #4a9e68;
   --red:       #dc4232;
   --blue:      #4a7ad8;
@@ -109,12 +109,12 @@ html { scrollbar-width: auto; scrollbar-color: var(--border-2) transparent; }
 }
 [data-theme="dark"] body {
   background:
-    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(196,160,64,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(129,140,248,0.06) 0%, transparent 60%),
     var(--bg);
 }
 [data-theme="dark"] .notice-banner {
-  background: rgba(196,160,64,0.06);
-  border-color: rgba(196,160,64,0.18);
+  background: rgba(129,140,248,0.06);
+  border-color: rgba(129,140,248,0.18);
   border-left-color: var(--gold);
   color: var(--text-2);
 }

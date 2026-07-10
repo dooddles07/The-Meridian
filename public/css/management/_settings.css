@@ -42,7 +42,7 @@
 }
 .settings-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(196,160,64,0.15);
+  box-shadow: 0 0 0 3px rgba(129,140,248,0.15);
 }
 
 /* ── Stage Fetch ──────────────────────────────────────────────────────────── */

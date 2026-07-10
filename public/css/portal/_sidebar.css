@@ -50,7 +50,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(176,140,56,0.18);
+  background: rgba(99,102,241,0.18);
   color: var(--gold);
   display: flex;
   align-items: center;
@@ -59,7 +59,7 @@
   font-weight: 600;
   flex-shrink: 0;
   letter-spacing: 0;
-  border: 1px solid rgba(176,140,56,0.25);
+  border: 1px solid rgba(99,102,241,0.25);
 }
 .sidebar__user-info { flex: 1; min-width: 0; }
 .sidebar__name {
@@ -82,7 +82,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 2px 6px;
-  border: 1px solid rgba(176,140,56,0.3);
+  border: 1px solid rgba(99,102,241,0.3);
   border-radius: var(--radius-pill);
   color: var(--gold);
   display: inline-block;
@@ -120,14 +120,14 @@
 .sidebar__item:hover {
   color: rgba(255,255,255,0.78);
   background: rgba(255,255,255,0.05);
-  border-left-color: rgba(176,140,56,0.35);
+  border-left-color: rgba(99,102,241,0.35);
   padding-left: 16px;
 }
 .sidebar__item--active {
   color: var(--gold);
   border-left-color: var(--gold);
-  background: linear-gradient(90deg, rgba(176,140,56,0.16) 0%, rgba(176,140,56,0.04) 60%, transparent 100%);
-  text-shadow: 0 0 20px rgba(176,140,56,0.35);
+  background: linear-gradient(90deg, rgba(99,102,241,0.16) 0%, rgba(99,102,241,0.04) 60%, transparent 100%);
+  text-shadow: 0 0 20px rgba(99,102,241,0.35);
   padding-left: 12px;
   font-weight: 600;
 }

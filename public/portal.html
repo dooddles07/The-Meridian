@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Meridian — Resident Portal</title>
+  <title>The Lumina — Resident Portal</title>
   <link rel="icon" type="image/png" href="asset/logomark.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,19 +13,19 @@
   <link rel="stylesheet" href="css/inbox.css" />
   <style>
     /* ── RSVP section inside announcement cards ── */
-    .ann-rsvp { margin-top:14px; padding-top:12px; border-top:1px solid var(--border,rgba(133,103,40,.15)); }
-    .ann-rsvp__label { font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold,#856728); margin-bottom:8px; }
+    .ann-rsvp { margin-top:14px; padding-top:12px; border-top:1px solid var(--border,rgba(49,46,129,.15)); }
+    .ann-rsvp__label { font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold,#312e81); margin-bottom:8px; }
     .ann-rsvp__btns { display:flex; gap:8px; margin-bottom:10px; }
-    .ann-rsvp__btn { padding:7px 18px; border-radius:20px; border:1.5px solid var(--border,rgba(133,103,40,.25)); background:transparent; font-size:0.82rem; font-weight:600; font-family:inherit; cursor:pointer; color:var(--text-muted,#5a514a); transition:border-color .15s,background .15s,color .15s; }
+    .ann-rsvp__btn { padding:7px 18px; border-radius:20px; border:1.5px solid var(--border,rgba(49,46,129,.25)); background:transparent; font-size:0.82rem; font-weight:600; font-family:inherit; cursor:pointer; color:var(--text-muted,#5a514a); transition:border-color .15s,background .15s,color .15s; }
     .ann-rsvp__yes.ann-rsvp__active { border-color:#27ae60; background:rgba(39,174,96,.12); color:#27ae60; }
     .ann-rsvp__no.ann-rsvp__active  { border-color:#c0392b; background:rgba(192,57,43,.1);  color:#c0392b; }
-    .ann-rsvp__btn:hover:not(.ann-rsvp__active) { border-color:var(--gold,#856728); color:var(--gold,#856728); }
+    .ann-rsvp__btn:hover:not(.ann-rsvp__active) { border-color:var(--gold,#312e81); color:var(--gold,#312e81); }
     .ann-rsvp__count { margin-bottom:8px; }
     .ann-rsvp__count.ann-rsvp__hidden { display:none; }
     .ann-rsvp__count-label { font-size:0.78rem; color:var(--text-muted,#5a514a); display:flex; align-items:center; gap:8px; }
-    .ann-rsvp__num { width:64px; padding:5px 8px; border:1px solid var(--border,rgba(133,103,40,.25)); border-radius:5px; font-size:0.85rem; font-family:inherit; background:transparent; color:inherit; text-align:center; }
+    .ann-rsvp__num { width:64px; padding:5px 8px; border:1px solid var(--border,rgba(49,46,129,.25)); border-radius:5px; font-size:0.85rem; font-family:inherit; background:transparent; color:inherit; text-align:center; }
     .ann-rsvp__footer { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; }
-    .ann-rsvp__submit { padding:7px 20px; border-radius:20px; border:none; background:var(--gold,#856728); color:#fff; font-size:0.82rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s; }
+    .ann-rsvp__submit { padding:7px 20px; border-radius:20px; border:none; background:var(--gold,#312e81); color:#fff; font-size:0.82rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s; }
     .ann-rsvp__submit:hover:not(:disabled) { opacity:0.88; }
     .ann-rsvp__submit:disabled { opacity:0.5; cursor:not-allowed; }
     .ann-rsvp__submit.ann-rsvp__hidden { display:none; }
@@ -35,10 +35,10 @@
     .urgency-selector { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:8px; }
     .urgency-option { position:relative; }
     .urgency-option input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
-    .urgency-label { display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid var(--border,rgba(133,103,40,.25)); border-radius:8px; cursor:pointer; transition:border-color .15s,background .15s; background:var(--surface,#fafaf8); }
-    .urgency-option input[type="radio"]:checked + .urgency-label { border-color:var(--gold,#856728); background:rgba(133,103,40,0.07); }
+    .urgency-label { display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid var(--border,rgba(49,46,129,.25)); border-radius:8px; cursor:pointer; transition:border-color .15s,background .15s; background:var(--surface,#fafaf8); }
+    .urgency-option input[type="radio"]:checked + .urgency-label { border-color:var(--gold,#312e81); background:rgba(49,46,129,0.07); }
     .urgency-icon { font-size:1.25rem; flex-shrink:0; color:var(--text-2,#5a514a); line-height:1; }
-    .urgency-option input[type="radio"]:checked + .urgency-label .urgency-icon { color:var(--gold,#856728); }
+    .urgency-option input[type="radio"]:checked + .urgency-label .urgency-icon { color:var(--gold,#312e81); }
     .urgency-text { min-width:0; }
     .urgency-text strong { font-weight:600; font-size:0.875rem; display:block; }
     .urgency-text small { font-size:0.75rem; color:var(--text-2,#5a514a); display:block; line-height:1.3; white-space:normal; }
@@ -52,18 +52,18 @@
     /* ── Messages: sidebar unread badge (design lives in inbox.css) ── */
     .sidebar__msg-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; margin-left:6px; border-radius:9px; background:#c0392b; color:#fff; font-size:0.68rem; font-weight:700; line-height:1; }
     /* My Bookings — collapsible note row */
-    .bk-note-toggle { color:var(--gold,#856728); font-weight:400; cursor:pointer; white-space:nowrap; font-size:14px;}
+    .bk-note-toggle { color:var(--gold,#312e81); font-weight:400; cursor:pointer; white-space:nowrap; font-size:14px;}
     .bk-note-toggle .phi { font-size:0.7rem; }
     .data-table tr.bk-note-open > td { border-bottom:none !important; }
     .data-table tr.bk-note-row > td { border-top:none !important; padding-top:0; }
-    .inbox__item-time--unit { font-size:0.66rem; color:var(--gold,#856728); font-weight:600; }
+    .inbox__item-time--unit { font-size:0.66rem; color:var(--gold,#312e81); font-weight:600; }
     /* ── Payments ── */
     .pay-summary { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
-    .pay-stat { flex:1; min-width:140px; background:var(--surface,#fff); border:1px solid var(--border,rgba(133,103,40,.18)); border-radius:10px; padding:14px 16px; }
+    .pay-stat { flex:1; min-width:140px; background:var(--surface,#fff); border:1px solid var(--border,rgba(49,46,129,.18)); border-radius:10px; padding:14px 16px; }
     .pay-stat__label { font-size:0.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--text-2,#9a9088); margin-bottom:4px; }
     .pay-stat__value { font-size:1.2rem; font-weight:600; color:var(--text,#14110f); }
     .pay-stat__value.due { color:#c0392b; }
-    .pay-card { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--surface,#fff); border:1px solid var(--border,rgba(133,103,40,.18)); border-radius:10px; margin-bottom:8px; flex-wrap:wrap; }
+    .pay-card { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--surface,#fff); border:1px solid var(--border,rgba(49,46,129,.18)); border-radius:10px; margin-bottom:8px; flex-wrap:wrap; }
     .pay-card__body { flex:1; min-width:0; }
     .pay-card__right { text-align:right; flex-shrink:0; }
     .pay-card__desc { font-weight:600; font-size:0.9rem; color:var(--text,#14110f); }
@@ -71,10 +71,10 @@
     .pay-card__amt { font-size:1rem; font-weight:600; white-space:nowrap; }
     .pay-tag { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.68rem; font-weight:600; letter-spacing:.03em; text-transform:capitalize; }
     .pay-tag.paid { background:rgba(39,174,96,.14); color:#27ae60; }
-    .pay-tag.pending { background:rgba(133,103,40,.14); color:var(--gold,#856728); }
+    .pay-tag.pending { background:rgba(49,46,129,.14); color:var(--gold,#312e81); }
     .pay-tag.overdue { background:rgba(192,57,43,.12); color:#c0392b; }
     .pay-tag.refunded { background:rgba(90,81,74,.12); color:var(--text-2,#5a514a); }
-    .pay-sub-head { font-size:.625rem; letter-spacing:.12em; text-transform:uppercase; font-weight:700; color:var(--gold,#856728); margin:0 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border,rgba(133,103,40,.1)); }
+    .pay-sub-head { font-size:.625rem; letter-spacing:.12em; text-transform:uppercase; font-weight:700; color:var(--gold,#312e81); margin:0 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border,rgba(49,46,129,.1)); }
     .pay-due { display:flex; align-items:center; gap:14px; padding:12px 14px; background:var(--surface,#fff); border:1px solid rgba(192,57,43,.25); border-left:3px solid #c0392b; border-radius:10px; margin-bottom:8px; flex-wrap:wrap; }
     .pay-due__body { flex:1; min-width:0; }
     .pay-due__desc { font-weight:600; font-size:0.875rem; color:var(--text,#14110f); }
@@ -82,7 +82,7 @@
     .pay-due__meta { font-size:0.72rem; color:var(--text-2,#9a9088); margin-top:2px; }
     .pay-due__right { text-align:right; flex-shrink:0; }
     .pay-due__amt { font-size:.9rem; font-weight:700; color:var(--text,#14110f); margin-bottom:5px; }
-    .pay-pay-btn { padding:7px 16px; border:none; border-radius:8px; background:var(--gold,#856728); color:#fff; font-size:0.78rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
+    .pay-pay-btn { padding:7px 16px; border:none; border-radius:8px; background:var(--gold,#312e81); color:#fff; font-size:0.78rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
     .pay-pay-btn:hover:not(:disabled) { opacity:.88; }
     .pay-pay-btn:disabled { opacity:.5; cursor:not-allowed; }
     @media (max-width:480px) {
@@ -97,7 +97,7 @@
     /* ── Verandah split-fee card ── */
     .pay-due--verandah { flex-direction:column; align-items:stretch; gap:0; padding:0; }
     .pay-due--verandah .pay-due__body { padding:11px 14px 9px; border-bottom:1px solid rgba(192,57,43,.14); }
-    .pay-fee-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--border,rgba(133,103,40,.1)); }
+    .pay-fee-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--border,rgba(49,46,129,.1)); }
     .pay-fee-row:last-child { border-bottom:none; }
     .pay-fee-row__name { flex:1; font-size:0.84rem; font-weight:600; color:var(--text,#14110f); }
     .pay-fee-row__right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
@@ -106,14 +106,14 @@
       .pay-fee-row { flex-wrap:wrap; gap:5px; }
       .pay-fee-row__right { width:100%; justify-content:space-between; }
     }
-    .pay-history-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:none; border-top:1px solid var(--border,rgba(133,103,40,.12)); padding:10px 0 0; margin-top:14px; font-size:0.78rem; font-weight:600; color:var(--text-2,#9a9088); cursor:pointer; font-family:inherit; }
+    .pay-history-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:none; border-top:1px solid var(--border,rgba(49,46,129,.12)); padding:10px 0 0; margin-top:14px; font-size:0.78rem; font-weight:600; color:var(--text-2,#9a9088); cursor:pointer; font-family:inherit; }
     .pay-history-toggle:hover { color:var(--text,#14110f); }
     .pay-links { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
     /* ── Payment modal ── */
     .pay-modal-box { max-width:620px; width:96vw; display:flex; flex-direction:column; max-height:92vh; }
     .pay-frame-wrap { flex:1; min-height:0; background:var(--bg,#faf8f5); }
     .pay-frame { width:100%; height:clamp(360px,56vh,540px); border:0; display:block; }
-    .pay-modal-foot { padding:12px 16px; border-top:1px solid var(--border,rgba(133,103,40,.15)); flex-shrink:0; }
+    .pay-modal-foot { padding:12px 16px; border-top:1px solid var(--border,rgba(49,46,129,.15)); flex-shrink:0; }
     .pay-modal-foot .btn-dark { width:100%; text-align:center; justify-content:center; }
     @media (max-width:520px) {
       #payModal { align-items:flex-end; padding:0; }
@@ -133,8 +133,8 @@
 <!-- ── LOGIN ──────────────────────────────────────────────────────────────── -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-brand">The <em>Meridian</em></div>
-    <div class="login-sub">Resident Portal · The Meridian</div>
+    <div class="login-brand">The <em>Lumina</em></div>
+    <div class="login-sub">Resident Portal · The Lumina</div>
     <p class="login-desc">Sign in with your registered unit number and email address to access resident services.</p>
     <div class="login-field">
       <label for="loginUnit">Unit Number</label>
@@ -155,7 +155,7 @@
         <span class="material-symbols-outlined theme-switch__icon">dark_mode</span>
       </button>
     </div>
-    <p class="powered">Powered by <span>Wibiz</span></p>
+    <p class="powered">Powered by <span>Quantum</span></p>
   </div>
 </div>
 
@@ -166,7 +166,7 @@
     <div class="sidebar__overlay" id="sbOverlay"></div>
     <aside class="sidebar">
       <div class="sidebar__brand">
-        <div class="sidebar__logo">The <em>Meridian</em></div>
+        <div class="sidebar__logo">The <em>Lumina</em></div>
         <div class="sidebar__tagline">Resident Portal</div>
       </div>
 
@@ -218,10 +218,10 @@
         <!-- ── Dashboard ──────────────────────────────────────────────────── -->
         <div id="view-dashboard" class="view active">
           <div id="noticeBanner" style="display:none"></div>
-          <div id="parcelNoticeBanner" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;background:rgba(133,103,40,0.08);border-left:3px solid var(--gold,#856728);display:flex;align-items:center;gap:10px;font-size:0.875rem;cursor:pointer" data-view="parcels">
-            <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--gold,#856728);flex-shrink:0">inventory_2</span>
+          <div id="parcelNoticeBanner" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;background:rgba(49,46,129,0.08);border-left:3px solid var(--gold,#312e81);display:flex;align-items:center;gap:10px;font-size:0.875rem;cursor:pointer" data-view="parcels">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--gold,#312e81);flex-shrink:0">inventory_2</span>
             <span id="parcelNoticeText"></span>
-            <span style="margin-left:auto;color:var(--gold,#856728);font-weight:600;white-space:nowrap">View →</span>
+            <span style="margin-left:auto;color:var(--gold,#312e81);font-weight:600;white-space:nowrap">View →</span>
           </div>
 
           <div class="matters-row">

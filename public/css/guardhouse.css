@@ -6,7 +6,7 @@
    --text    #e8e0d0  on --bg   #0c0b09  → 14.1:1 ✓
    --text-dim #c2b49a  on --card #1a1814  →  8.2:1 ✓
    --muted   #9e9080  on --card #1a1814  →  5.5:1 ✓  (was #7a7060 = 3.6:1 ✗)
-   --gold    #c9a84c  on --bg   #0c0b09  →  8.8:1 ✓
+   --gold    #a5a3f5  on --bg   #0c0b09  →  8.8:1 ✓
    --green   #2ecc8a  on --bg   #0c0b09  →  9.5:1 ✓
    --red     #e05555  on --bg   #0c0b09  →  5.4:1 ✓
    --orange  #e8933a  on --bg   #0c0b09  →  8.3:1 ✓
@@ -21,7 +21,7 @@
   --text:      #e8e0d0;
   --text-dim:  #c2b49a;   /* secondary body text — 8.2:1 on card */
   --muted:     #9e9080;   /* labels/meta — 5.5:1 on card (WCAG AA) */
-  --gold:      #c9a84c;
+  --gold:      #a5a3f5;
   --gold-dim:  #6a5535;
   --green:     #2ecc8a;
   --green-dim: #0e3d28;
@@ -84,7 +84,7 @@ body {
 }
 .gh-login-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.18);
+  box-shadow: 0 0 0 3px rgba(129,140,248,0.18);
 }
 .gh-login-err {
   font-size: 0.84rem; color: var(--red); min-height: 1.25rem; margin-bottom: 0.6rem;
@@ -216,7 +216,7 @@ body {
 }
 .gh-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+  box-shadow: 0 0 0 3px rgba(129,140,248,0.15);
 }
 .gh-input::placeholder { color: var(--muted); }
 
@@ -437,7 +437,7 @@ body {
   background: none; border: 1px solid var(--border-hi); color: var(--gold);
   transition: all 0.15s; min-height: 34px;
 }
-.gh-parcel-override:hover:not(:disabled) { border-color: var(--gold); background: rgba(201,168,76,0.12); }
+.gh-parcel-override:hover:not(:disabled) { border-color: var(--gold); background: rgba(129,140,248,0.12); }
 .gh-parcel-override:disabled { opacity: 0.5; cursor: progress; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */

@@ -109,7 +109,7 @@
       .finally(() => { b.disabled = false; b.textContent = '⟲ REFRESH'; });
   });
   // ── Announcement event date/time controls ────────────────────────────────────
-  // Time dropdowns: 30-min slots, value "HH:MM" (24h), label 12h. The Meridian runs
+  // Time dropdowns: 30-min slots, value "HH:MM" (24h), label 12h. The Lumina runs
   // on Asia/Singapore, so we anchor the combined instant to +08:00 on submit.
   const SGT_OFFSET = '+08:00';
   function fillTimeOptions(sel, blankLabel) {
@@ -1231,13 +1231,13 @@
         ['Facility',        facility || '—'],
       ].map(([lbl, val]) =>
         `<div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#c4a040;font-weight:700;margin-bottom:2px">${lbl}</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">${lbl}</div>
           <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(val)}</div>
         </div>`).join('');
       const html = `<div style="text-align:left;font-size:0.88rem;line-height:1.6;color:#3f3832">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px${mgmtNotes ? ';margin-bottom:14px' : ''}">${cells}</div>
         ${mgmtNotes ? `<div style="background:#faf7f2;border-radius:6px;padding:10px 12px">
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#c4a040;font-weight:700;margin-bottom:3px">Notes</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:3px">Notes</div>
           <div style="color:#5a514a;font-size:0.82rem;line-height:1.5">${esc(mgmtNotes)}</div>
         </div>` : ''}
       </div>`;
@@ -1247,7 +1247,7 @@
         showCancelButton:   true,
         confirmButtonText:  'Confirm &amp; Register',
         cancelButtonText:   '&#8592; Edit Details',
-        confirmButtonColor: '#c4a040',
+        confirmButtonColor: '#a5a3f5',
         cancelButtonColor:  '#9a9088',
         reverseButtons:     true,
         focusConfirm:       false,
@@ -1277,26 +1277,26 @@
           html: `<div style="text-align:left;font-size:0.88rem;line-height:1.6;color:#3f3832">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
               <div>
-                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#c4a040;font-weight:700;margin-bottom:2px">Visitor</div>
+                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">Visitor</div>
                 <div style="color:#14110f">${esc(name)}</div>
               </div>
               <div>
-                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#c4a040;font-weight:700;margin-bottom:2px">Visit Date</div>
+                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">Visit Date</div>
                 <div style="color:#14110f">${esc(date)}</div>
               </div>
               <div>
-                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#c4a040;font-weight:700;margin-bottom:2px">Host</div>
+                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">Host</div>
                 <div style="color:#14110f">${esc(hostName)}</div>
               </div>
               <div>
-                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#c4a040;font-weight:700;margin-bottom:2px">Reference</div>
-                <div style="color:#c4a040;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${esc(data.reference || '—')}</div>
+                <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">Reference</div>
+                <div style="color:#a5a3f5;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${esc(data.reference || '—')}</div>
               </div>
             </div>
             <div style="background:#faf7f2;border-radius:6px;padding:10px 12px;font-size:0.82rem;color:#5a514a">QR pass sent to resident.</div>
           </div>`,
           confirmButtonText:  'Done',
-          confirmButtonColor: '#c4a040',
+          confirmButtonColor: '#a5a3f5',
         });
       }
       clearGuestForm();
@@ -1359,7 +1359,7 @@
               <td>${esc(d.resident || '—')}</td><td>${d.unit ? '#' + esc(d.unit) : '—'}</td>
               <td>${esc(d.desc)}</td><td>${d.date ? esc(payDate(d.date)) : '—'}</td>
               <td>${d.amount ? esc(payMoney(d.amount, 'SGD')) : '—'}</td>
-              <td><span class="tag" style="background:rgba(133,103,40,.15);color:var(--gold,#856728)">Deposit Pending</span></td>
+              <td><span class="tag" style="background:rgba(49,46,129,.15);color:var(--gold,#312e81)">Deposit Pending</span></td>
               <td><button class="btn-primary" style="padding:5px 12px;font-size:0.72rem" data-paid="${i}">Mark as Paid</button></td>
             </tr>`).join('')
           : '<tr class="empty-row"><td colspan="7">No pending deposits.</td></tr>';
@@ -1374,7 +1374,7 @@
       const payments = (hist.success && hist.payments) ? hist.payments : [];
       const tagStyle = (s) => s === 'paid'     ? 'rgba(39,174,96,.15);color:#27ae60'
                             : s === 'refunded' ? 'rgba(90,81,74,.15);color:var(--text-2,#5a514a)'
-                            :                    'rgba(133,103,40,.15);color:var(--gold,#856728)';
+                            :                    'rgba(49,46,129,.15);color:var(--gold,#312e81)';
       const histRows = payments.map(p => ({
         date: p.paid_at || p.createdAt, unit: p.resident_unit,
         desc: p.description, category: p.category, amount: p.amount, currency: p.currency, status: p.status,

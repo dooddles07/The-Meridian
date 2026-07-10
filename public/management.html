@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Meridian — Management Portal</title>
+  <title>The Lumina — Management Portal</title>
   <link rel="icon" type="image/png" href="asset/logomark.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
     .ann-rsvp-tag--none { color:var(--muted,#9a9088); font-weight:400; }
     .ann-block-tag { font-size:0.72rem; color:var(--muted,#9a9088); margin-top:6px; }
     .ann-rsvp-detail-btn { margin-left:auto; background:none; border:1px solid var(--border,#2a2822); color:var(--muted,#9a9088); border-radius:5px; padding:3px 10px; font-size:0.72rem; cursor:pointer; transition:border-color .15s,color .15s; }
-    .ann-rsvp-detail-btn:hover { border-color:var(--gold,#856728); color:var(--gold,#856728); }
+    .ann-rsvp-detail-btn:hover { border-color:var(--gold,#312e81); color:var(--gold,#312e81); }
     .ann-rsvp-list { flex-basis:100%; border-radius:6px; overflow:hidden; border:1px solid var(--border,#2a2822); }
     .ann-rsvp-list.hidden { display:none; }
     .rsvp-row { display:grid; grid-template-columns:4.5rem 1fr auto; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid var(--border,#2a2822); font-size:0.78rem; min-width:0; }
@@ -46,16 +46,16 @@
   gap:1.4rem;
   transition:opacity 0.4s ease;
 ">
-  <div style="font-family:'Cormorant',serif;font-size:2.2rem;font-weight:400;color:#c4a040;letter-spacing:0.02em;">
-    The <em style="font-style:italic">Meridian</em>
+  <div style="font-family:'Cormorant',serif;font-size:2.2rem;font-weight:400;color:#a5a3f5;letter-spacing:0.02em;">
+    The <em style="font-style:italic">Lumina</em>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
-    <span style="width:7px;height:7px;border-radius:50%;background:#c4a040;animation:ldot 1.2s infinite 0s"></span>
-    <span style="width:7px;height:7px;border-radius:50%;background:#c4a040;animation:ldot 1.2s infinite 0.2s"></span>
-    <span style="width:7px;height:7px;border-radius:50%;background:#c4a040;animation:ldot 1.2s infinite 0.4s"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#a5a3f5;animation:ldot 1.2s infinite 0s"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#a5a3f5;animation:ldot 1.2s infinite 0.2s"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#a5a3f5;animation:ldot 1.2s infinite 0.4s"></span>
   </div>
   <div id="loadingStatus" style="font-family:'Elms Sans',sans-serif;font-size:0.7rem;letter-spacing:0.1em;color:#706858;text-transform:uppercase">
-    Connecting to Wibiz…
+    Connecting to Quantum…
   </div>
 </div>
 <style>
@@ -67,7 +67,7 @@
   <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
   <aside class="sidebar">
     <div class="sidebar__brand">
-      <div class="sidebar__logo">The <em>Meridian</em></div>
+      <div class="sidebar__logo">The <em>Lumina</em></div>
       <div class="sidebar__portal">Management Portal</div>
     </div>
 
@@ -79,7 +79,7 @@
           <div class="user__role">Admin</div>
         </div>
       </div>
-      <div class="user__building">The Meridian · Management</div>
+      <div class="user__building">The Lumina · Management</div>
     </div>
 
     <div class="sidebar__divider"></div>
@@ -159,7 +159,7 @@
           <span class="material-symbols-outlined theme-switch__icon">dark_mode</span>
         </button>
         <button class="btn-refresh" id="refreshBtn"><span class="material-symbols-outlined" style="font-size:0.875rem;line-height:1;vertical-align:middle">refresh</span> REFRESH</button>
-        <div class="live-badge"><div class="live-dot"></div> LIVE · WIBIZ</div>
+        <div class="live-badge"><div class="live-dot"></div> LIVE · QUANTUM</div>
         <button class="btn-logout" id="logoutBtn" aria-label="Log out"><span class="material-symbols-outlined" style="font-size:0.875rem;line-height:1;vertical-align:middle">logout</span> LOGOUT</button>
       </div>
     </header>
@@ -390,7 +390,7 @@
       <!-- ── Move-In / Move-Out ─────────────────────────────────────────────── -->
       <div id="view-move" class="view">
         <div class="page-title">Move-In / <em>Move-Out</em></div>
-        <p class="section-meta" style="margin-bottom:1rem;font-size:0.7rem;text-align:right;color:var(--muted)">Stage moves update Wibiz directly</p>
+        <p class="section-meta" style="margin-bottom:1rem;font-size:0.7rem;text-align:right;color:var(--muted)">Stage moves update Quantum directly</p>
         <div class="summary-row" id="moveSummary"></div>
         <div class="filter-bar">
           <input type="text" class="filter-input" id="mvSearch" placeholder="Search reference, contact or unit…">

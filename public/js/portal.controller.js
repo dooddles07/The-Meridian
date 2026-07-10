@@ -467,29 +467,29 @@
         <span style="font-size:1.5rem;line-height:1">${f.emoji || '🏢'}</span>
         <div>
           <div style="font-size:1rem;font-weight:500;color:#14110f">${esc(f.name)}</div>
-          <div style="font-size:0.65rem;color:#856728;letter-spacing:0.08em;text-transform:uppercase">Unit ${esc(member.unit || '—')}</div>
+          <div style="font-size:0.65rem;color:#312e81;letter-spacing:0.08em;text-transform:uppercase">Unit ${esc(member.unit || '—')}</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px${notes ? ';margin-bottom:14px' : ''}">
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Date</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Date</div>
           <div style="color:#14110f">${fmtDate(date)}</div>
         </div>
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Time</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Time</div>
           <div style="color:#14110f">${esc(slot)}</div>
         </div>
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Guests</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Guests</div>
           <div style="color:#14110f">${pax} ${pax === 1 ? 'person' : 'people'}</div>
         </div>
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Member</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Member</div>
           <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(member.name || '—')}</div>
         </div>
       </div>
       ${notes ? `<div style="background:#faf7f2;border-radius:6px;padding:10px 12px">
-        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:3px">Notes</div>
+        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:3px">Notes</div>
         <div style="color:#5a514a;font-size:0.82rem">${esc(notes)}</div>
       </div>` : ''}
     </div>`;
@@ -504,24 +504,24 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px${notes ? ';margin-bottom:14px' : ''}">
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Date</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Date</div>
           <div style="color:#14110f">${fmtDate(date)}</div>
         </div>
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Time</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Time</div>
           <div style="color:#14110f">${esc(slot)}</div>
         </div>
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Guests</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Guests</div>
           <div style="color:#14110f">${pax} ${pax === 1 ? 'person' : 'people'}</div>
         </div>
         <div>
-          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">Reference</div>
-          <div style="color:#856728;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${ref}</div>
+          <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Reference</div>
+          <div style="color:#312e81;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${ref}</div>
         </div>
       </div>
       ${notes ? `<div style="background:#faf7f2;border-radius:6px;padding:10px 12px">
-        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:3px">Notes</div>
+        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:3px">Notes</div>
         <div style="color:#5a514a;font-size:0.82rem">${esc(notes)}</div>
       </div>` : ''}
     </div>`;
@@ -562,7 +562,7 @@
         showCancelButton:   true,
         confirmButtonText:  editing ? 'Save Changes' : 'Confirm &amp; Book',
         cancelButtonText:   '&#8592; Edit Details',
-        confirmButtonColor: '#856728',
+        confirmButtonColor: '#312e81',
         cancelButtonColor:  '#9a9088',
         reverseButtons:     true,
         focusConfirm:       false,
@@ -604,7 +604,7 @@
             title:              'Booking Updated',
             html:               buildSuccessHtml(f, date, slot, pax, notes, editing.id),
             confirmButtonText:  'View My Bookings',
-            confirmButtonColor: '#856728',
+            confirmButtonColor: '#312e81',
           }).then(() => navigate('booking'));
         } else {
           toast('Booking updated!');
@@ -659,7 +659,7 @@
             confirmButtonText:  'Go to Payments',
             showCancelButton:   true,
             cancelButtonText:   'Later',
-            confirmButtonColor: '#856728',
+            confirmButtonColor: '#312e81',
             cancelButtonColor:  '#9a9088',
           }).then(r => { if (r.isConfirmed) navigate('payments'); });
         } else {
@@ -671,7 +671,7 @@
           title:              'Booking Confirmed',
           html:               buildSuccessHtml(f, date, slot, pax, notes, bookingId),
           confirmButtonText:  'View My Bookings',
-          confirmButtonColor: '#856728',
+          confirmButtonColor: '#312e81',
         }).then(() => navigate('booking'));
       } else {
         toast('Booking confirmed!');
@@ -686,7 +686,7 @@
     }
   }
 
-  // Wibiz payment links per deposit facility / move. Each entry is one or more fees.
+  // Quantum payment links per deposit facility / move. Each entry is one or more fees.
   // DEMO: external payment links removed. "Pay Deposit" opens a local mock payment
   // page (public/demo-pay.html) in the modal iframe — no external call is made.
   const PAY_LINKS = {
@@ -703,7 +703,7 @@
     const f = FACILITIES.find(x => x.key === key);
     return !!(f && f.deposit) || key === 'verandah' || !!PAY_LINKS[key];
   }
-  // Append the resident's name + email so the Wibiz payment link is pre-filled.
+  // Append the resident's name + email so the Quantum payment link is pre-filled.
   // Sent under several common param spellings since the exact keys vary.
   function prefillLink(url) {
     const parts = String(member.name || '').trim().split(/\s+/).filter(Boolean);
@@ -751,7 +751,7 @@
             : '';
           const row = `<tr><td>${b.emoji} ${esc(b.facilityName)}</td><td style="font-size:0.8rem">${fmtDate(b.date)}</td><td style="font-size:0.8rem">${esc(b.slot)}</td><td style="font-size:0.8rem">${b.pax || 1}</td><td><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></td>${showActions ? `<td style="white-space:nowrap">${actions}${noteToggle}</td>` : ''}</tr>`;
           const noteRow = hasNote
-            ? `<tr class="bk-note-row" id="bknote-${b.id}" style="display:none"><td colspan="${showActions ? 6 : 5}" style="font-size:0.78rem;color:var(--text-2,#5a514a)"><span style="color:var(--gold,#856728);font-weight:600">Note:</span> ${esc(b.notes)}</td></tr>`
+            ? `<tr class="bk-note-row" id="bknote-${b.id}" style="display:none"><td colspan="${showActions ? 6 : 5}" style="font-size:0.78rem;color:var(--text-2,#5a514a)"><span style="color:var(--gold,#312e81);font-weight:600">Note:</span> ${esc(b.notes)}</td></tr>`
             : '';
           return row + noteRow;
         }).join('')
@@ -781,7 +781,7 @@
           confirmButtonText:  'Yes, cancel it',
           cancelButtonText:   'Keep Booking',
           confirmButtonColor: '#9f1f16',
-          cancelButtonColor:  '#856728',
+          cancelButtonColor:  '#312e81',
           reverseButtons:     true,
         });
         if (!isConfirmed) return;
@@ -961,17 +961,17 @@
     window.Swal.fire({
       title:              'Guest Pass',
       html:               `<div style="text-align:center">
-        <div style="font-size:0.8rem;color:#856728;font-family:'Courier New',monospace;font-weight:600;letter-spacing:0.04em;margin-bottom:12px">${esc(ref)}</div>
+        <div style="font-size:0.8rem;color:#312e81;font-family:'Courier New',monospace;font-weight:600;letter-spacing:0.04em;margin-bottom:12px">${esc(ref)}</div>
         <img src="${url}" alt="Guest Pass QR" style="width:230px;height:230px;border-radius:10px;border:1px solid #e8e0d0"
           onerror="this.outerHTML='<div style=padding:16px;color:var(--muted,#9a9088);font-size:0.82rem>QR unavailable. Use your reference code at the guardhouse.</div>'">
         <div style="margin-top:14px">
           <a href="${url}&download=1" download="guest-pass-${esc(ref)}.png" target="_blank" rel="noopener"
-             style="display:inline-block;background:#856728;color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:0.82rem;font-weight:600">&#10515; Download QR</a>
+             style="display:inline-block;background:#312e81;color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:0.82rem;font-weight:600">&#10515; Download QR</a>
         </div>
         <div style="margin-top:10px;font-size:0.72rem;color:#9a9088">Show this at the guardhouse on arrival.</div>
       </div>`,
       confirmButtonText:  'Done',
-      confirmButtonColor: '#856728',
+      confirmButtonColor: '#312e81',
     });
   }
 
@@ -1612,7 +1612,7 @@
         <div class="pay-due__body">${headerHtml}</div>
         <div class="pay-due__right">
           <div class="pay-due__amt">${esc(amtStr)}</div>
-          <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-desc="${rawLabel}"${!PAY_LINKS[key] ? ' disabled title="No payment link configured"' : ''}>Pay Deposit</button>
+          <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-amount="${Number(amount).toFixed(2)}" data-desc="${rawLabel}"${!PAY_LINKS[key] ? ' disabled title="No payment link configured"' : ''}>Pay Deposit</button>
         </div>
       </div>`;
     }
@@ -1801,17 +1801,26 @@
       el.innerHTML = _renderPayBlock(pending, confirmed, refunded, paidFeeSet);
       el.querySelectorAll('[data-pay-key]').forEach(btn => {
         btn.addEventListener('click', () => {
-          let url, title;
+          let url, title, payLabel = '';
           const oppId    = btn.dataset.oppId    || '';
           const feeLabel = btn.dataset.feeLabel || '';
+          const amt      = btn.dataset.feeAmount || btn.dataset.amount || '';
           if (feeLabel) {
             const fee = VERANDAH_FEES.find(f => f.feeLabel === feeLabel);
-            if (fee) { url = fee.url; title = `Pay ${fee.label} — The Verandah`; }
+            if (fee) { url = fee.url; title = `Pay ${fee.label} — The Verandah`; payLabel = fee.label; }
           } else {
             const fees = PAY_LINKS[btn.dataset.payKey] || [];
-            if (fees.length) { url = fees[0].url; title = 'Pay Deposit'; }
+            if (fees.length) { url = fees[0].url; title = 'Pay Deposit'; payLabel = fees[0].label; }
           }
-          if (url) openPayModal(url, title, oppId, feeLabel, btn.dataset.payKey || '', btn.dataset.desc || '');
+          if (url) {
+            // Pass the real amount + label so the demo checkout shows them.
+            const q = new URLSearchParams();
+            if (amt)      q.set('amount', amt);
+            if (payLabel) q.set('label', payLabel);
+            const qs = q.toString();
+            if (qs) url += (url.includes('?') ? '&' : '?') + qs;
+            openPayModal(url, title, oppId, feeLabel, btn.dataset.payKey || '', btn.dataset.desc || '');
+          }
         });
       });
     } catch {
@@ -1979,18 +1988,18 @@
   // ── Feedback helpers + other forms ─────────────────────────────────────────────
   let _t;
   function toast(msg, type) { const el = $('toast'); if (!el) return; el.textContent = msg; el.className = 'show ' + (type || 'ok'); clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3500); }
-  function notify(title, text) { if (window.Swal) window.Swal.fire({ icon: 'info', title, text, confirmButtonText: 'Got it', confirmButtonColor: '#856728' }); else toast(text || title); }
+  function notify(title, text) { if (window.Swal) window.Swal.fire({ icon: 'info', title, text, confirmButtonText: 'Got it', confirmButtonColor: '#312e81' }); else toast(text || title); }
 
   function swalHtml(rows, body) {
     const cells = rows.map(([lbl, val]) =>
       `<div>
-        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:2px">${lbl}</div>
+        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">${lbl}</div>
         <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(val || '—')}</div>
       </div>`).join('');
     return `<div style="text-align:left;font-size:0.88rem;line-height:1.6;color:#3f3832">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px${body ? ';margin-bottom:14px' : ''}">${cells}</div>
       ${body ? `<div style="background:#faf7f2;border-radius:6px;padding:10px 12px">
-        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#856728;font-weight:700;margin-bottom:3px">Details</div>
+        <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:3px">Details</div>
         <div style="color:#5a514a;font-size:0.82rem;line-height:1.5;white-space:pre-wrap">${esc(body)}</div>
       </div>` : ''}
     </div>`;
@@ -2003,14 +2012,14 @@
       showCancelButton:   true,
       confirmButtonText:  'Confirm &amp; Submit',
       cancelButtonText:   '&#8592; Edit Details',
-      confirmButtonColor: '#856728',
+      confirmButtonColor: '#312e81',
       cancelButtonColor:  '#9a9088',
       reverseButtons:     true,
       focusConfirm:       false,
     });
   }
   function swalDone(title, rows, body) {
-    if (window.Swal) window.Swal.fire({ icon: 'success', title, html: swalHtml(rows, body), confirmButtonText: 'Got it', confirmButtonColor: '#856728' });
+    if (window.Swal) window.Swal.fire({ icon: 'success', title, html: swalHtml(rows, body), confirmButtonText: 'Got it', confirmButtonColor: '#312e81' });
     else toast(title);
   }
   function setMsg(id, t, err) { const el = $(id); if (el) { el.textContent = t; el.className = 'form-msg' + (err ? ' err' : ''); } }
@@ -2124,7 +2133,7 @@
             confirmButtonText:  'Go to Payments',
             showCancelButton:   true,
             cancelButtonText:   'Later',
-            confirmButtonColor: '#856728',
+            confirmButtonColor: '#312e81',
             cancelButtonColor:  '#9a9088',
           }).then(r => { if (r.isConfirmed) navigate('payments'); });
         } else {
@@ -2337,7 +2346,7 @@
       if (!data.success) { setMsg('pcMsg', data.message || 'Submission failed.', true); return; }
       if (data.duplicate) {
         setMsg('pcMsg', '');
-        window.Swal?.fire({ icon: 'info', title: 'Already Logged', text: `Parcel reference "${ref}" is already on record with the guardhouse.`, confirmButtonText: 'OK', confirmButtonColor: '#856728' });
+        window.Swal?.fire({ icon: 'info', title: 'Already Logged', text: `Parcel reference "${ref}" is already on record with the guardhouse.`, confirmButtonText: 'OK', confirmButtonColor: '#312e81' });
         return;
       }
       setMsg('pcMsg', '');

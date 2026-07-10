@@ -135,7 +135,7 @@
 .bk-field input:focus,
 .bk-field textarea:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(133,103,40,0.12);
+  box-shadow: 0 0 0 3px rgba(49,46,129,0.12);
 }
 .bk-field textarea { resize: none; }
 .bk-field input.bk-locked { opacity: 0.4; cursor: not-allowed; }

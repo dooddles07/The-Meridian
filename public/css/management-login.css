@@ -8,8 +8,8 @@ html { font-size: 15px; }
   --text:      #e8dfc8;
   --muted:     #7a7060;
   --faint:     #3a3530;
-  --gold:      #c9a84c;
-  --gold-hov:  #e8c56a;
+  --gold:      #a5a3f5;
+  --gold-hov:  #a5a3f5;
   --input-bg:  #111;
   --input-bdr: #2a2520;
   --border:    rgba(255,255,255,0.07);
@@ -20,8 +20,8 @@ html { font-size: 15px; }
   --text:      #14110f;
   --muted:     #5a514a;
   --faint:     #9a9088;
-  --gold:      #856728;
-  --gold-hov:  #6f5420;
+  --gold:      #312e81;
+  --gold-hov:  #262261;
   --input-bg:  #faf7f4;
   --input-bdr: #cfc6ba;
   --border:    rgba(0,0,0,0.1);
@@ -167,7 +167,7 @@ body {
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 [data-theme="dark"] .theme-switch__thumb { transform: translateX(16px); }
-[data-theme="dark"] .theme-switch__track { background: rgba(196,160,64,0.12); border-color: rgba(196,160,64,0.3); }
+[data-theme="dark"] .theme-switch__track { background: rgba(129,140,248,0.12); border-color: rgba(129,140,248,0.3); }
 [data-theme="light"] .theme-switch__track { background: rgba(0,0,0,0.06); }
 .theme-switch__icon {
   font-size: 0.9375rem;

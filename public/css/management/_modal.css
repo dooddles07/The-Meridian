@@ -70,7 +70,7 @@
   transition: background 0.15s, border-color 0.15s, padding-left 0.15s ease-out;
 }
 .stage-option:last-child { border-bottom: none; }
-.stage-option:hover { background: rgba(255,255,255,0.03); border-left-color: rgba(196,160,64,0.4); padding-left: 24px; }
+.stage-option:hover { background: rgba(255,255,255,0.03); border-left-color: rgba(129,140,248,0.4); padding-left: 24px; }
 .stage-option--current {
   background: var(--gold-lt);
   border-left-color: var(--gold);

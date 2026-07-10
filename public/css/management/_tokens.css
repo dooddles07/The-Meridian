@@ -20,9 +20,9 @@ button, input, select, textarea { font: inherit; }
   --faint:     #857b6b;   /*  4.7:1 ✓  (was #484038 @ 1.94:1 — fixed) */
 
   /* Gold — same warm family as member portal */
-  --gold:      #c4a040;   /*  7.9:1 ✓ */
-  --gold-dk:   #8a6c28;
-  --gold-lt:   rgba(196,160,64,0.12);
+  --gold:      #a5a3f5;   /*  7.9:1 ✓ */
+  --gold-dk:   #8582e4;
+  --gold-lt:   rgba(129,140,248,0.12);
 
   /* Status */
   --green:     #4a9e68;   /*  6.0:1 ✓ */
@@ -52,7 +52,7 @@ button, input, select, textarea { font: inherit; }
 html { font-size: 20px; }
 body {
   background:
-    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(196,160,64,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(129,140,248,0.06) 0%, transparent 60%),
     var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -101,9 +101,9 @@ html { scrollbar-width: auto; scrollbar-color: var(--faint) transparent; }
   --text-2:    #3f3832;
   --muted:     #5a514a;
   --faint:     #706860;
-  --gold:      #856728;
-  --gold-dk:   #6f5420;
-  --gold-lt:   #f0e3c6;
+  --gold:      #312e81;
+  --gold-dk:   #262261;
+  --gold-lt:   #e7e6f5;
   --green:     #1f6b45;
   --red:       #9f1f16;
   --blue:      #1f4f8b;
@@ -115,6 +115,6 @@ html { scrollbar-width: auto; scrollbar-color: var(--faint) transparent; }
 }
 [data-theme="light"] body {
   background:
-    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(176,140,56,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(99,102,241,0.07) 0%, transparent 60%),
     var(--bg);
 }

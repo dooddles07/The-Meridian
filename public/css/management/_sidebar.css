@@ -56,7 +56,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(196,160,64,0.18);
+  background: rgba(129,140,248,0.18);
   color: var(--gold);
   display: flex;
   align-items: center;
@@ -118,14 +118,14 @@
 .nav__item:hover {
   color: rgba(224,213,190,0.78);
   background: rgba(255,255,255,0.04);
-  border-left-color: rgba(196,160,64,0.3);
+  border-left-color: rgba(129,140,248,0.3);
   padding-left: 16px;
 }
 .nav__item.active {
   color: var(--gold);
   border-left-color: var(--gold);
-  background: linear-gradient(90deg, rgba(196,160,64,0.16) 0%, rgba(196,160,64,0.04) 60%, transparent 100%);
-  text-shadow: 0 0 20px rgba(196,160,64,0.3);
+  background: linear-gradient(90deg, rgba(129,140,248,0.16) 0%, rgba(129,140,248,0.04) 60%, transparent 100%);
+  text-shadow: 0 0 20px rgba(129,140,248,0.3);
   padding-left: 12px;
 }
 .nav__item.active:hover { padding-left: 12px; }
@@ -223,5 +223,5 @@
 [data-theme="light"] .nav__item:hover {
   color: rgb(255, 249, 237);
   background: rgba(255,255,255,0.04);
-  border-left-color: rgba(196,160,64,0.3);
+  border-left-color: rgba(129,140,248,0.3);
 }

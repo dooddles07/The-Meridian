@@ -469,12 +469,12 @@ div#view-messages.view {
 }
 
 /* Light-mode: outgoing needs a richer gold tint so it reads differently from
-   the warm cream bg (#f4f0eb). --gold-lt in light = #f0e3c6 which is too close.
+   the warm cream bg (#f4f0eb). --gold-lt in light = #e7e6f5 which is too close.
    Apply to :root (portal default) and [data-theme="light"] (management switched). */
 :root .inbox__msg--out .inbox__msg-bubble,
 [data-theme="light"] .inbox__msg--out .inbox__msg-bubble {
-  background: rgba(133, 103, 40, 0.14); /* #856728 at 14% over cream → warm tan */
-  border-color: rgba(133, 103, 40, 0.28);
+  background: rgba(49, 46, 129, 0.14); /* #312e81 at 14% over cream → warm tan */
+  border-color: rgba(49, 46, 129, 0.28);
 }
 
 /* Timestamp */

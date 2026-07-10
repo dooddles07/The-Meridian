@@ -38,7 +38,7 @@ table { width: 100%; border-collapse: collapse; }
   line-height: 1.45;
 }
 .data-table tr:last-child td { border-bottom: none; }
-.data-table tr:hover td { background: linear-gradient(90deg, rgba(196,160,64,0.07) 0%, rgba(255,255,255,0.02) 100%); }
+.data-table tr:hover td { background: linear-gradient(90deg, rgba(129,140,248,0.07) 0%, rgba(255,255,255,0.02) 100%); }
 .empty-row td {
   text-align: center;
   padding: 28px;
@@ -149,7 +149,7 @@ table { width: 100%; border-collapse: collapse; }
   font-size: 0.78rem;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.03em;
-  color: var(--gold, #c9a84c);
+  color: var(--gold, #a5a3f5);
   word-break: break-all;
   line-height: 1.4;
 }

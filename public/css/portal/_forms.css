@@ -89,7 +89,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(133,103,40,0.12);
+  box-shadow: 0 0 0 3px rgba(49,46,129,0.12);
 }
 .form-group input::placeholder,
 .form-group textarea::placeholder { color: var(--faint); }
@@ -150,7 +150,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--gold, #856728);
+  background: var(--gold, #312e81);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -160,7 +160,7 @@
 }
 .form-info {
   background: #fffaed;
-  border: 1px solid #e8d898;
+  border: 1px solid #cdccf0;
   border-left: 3px solid var(--gold);
   border-radius: 6px;
   padding: 10px 13px;
@@ -170,8 +170,8 @@
   line-height: 1.6;
 }
 [data-theme="dark"] .form-info {
-  background: rgba(196,160,64,0.06);
-  border-color: rgba(196,160,64,0.14);
+  background: rgba(129,140,248,0.06);
+  border-color: rgba(129,140,248,0.14);
   border-left-color: var(--gold);
   color: var(--text-2);
 }

@@ -3,46 +3,170 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Demo Payment</title>
+  <title>Demo Payment — The Lumina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Tenor+Sans&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+  <script>
+    // Match the resident portal theme so the checkout blends into the modal.
+    (function () {
+      var t = localStorage.getItem('meridian-portal-theme') ||
+              (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <style>
-    :root { color-scheme: light dark; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: #f4f1ea; color: #2c2620; padding: 24px;
+    :root {
+      --bg:      #f4f0eb;
+      --surface: #ffffff;
+      --text:    #14110f;
+      --muted:   #5a514a;
+      --faint:   #706860;
+      --border:  #ded6c7;
+      --gold:    #312e81;
+      --gold-lt: #e7e6f5;
+      --green:   #1f6b45;
+      --green-lt:#e4efe7;
     }
-    @media (prefers-color-scheme: dark) { body { background: #1a1713; color: #ece6db; } .card { background: #241f19 !important; box-shadow: none !important; } }
+    [data-theme="dark"] {
+      --bg:      #0c0b09;
+      --surface: #151310;
+      --text:    #e6dcc4;
+      --muted:   #9a8f7c;
+      --faint:   #7f7565;
+      --border:  rgba(255,255,255,.09);
+      --gold:    #a5a3f5;
+      --gold-lt: rgba(129,140,248,.14);
+      --green:   #5cb17f;
+      --green-lt:rgba(92,177,127,.14);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px 20px;
+      color: var(--text);
+      background: var(--bg);
+      font-family: 'Tenor Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.55;
+    }
     .card {
-      background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.12);
-      max-width: 420px; width: 100%; padding: 32px; text-align: center;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
     }
     .badge {
-      display: inline-block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase;
-      color: #856728; background: rgba(133,103,40,.12); padding: 5px 12px; border-radius: 999px; margin-bottom: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--green);
+      background: var(--green-lt);
+      border: 1px solid color-mix(in srgb, var(--green) 32%, transparent);
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin-bottom: 20px;
     }
-    h1 { font-size: 1.25rem; margin: 0 0 6px; }
-    p { font-size: .9rem; line-height: 1.55; opacity: .85; margin: 8px 0; }
-    .lock { font-size: 2rem; margin-bottom: 8px; }
-    .amount { font-size: 2rem; font-weight: 700; color: #856728; margin: 14px 0 4px; }
-    .hint { margin-top: 20px; font-size: .8rem; opacity: .7; }
-    .fake-fields { text-align: left; margin: 22px 0 4px; }
-    .fake-fields label { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; opacity:.6; margin:12px 0 4px; }
-    .fake-fields .box { border:1px solid rgba(133,103,40,.35); border-radius:9px; padding:10px 12px; font-size:.9rem; opacity:.75; }
+    .badge .material-symbols-outlined { font-size: 15px; }
+    .lock {
+      width: 52px; height: 52px;
+      margin: 0 auto 14px;
+      display: grid; place-items: center;
+      border-radius: 14px;
+      background: var(--gold-lt);
+      border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+    }
+    .lock .material-symbols-outlined { font-size: 26px; color: var(--gold); }
+    h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 500;
+      font-size: 1.6rem;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+    .sub { font-size: .86rem; color: var(--muted); margin: 0 auto; max-width: 30ch; }
+    .amount-wrap {
+      margin: 20px 0 4px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .amount-label { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+    .amount { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 2.3rem; color: var(--gold); line-height: 1.1; margin-top: 2px; }
+    .amount-for { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    .fields { text-align: left; margin: 18px 0 4px; }
+    .fields label { display: block; font-size: .66rem; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin: 12px 0 5px; }
+    .fields .box {
+      display: flex; align-items: center; justify-content: space-between;
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 10px 12px; font-size: .9rem; color: var(--muted); background: var(--surface);
+    }
+    .fields .box .tag { font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+    .hint {
+      display: flex; align-items: flex-start; gap: 8px; text-align: left;
+      margin-top: 20px; padding: 12px 14px;
+      border-radius: 10px; background: var(--gold-lt);
+      border: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+      font-size: .82rem; color: var(--text);
+    }
+    .hint .material-symbols-outlined { font-size: 18px; color: var(--gold); flex-shrink: 0; margin-top: 1px; }
+    .hint b { font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="badge">Demo Payment Gateway</div>
-    <div class="lock">🔒</div>
+    <span class="badge">
+      <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+      Simulated — no card is charged
+    </span>
+
+    <div class="lock"><span class="material-symbols-outlined" aria-hidden="true">lock</span></div>
     <h1>Secure Checkout</h1>
-    <p>This is a <strong>simulated</strong> payment page for the portfolio demo. No card is charged and no request leaves your browser.</p>
-    <div class="amount">SGD —</div>
-    <div class="fake-fields">
-      <label>Card number</label><div class="box">4242 4242 4242 4242</div>
-      <label>Expiry / CVC</label><div class="box">12/28 &nbsp;·&nbsp; 123</div>
+    <p class="sub">This is a practice payment page for the demo. Nothing is charged and nothing leaves your browser.</p>
+
+    <div class="amount-wrap">
+      <div class="amount-label">Amount due</div>
+      <div class="amount" id="amount">SGD 0.00</div>
+      <div class="amount-for" id="amountFor" hidden></div>
     </div>
-    <p class="hint">When you're done, close this window and tap <strong>“I've Completed Payment”</strong> to confirm your booking.</p>
+
+    <div class="fields">
+      <label>Card number</label>
+      <div class="box"><span>4242 4242 4242 4242</span><span class="tag">Sample</span></div>
+      <label>Expiry / CVC</label>
+      <div class="box"><span>12 / 28 &nbsp;·&nbsp; 123</span><span class="tag">Sample</span></div>
+    </div>
+
+    <div class="hint">
+      <span class="material-symbols-outlined" aria-hidden="true">touch_app</span>
+      <span>When you're ready, tap <b>“I've Completed Payment”</b> just below to confirm your booking.</span>
+    </div>
   </div>
+
+  <script>
+    (function () {
+      var p = new URLSearchParams(location.search);
+      var raw = p.get('amount');
+      var amt = raw != null ? Number(raw) : NaN;
+      var el = document.getElementById('amount');
+      if (!isNaN(amt) && amt > 0) {
+        el.textContent = 'SGD ' + amt.toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else {
+        el.textContent = 'Refundable deposit';
+      }
+      var label = p.get('label');
+      if (label) {
+        var forEl = document.getElementById('amountFor');
+        forEl.textContent = label;
+        forEl.hidden = false;
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -25,7 +25,7 @@
   border-radius: 4px;
   background: var(--gold-lt);
   color: var(--gold);
-  border: 1px solid rgba(196,160,64,0.25);
+  border: 1px solid rgba(129,140,248,0.25);
 }
 .ann-category.maint  { background: rgba(74,122,216,0.1);  color: var(--blue);   border-color: rgba(74,122,216,0.25); }
 .ann-category.rule   { background: rgba(138,106,216,0.1); color: var(--purple); border-color: rgba(138,106,216,0.25); }
@@ -46,9 +46,9 @@
   gap: 5px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--gold, #856728);
-  background: rgba(133, 103, 40, 0.1);
-  border: 1px solid rgba(133, 103, 40, 0.25);
+  color: var(--gold, #312e81);
+  background: rgba(49, 46, 129, 0.1);
+  border: 1px solid rgba(49, 46, 129, 0.25);
   border-radius: 6px;
   padding: 3px 8px;
   margin-bottom: 6px;
@@ -93,7 +93,7 @@
   align-items: center;
   margin-left: 1px;
 }
-.ann-unpin-btn:hover { background: rgba(196,160,64,0.12); }
+.ann-unpin-btn:hover { background: rgba(129,140,248,0.12); }
 .ann-unpin-btn:hover .ann-pin { opacity: 0.55; }
 
 /* ── Unpin confirmation modal ─────────────────────────────────────────────── */

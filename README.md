@@ -1,4 +1,4 @@
-# The Meridian — Community Living Portal
+# The Lumina — Community Living Portal
 
 A complete, three-role property-management platform for a residential community —
 covering everything residents, building management, and the guardhouse do day to day:
@@ -32,7 +32,7 @@ two-way messaging, and a shared document library.
 
 ## What it is
 
-The Meridian digitises the operations of a residential condominium into one connected
+The Lumina digitises the operations of a residential condominium into one connected
 system with **three portals** that talk to each other in real time:
 
 | Portal | Who uses it | Opens as |

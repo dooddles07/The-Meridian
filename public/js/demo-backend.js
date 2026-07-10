@@ -1,7 +1,7 @@
 /* =============================================================================
  * demo-backend.js — PORTFOLIO DEMO
  *
- * Makes The Meridian portal run with ZERO backend and ZERO external connections.
+ * Makes The Lumina portal run with ZERO backend and ZERO external connections.
  * It must be loaded BEFORE each portal's controller script. It does three things:
  *
  *   1. Auto-enters every portal (no login) by seeding a demo session.
@@ -158,7 +158,7 @@
       return { id: uid('demo-convo'), contact_id: m.contact_id, resident_name: m.name, resident_unit: m.unit, resident_email: m.email, last_message_at: last.createdAt, last_message_preview: last.body.slice(0, 80), last_sender: last.sender, unread_management: 0, unread_resident: 0, resolved: !!resolved, messages: messages };
     }
     function resource(title, category, fileName, fileType) {
-      var text = 'The Meridian — ' + title + '\n\nThis is a demo document included with the portfolio build.';
+      var text = 'The Lumina — ' + title + '\n\nThis is a demo document included with the portfolio build.';
       var data = 'data:' + fileType + ';base64,' + btoa(unescape(encodeURIComponent(text)));
       return { id: uid('demo-res'), title: title, category: category, visibility: 'residents', file_data: data, file_name: fileName, file_type: fileType, file_size: text.length, uploaded_by: 'Management', createdAt: nowISO() };
     }
@@ -522,5 +522,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Meridian] Portfolio demo — running fully client-side (no backend, no database, no external calls).', 'color:#856728;font-weight:bold');
+  console.log('%c[The Lumina] Portfolio demo — running fully client-side (no backend, no database, no external calls).', 'color:#312e81;font-weight:bold');
 })();

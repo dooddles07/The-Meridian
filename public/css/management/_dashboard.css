@@ -66,7 +66,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
-.kpi-value.gold   { color: var(--gold);   text-shadow: 0 2px 28px rgba(196,160,64,0.4); }
+.kpi-value.gold   { color: var(--gold);   text-shadow: 0 2px 28px rgba(129,140,248,0.4); }
 .kpi-value.orange { color: var(--orange); text-shadow: 0 2px 28px rgba(212,120,72,0.35); }
 .kpi-value.red    { color: var(--red);    text-shadow: 0 2px 28px rgba(192,56,40,0.35); }
 .kpi-value.blue   { color: var(--blue);   text-shadow: 0 2px 28px rgba(74,122,216,0.35); }
@@ -91,7 +91,7 @@
 .pipe-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .pipe-row:last-child { border-bottom: none; }
 .pipe-row__name { font-size: 0.75rem; font-weight: 700; color: var(--text); min-width: 120px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
-.pipe-open-badge { font-size: 0.6rem; font-weight: 600; padding: 1px 6px; border-radius: 20px; background: rgba(133,103,40,.12); color: var(--gold, #856728); white-space: nowrap; }
+.pipe-open-badge { font-size: 0.6rem; font-weight: 600; padding: 1px 6px; border-radius: 20px; background: rgba(49,46,129,.12); color: var(--gold, #312e81); white-space: nowrap; }
 .pipe-stages { display: flex; gap: 8px; flex-wrap: wrap; }
 .pipe-stage-cell { display: flex; align-items: center; gap: 5px; padding: 3px 9px; background: var(--surface-2); border-radius: 6px; border: 1px solid var(--border); }
 .pipe-stage-cell.done { opacity: .5; }
