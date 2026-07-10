@@ -1,11 +1,15 @@
 const model     = require('../models/auth.model');
 const residents = require('../services/residents.service');
-const { signToken } = require('../config/secrets');
+const { signToken, SESSION_COOKIE, COOKIE_OPTIONS } = require('../config/secrets');
 
+// The token is still returned in the JSON body too (so the API stays directly
+// callable/testable without a browser), but the browser itself authenticates via
+// the httpOnly cookie set here, not by reading/storing this value.
 function issueToken(res, role, account) {
   const displayName = account.displayName || role;
   const username    = model.clean(account.username).toLowerCase();
   const token       = signToken({ role, username, displayName });
+  res.cookie(SESSION_COOKIE, token, COOKIE_OPTIONS);
   return res.json({ success: true, token, user: { username, role, displayName } });
 }
 
@@ -16,6 +20,7 @@ function issueResidentSession(res, account) {
   const cleanEmail = model.clean(account.email).toLowerCase();
   const normUnit   = model.normalizeUnit(account.unit);
   const token      = signToken({ role: 'resident', contact_id: account.contact_id || '', email: cleanEmail, unit: normUnit, name });
+  res.cookie(SESSION_COOKIE, token, COOKIE_OPTIONS);
 
   return res.json({
     success: true,
@@ -28,6 +33,18 @@ function issueResidentSession(res, account) {
       contact_id: account.contact_id || '',
     },
   });
+}
+
+// POST /api/auth/logout — clears the session cookie server-side. Required because
+// an httpOnly cookie can't be cleared by client-side JS (document.cookie can't
+// touch it), unlike the old localStorage-token approach.
+// maxAge is dropped: passing it through would override clearCookie's own forced
+// past-dated expiry, so the browser would keep the cookie for its original 8h
+// lifetime instead of deleting it immediately.
+const { maxAge: _unused, ...CLEAR_COOKIE_OPTIONS } = COOKIE_OPTIONS;
+function logout(req, res) {
+  res.clearCookie(SESSION_COOKIE, CLEAR_COOKIE_OPTIONS);
+  return res.json({ success: true });
 }
 
 async function residentSignup(req, res) {
@@ -82,4 +99,4 @@ function guardhouseLogin(req, res) {
   return issueToken(res, 'guardhouse', account);
 }
 
-module.exports = { residentSignup, residentLogin, managementLogin, guardhouseLogin };
+module.exports = { residentSignup, residentLogin, managementLogin, guardhouseLogin, logout };

@@ -45,4 +45,17 @@ function verifyToken(token) {
   return payload;
 }
 
-module.exports = { JWT_SECRET, signToken, verifyToken, TOKEN_VERSION };
+// The session lives in an httpOnly cookie so client-side JS can never read the
+// token (removes it as an XSS target — no more storing it in localStorage).
+// secure requires HTTPS, which only local dev lacks; sameSite:'lax' is enough
+// since this is a same-origin app with no cross-site POST flows.
+const SESSION_COOKIE = 'lumina_session';
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 8 * 60 * 60 * 1000, // matches the default TOKEN_TTL of 8h
+  path: '/',
+};
+
+module.exports = { JWT_SECRET, signToken, verifyToken, TOKEN_VERSION, SESSION_COOKIE, COOKIE_OPTIONS };

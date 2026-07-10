@@ -9,8 +9,11 @@ const errMsg     = document.getElementById('errMsg');
 const usernameEl = document.getElementById('username');
 const passwordEl = document.getElementById('password');
 
-// Already signed in? Skip to the console.
-if (sessionStorage.getItem('mgmtToken') || localStorage.getItem('mgmtToken')) {
+// Already signed in? Skip to the console. (The session itself lives in an
+// httpOnly cookie now - mgmtUser is just the display-info signal that a
+// session exists; if the cookie's actually gone, the console's own fetches
+// will 401 and bounce back here.)
+if (sessionStorage.getItem('mgmtUser') || localStorage.getItem('mgmtUser')) {
   window.location.href = 'management.html';
 }
 
@@ -37,9 +40,10 @@ async function doLogin() {
     const data = await res.json();
     if (!data.success) { errMsg.textContent = data.message || 'Invalid credentials.'; return; }
 
-    sessionStorage.setItem('mgmtToken', data.token);
-    sessionStorage.setItem('mgmtUser',  JSON.stringify(data.user));
-    localStorage.setItem('mgmtToken', data.token);
+    // The session cookie is already set by the server on this same response -
+    // nothing to store client-side beyond the (non-secret) display info below.
+    try { localStorage.removeItem('lumina_mgmt_signed_out'); } catch {}
+    sessionStorage.setItem('mgmtUser', JSON.stringify(data.user));
     localStorage.setItem('mgmtUser',  JSON.stringify(data.user));
     window.location.href = 'management.html';
   } catch {

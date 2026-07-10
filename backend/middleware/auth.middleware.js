@@ -1,9 +1,19 @@
-const { verifyToken } = require('../config/secrets');
+const { verifyToken, SESSION_COOKIE } = require('../config/secrets');
+
+// The browser session lives in an httpOnly cookie (invisible to JS, so it can't be
+// read/stolen via XSS) set on login/signup. The Authorization header is kept as a
+// fallback so the API stays directly callable/testable (curl, Postman) without a
+// browser session.
+function _extractToken(req) {
+  const fromCookie = req.cookies && req.cookies[SESSION_COOKIE];
+  if (fromCookie) return fromCookie;
+  const header = req.headers.authorization || '';
+  return header.startsWith('Bearer ') ? header.slice(7) : null;
+}
 
 function requireRole(role) {
   return (req, res, next) => {
-    const header = req.headers.authorization || '';
-    const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
+    const token = _extractToken(req);
     if (!token) {
       return res.status(401).json({ success: false, message: 'Authentication required.' });
     }
@@ -26,10 +36,10 @@ function requireRole(role) {
 // caller can only ever act as themselves; supplying another resident's contact_id or
 // email is silently ignored. This closes the IDOR where any party could read/write
 // another resident's data by passing their identifier.
-// Verify the Bearer token. Returns the payload, or sends the 401 and returns null.
+// Verify the token (cookie or Bearer header). Returns the payload, or sends the 401
+// and returns null.
 function _verifyBearer(req, res) {
-  const header = req.headers.authorization || '';
-  const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
+  const token = _extractToken(req);
   if (!token) {
     res.status(401).json({ success: false, message: 'Please sign in to continue.' });
     return null;

@@ -46,5 +46,6 @@ router.post('/resident/signup', residentSignupLimiter, residentSignupRules, vali
 router.post('/resident/login',   residentLoginLimiter, residentLoginRules, validate, controller.residentLogin);
 router.post('/management/login', staffLoginLimiter,    staffRules,    validate, controller.managementLogin);
 router.post('/guardhouse/login', staffLoginLimiter,    staffRules,    validate, controller.guardhouseLogin);
+router.post('/logout', controller.logout);
 
 module.exports = router;

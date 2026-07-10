@@ -2,13 +2,14 @@
   "name": "lumina-portal",
   "version": "1.0.0",
   "private": true,
-  "description": "The Lumina — Community Living Portal. The Node server (./backend) serves the static frontend (./public) and the real API (JWT auth, MongoDB) for the resident portal; management/guardhouse stay on the client-side mock (public/js/client-backend.js).",
+  "description": "The Lumina — Community Living Portal. The Node server (./backend) serves the static frontend (./public) and the real API (JWT auth via httpOnly cookies, MongoDB) for resident and management login; other data stays on the client-side mock (public/js/client-backend.js).",
   "scripts": {
     "start": "cd backend && node server.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",

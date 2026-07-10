@@ -10,10 +10,11 @@ require('./config/logging');
 // that supports them — harmless where the default resolver already works fine.
 require('dns').setServers(['1.1.1.1', '8.8.8.8']);
 
-const express  = require('express');
-const helmet   = require('helmet');
-const cors     = require('cors');
-const mongoose = require('mongoose');
+const express      = require('express');
+const helmet       = require('helmet');
+const cors         = require('cors');
+const cookieParser = require('cookie-parser');
+const mongoose     = require('mongoose');
 
 const { errorHandler } = require('./middleware/auth.middleware');
 
@@ -25,6 +26,7 @@ app.set('trust proxy', 1);
 // response, including static pages, silently breaking them.
 app.use('/api', helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 app.use('/api', cors({ origin: false })); // same-origin only — frontend and API share one domain
+app.use('/api', cookieParser()); // reads the httpOnly session cookie into req.cookies
 app.use(express.json());
 
 // Connect once per warm serverless container; skip if already connecting/connected.

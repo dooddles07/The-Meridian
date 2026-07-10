@@ -8,7 +8,6 @@
   // GHL once the booking API is reconnected.
 
   const SESS = 'lumina_member';
-  const TOKEN_KEY = 'lumina_token';
   const BK   = 'lumina_bookings';
   const $ = id => document.getElementById(id);
   // Finished bookings (no longer active): shown in history but excluded from the
@@ -17,16 +16,13 @@
   const isFinished = s => FINISHED_STATUSES.includes(s);
 
   // Authenticated fetch
-  // The resident session token (set on login) is attached to every same-origin
-  // /api/ call. The backend derives identity from this token - the portal no longer
-  // proves who it is by sending contact_id/email in the request. Shadows the global
-  // fetch so every existing call site is covered without change.
-  let authToken = null;
+  // The resident session lives in an httpOnly cookie (set by the server on
+  // login/signup) - client-side JS never sees or stores the token itself, so
+  // there's nothing to attach here; the browser sends the cookie automatically
+  // on every same-origin request. Shadowing the global fetch is still needed for
+  // the 401 -> force-relogin handling below.
   const _rawFetch = window.fetch.bind(window);
   function fetch(url, opts = {}) {
-    if (authToken && typeof url === 'string' && url.startsWith('/api/')) {
-      opts = { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + authToken } };
-    }
     return _rawFetch(url, opts).then(res => {
       // A 401 on a non-login API call means the session is gone/expired - bounce to login.
       if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
@@ -40,8 +36,8 @@
   function handleAuthExpired() {
     if (_authExpiredHandled) return;     // avoid a storm of reloads from parallel calls
     _authExpiredHandled = true;
-    authToken = null;
-    [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    _rawFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
+    [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
     window.location.reload();
   }
 
@@ -303,12 +299,12 @@
       const data = await res.json();
       if (!data.success) { errEl.textContent = data.message || 'Invalid email or password.'; $('loginPassword').focus(); return; }
       member = data.member;
-      authToken = data.token || null;
+      // The session cookie is already set by the server on this same response -
+      // nothing to store client-side beyond the (non-secret) display info below.
       _authExpiredHandled = false;
       try { localStorage.removeItem('lumina_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
-      if (authToken) { sessionStorage.setItem(TOKEN_KEY, authToken); localStorage.setItem(TOKEN_KEY, authToken); }
       bootPortal();
     } catch {
       errEl.textContent = 'Connection error. Please try again.';
@@ -352,12 +348,12 @@
         return;
       }
       member = data.member;
-      authToken = data.token || null;
+      // The session cookie is already set by the server on this same response -
+      // nothing to store client-side beyond the (non-secret) display info below.
       _authExpiredHandled = false;
       try { localStorage.removeItem('lumina_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
-      if (authToken) { sessionStorage.setItem(TOKEN_KEY, authToken); localStorage.setItem(TOKEN_KEY, authToken); }
       bootPortal();
     } catch {
       errEl.textContent = 'Connection error. Please try again.';
@@ -2587,8 +2583,8 @@
   }
 
   bind('logoutBtn', () => {
-    authToken = null;
-    [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    _rawFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
+    [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
     // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.
     try { localStorage.setItem('lumina_signed_out', '1'); } catch {}
@@ -2608,11 +2604,11 @@
 
   // Restore an existing session and boot the portal LAST - after every top-level
   // declaration above is initialized - so bootPortal() can safely read them.
+  // The token itself lives in an httpOnly cookie now (invisible to this JS), so
+  // stored member info is the only client-side signal that a session might exist;
+  // if the cookie's actually gone/expired, the first real API call 401s and
+  // handleAuthExpired() bounces back to login.
   try { member = JSON.parse(sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || 'null'); } catch {}
-  authToken = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || null;
-  // A stored session with no token predates auth (or was cleared) - force a fresh
-  // login so the portal gets a valid token rather than 401-looping on every call.
-  if (member && authToken) bootPortal();
-  else if (member && !authToken) { [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); }
+  if (member) bootPortal();
 
 })();

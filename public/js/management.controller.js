@@ -9,11 +9,12 @@
 
   const $ = id => document.getElementById(id);
 
-  // Session gate
-  const token = sessionStorage.getItem('mgmtToken') || localStorage.getItem('mgmtToken');
+  // Session gate — the actual credential lives in an httpOnly cookie now;
+  // mgmtUser is just the display-info signal that a session exists. If the
+  // cookie's actually gone/expired, this page's own API calls will 401.
   let USER = {};
   try { USER = JSON.parse(sessionStorage.getItem('mgmtUser') || localStorage.getItem('mgmtUser') || '{}'); } catch {}
-  if (!token) { window.location.href = 'management-login.html'; return; }
+  if (!USER.username) { window.location.href = 'management-login.html'; return; }
 
   // Hide the full-screen loading overlay (covers everything by default)
   const overlay = $('loadingOverlay');
@@ -1932,7 +1933,11 @@
 
   // Logout
   bind('logoutBtn', () => {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
     ['mgmtToken', 'mgmtUser', 'mgmtLastView', 'mgmtDataSnapshot'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    // Tells client-backend.js's auto-login not to re-seed the preview session on
+    // the next load — an explicit logout should reach the real sign-in screen.
+    try { localStorage.setItem('lumina_mgmt_signed_out', '1'); } catch {}
     window.location.href = 'index.html';
   });
 
