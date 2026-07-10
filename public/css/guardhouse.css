@@ -6,7 +6,7 @@
    --text    #e8e0d0  on --bg   #0c0b09  → 14.1:1 ✓
    --text-dim #c2b49a  on --card #1a1814  →  8.2:1 ✓
    --muted   #9e9080  on --card #1a1814  →  5.5:1 ✓  (was #7a7060 = 3.6:1 ✗)
-   --gold    #a5a3f5  on --bg   #0c0b09  →  8.8:1 ✓
+   --gold    #a5a3f5  on --bg   #0c0b09  →  8.6:1 ✓
    --green   #2ecc8a  on --bg   #0c0b09  →  9.5:1 ✓
    --red     #e05555  on --bg   #0c0b09  →  5.4:1 ✓
    --orange  #e8933a  on --bg   #0c0b09  →  8.3:1 ✓
@@ -29,7 +29,7 @@
   --red-dim:   #3d1515;
   --orange:    #e8933a;
   --blue:      #4c8fd9;
-  --on-gold:   var(--on-gold);   /* label on accent buttons (dark, since accent is light periwinkle) */
+  --on-gold:   #0c0b09;   /* label on accent buttons (dark, since accent is light periwinkle) */
   --gold-hi:   #8582e4;   /* accent hover */
 }
 

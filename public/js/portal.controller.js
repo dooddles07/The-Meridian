@@ -11,7 +11,6 @@
   const TOKEN_KEY = 'meridian_token';
   const BK   = 'meridian_bookings';
   const $ = id => document.getElementById(id);
-  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   // Finished bookings (no longer active): shown in history but excluded from the
   // active count, per-day limit, slot re-booking guard and guest linking.
   const FINISHED_STATUSES = ['Completed', 'No-Show', 'Cancelled'];
@@ -718,11 +717,6 @@
     const q = p.toString();
     return q ? url + (url.includes('?') ? '&' : '?') + q : url;
   }
-  function setLocalBookingStatus(bookingId, status) {
-    const list = getBookings(); const b = list.find(x => x.id === bookingId);
-    if (b) { b.status = status; saveBookings(list); renderMyBookings(); renderDashboardBookings(); }
-  }
-
   function closeModal() { if (modal) { modal.classList.remove('open'); if (host) host.innerHTML = ''; } _editing = null; }
   if (modal) {
     bind('modalCloseBtn', closeModal);
@@ -1471,13 +1465,6 @@
   }
 
   // ── Payments (read-only history) ───────────────────────────────────────────────
-  function payMoney(n, cur) {
-    const v = Math.abs(Number(n) || 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${(Number(n) < 0 ? '-' : '')}${cur || 'SGD'} ${v}`;
-  }
-  function payDate(iso) {
-    return iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : ' - ';
-  }
   // Move is one payment: SGD 200 admin fee + SGD 2000 refundable deposit = SGD 2200.
   // On completion the SGD 2000 deposit is refunded (shown on the Deposit Refunded card).
   const MOVE_REFUNDABLE_DEPOSIT = 2000;
@@ -1986,7 +1973,6 @@
   // ── Feedback helpers + other forms ─────────────────────────────────────────────
   let _t;
   function toast(msg, type) { const el = $('toast'); if (!el) return; el.textContent = msg; el.className = 'show ' + (type || 'ok'); clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3500); }
-  function notify(title, text) { if (window.Swal) window.Swal.fire({ icon: 'info', title, text, confirmButtonText: 'Got it', confirmButtonColor: '#312e81' }); else toast(text || title); }
 
   function swalHtml(rows, body) {
     const cells = rows.map(([lbl, val]) =>
@@ -2048,7 +2034,6 @@
     $('fbDesc')?.addEventListener('blur', () => fieldErr('fbDesc', $('fbDesc').value.trim() ? '' : 'Description is required.'));
   }
   validateInline();
-  const NOT_LIVE = 'This form is not connected yet - it will submit to management once the backend is reconnected.';
 
   // ── Move date validation helpers ──────────────────────────────────────────
   function calcMinMoveDate() {

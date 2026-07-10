@@ -20,7 +20,7 @@ button, input, select, textarea { font: inherit; }
   --faint:     #706860;   /*  4.9:1 ✓  (was #7a7067 @ 4.3:1 — fixed) */
 
   /* Gold — passes 4.5:1 on both bg and white */
-  --gold:      #312e81;   /* 4.7:1 on bg, 5.3:1 on white ✓ (was #312e81 @ 4.2:1) */
+  --gold:      #312e81;   /* 10.1:1 on bg, 11.4:1 on white ✓ */
   --gold-dk:   #262261;
   --gold-lt:   #e7e6f5;
 

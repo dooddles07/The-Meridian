@@ -451,8 +451,6 @@
   function nowSGT() {
     return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Singapore' });
   }
-  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
   let _t;
   function toast(msg, type) {
     const el = $('ghToast'); if (!el) return;

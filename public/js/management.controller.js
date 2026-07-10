@@ -221,7 +221,6 @@
       $('annMsg').textContent = 'Connection error. Please try again.';
     } finally { btn.disabled = false; }
   });
-  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
   if ($('guestDate')) { $('guestDate').value = today; $('guestDate').min = today; }
 
