@@ -6,7 +6,7 @@ feedback, move-in/out scheduling, deposits & payments, announcements with RSVP,
 two-way messaging, and a shared document library.
 
 **🔗 Live:** https://the-lumina.vercel.app
-*(No login required - every portal opens ready to explore.)*
+*(Every portal opens straight into a furnished account.)*
 
 > **About this build.** This is a fully working **portfolio project** - a production-grade
 > system that runs **entirely in the browser**: no login required, no database, no
