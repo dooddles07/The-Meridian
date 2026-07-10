@@ -15,6 +15,10 @@
   let USER = {};
   try { USER = JSON.parse(sessionStorage.getItem('mgmtUser') || localStorage.getItem('mgmtUser') || '{}'); } catch {}
   if (!USER.username) { window.location.href = 'management-login.html'; return; }
+  // Every data view below still attaches this to its mock API calls, which
+  // ignore it entirely (the mock doesn't check headers) - kept as a harmless
+  // placeholder so those existing call sites don't need touching.
+  const token = 'session';
 
   // Hide the full-screen loading overlay (covers everything by default)
   const overlay = $('loadingOverlay');
