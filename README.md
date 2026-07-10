@@ -37,8 +37,8 @@ system with **three portals** that talk to each other in real time:
 | Portal | Who uses it | Opens as |
 | --- | --- | --- |
 | **Resident** (`/portal.html`) | Home owners & tenants | Furnished resident account |
-| **Management** (`/management.html`) | Building management office | Management console |
-| **Guardhouse** (`/guardhouse-portal.html`) | Security / front desk | Guard station |
+| **Management** (`/management.html`) | Building management office | Furnished management console |
+| **Guardhouse** (`/guardhouse-portal.html`) | Security / front desk | Furnished guard station |
 
 The whole point is the **hand-offs between roles**: a resident books a facility or
 registers a guest, management reviews and advances it, the guardhouse verifies people
