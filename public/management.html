@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Meridian — Management Portal</title>
+  <link rel="icon" type="image/png" href="asset/logomark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&family=Elms+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0" rel="stylesheet" />
+  <link rel="stylesheet" href="css/management.css" />
+  <link rel="stylesheet" href="css/inbox.css" />
+  <style>
+    /* ── RSVP summary in announcement cards ── */
+    .ann-rsvp-summary { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:8px 0 2px; border-top:1px solid var(--border,#2a2822); margin-top:8px; font-size:0.75rem; }
+    .ann-rsvp-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-weight:600; letter-spacing:0.04em; }
+    .ann-rsvp-tag--yes { background:rgba(39,174,96,0.15); color:#27ae60; }
+    .ann-rsvp-tag--no  { background:rgba(192,57,43,0.12);  color:#c0392b; }
+    .ann-rsvp-tag--none { color:var(--muted,#9a9088); font-weight:400; }
+    .ann-block-tag { font-size:0.72rem; color:var(--muted,#9a9088); margin-top:6px; }
+    .ann-rsvp-detail-btn { margin-left:auto; background:none; border:1px solid var(--border,#2a2822); color:var(--muted,#9a9088); border-radius:5px; padding:3px 10px; font-size:0.72rem; cursor:pointer; transition:border-color .15s,color .15s; }
+    .ann-rsvp-detail-btn:hover { border-color:var(--gold,#856728); color:var(--gold,#856728); }
+    .ann-rsvp-list { flex-basis:100%; border-radius:6px; overflow:hidden; border:1px solid var(--border,#2a2822); }
+    .ann-rsvp-list.hidden { display:none; }
+    .rsvp-row { display:grid; grid-template-columns:4.5rem 1fr auto; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid var(--border,#2a2822); font-size:0.78rem; min-width:0; }
+    .rsvp-row:last-child { border-bottom:none; }
+    .rsvp-unit { color:var(--muted,#9a9088); font-size:0.7rem; }
+    .rsvp-resp-yes { color:#27ae60; font-weight:600; }
+    .rsvp-resp-no  { color:#c0392b; }
+  </style>
+  <script>
+    (function(){
+      var t=localStorage.getItem('meridian-mgmt-theme')||'dark';
+      document.documentElement.dataset.theme=t;
+    })();
+  </script>
+</head>
+<body>
+
+<!-- ── Loading overlay ───────────────────────────────────────────────────────── -->
+<div id="loadingOverlay" style="
+  position:fixed;inset:0;z-index:9000;
+  background:#080808;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1.4rem;
+  transition:opacity 0.4s ease;
+">
+  <div style="font-family:'Cormorant',serif;font-size:2.2rem;font-weight:400;color:#c4a040;letter-spacing:0.02em;">
+    The <em style="font-style:italic">Meridian</em>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <span style="width:7px;height:7px;border-radius:50%;background:#c4a040;animation:ldot 1.2s infinite 0s"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#c4a040;animation:ldot 1.2s infinite 0.2s"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#c4a040;animation:ldot 1.2s infinite 0.4s"></span>
+  </div>
+  <div id="loadingStatus" style="font-family:'Elms Sans',sans-serif;font-size:0.7rem;letter-spacing:0.1em;color:#706858;text-transform:uppercase">
+    Connecting to Wibiz…
+  </div>
+</div>
+<style>
+@keyframes ldot { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+</style>
+
+<div class="shell">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__logo">The <em>Meridian</em></div>
+      <div class="sidebar__portal">Management Portal</div>
+    </div>
+
+    <div class="sidebar__user">
+      <div class="user__row">
+        <div class="user__avatar" id="userAvatar">M</div>
+        <div class="user__info">
+          <div class="user__name" id="userName">management</div>
+          <div class="user__role">Admin</div>
+        </div>
+      </div>
+      <div class="user__building">The Meridian · Management</div>
+    </div>
+
+    <div class="sidebar__divider"></div>
+    <div class="nav__section-label">Overview</div>
+    <div class="nav__item active" data-view="dashboard">
+      <span class="nav__icon material-symbols-outlined">grid_view</span> Dashboard Overview
+    </div>
+
+    <div class="sidebar__divider"></div>
+    <div class="nav__section-label">Operations</div>
+    <div class="nav__item" data-view="bookings">
+      <span class="nav__icon material-symbols-outlined">event_available</span> Facility Bookings
+      <span class="nav__badge" id="badge-bookings" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="guests">
+      <span class="nav__icon material-symbols-outlined">directions_car</span> Guest Registration
+      <span class="nav__badge blue" id="badge-guests" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="defects">
+      <span class="nav__icon material-symbols-outlined">build</span> Defect Tracking
+      <span class="nav__badge" id="badge-defects" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="parcels">
+      <span class="nav__icon material-symbols-outlined">inventory_2</span> Parcel Management
+      <span class="nav__badge" id="badge-parcels" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="move">
+      <span class="nav__icon material-symbols-outlined">home_work</span> Move-In / Move-Out
+      <span class="nav__badge blue" id="badge-move" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="feedback">
+      <span class="nav__icon material-symbols-outlined">forum</span> Feedback &amp; Complaints
+      <span class="nav__badge" id="badge-feedback" style="display:none"></span>
+    </div>
+
+
+    <div class="sidebar__divider"></div>
+    <div class="nav__section-label">Management</div>
+    <div class="nav__item" data-view="announcements">
+      <span class="nav__icon material-symbols-outlined">campaign</span> Announcements
+      <span class="nav__badge gold" id="badge-ann" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="contacts">
+      <span class="nav__icon material-symbols-outlined">group</span> Resident Contacts
+    </div>
+    <div class="nav__item" data-view="messages">
+      <span class="nav__icon material-symbols-outlined">chat</span> Messages
+      <span class="nav__badge" id="badge-messages" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="payments">
+      <span class="nav__icon material-symbols-outlined">payments</span> Payments
+      <span class="nav__badge" id="badge-payments" style="display:none"></span>
+    </div>
+    <div class="nav__item" data-view="resources">
+      <span class="nav__icon material-symbols-outlined">folder_open</span> Resources
+    </div>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__refresh-note" id="refreshNote">Auto-refresh: 90s</div>
+    </div>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────────────────────── -->
+  <div class="main">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu">
+          <span class="material-symbols-outlined" style="font-size:1.25rem">menu</span>
+        </button>
+        <span class="topbar__date" id="topbarDate"></span>
+      </div>
+      <div class="topbar__right">
+        <button class="theme-switch" data-theme-toggle role="switch" aria-label="Toggle colour scheme">
+          <span class="material-symbols-outlined theme-switch__icon">light_mode</span>
+          <span class="theme-switch__track"><span class="theme-switch__thumb"></span></span>
+          <span class="material-symbols-outlined theme-switch__icon">dark_mode</span>
+        </button>
+        <button class="btn-refresh" id="refreshBtn"><span class="material-symbols-outlined" style="font-size:0.875rem;line-height:1;vertical-align:middle">refresh</span> REFRESH</button>
+        <div class="live-badge"><div class="live-dot"></div> LIVE · WIBIZ</div>
+        <button class="btn-logout" id="logoutBtn" aria-label="Log out"><span class="material-symbols-outlined" style="font-size:0.875rem;line-height:1;vertical-align:middle">logout</span> LOGOUT</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ── Dashboard ─────────────────────────────────────────────────────── -->
+      <div id="view-dashboard" class="view active">
+        <div class="page-title">Dashboard <em>Overview</em></div>
+
+        <div class="date-tabs" id="dashDateTabs">
+          <div class="date-tab active" data-period="today">Today</div>
+          <div class="date-tab" data-period="tomorrow">Tomorrow</div>
+          <div class="date-tab" data-period="week">This Week</div>
+          <div class="date-tab" data-period="month">This Month</div>
+          <div class="date-tab" data-period="30days">Next 30 Days</div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-card gold"><div class="kpi-label">Bookings</div><div class="kpi-value gold" id="kpiBookings">—</div><div class="kpi-sub">Today</div></div>
+          <div class="kpi-card blue"><div class="kpi-label">Guest Passes</div><div class="kpi-value blue" id="kpiGuests">—</div><div class="kpi-sub">0 pending</div></div>
+          <div class="kpi-card orange"><div class="kpi-label">Open Defects</div><div class="kpi-value orange" id="kpiDefects">—</div><div class="kpi-sub">Unresolved</div></div>
+          <div class="kpi-card"><div class="kpi-label">Pending Parcels</div><div class="kpi-value" id="kpiParcels">—</div><div class="kpi-sub">Awaiting collection</div></div>
+          <div class="kpi-card red"><div class="kpi-label">Open Complaints</div><div class="kpi-value red" id="kpiFeedback">—</div><div class="kpi-sub">Unresolved</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="section-head">
+              <span class="section-title" id="dashBookingsTitle">Today's Facility Bookings</span>
+              <span class="section-meta" id="bookingsTimestamp"></span>
+            </div>
+            <table class="data-table">
+              <thead><tr>
+                <th>Facility</th><th>Resident</th><th>Slot</th><th>Status</th>
+              </tr></thead>
+              <tbody id="dashBookingsBody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="right-col">
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">Defect Summary</span>
+                <span class="view-all-link" data-view="defects">VIEW ALL →</span>
+              </div>
+              <div class="defect-summary-cells" id="defectSummaryCells"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">📌 Pinned Notices</span>
+              </div>
+              <div id="pinnedNotices"><div class="loading">Loading…</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipelines-section">
+          <div class="section-head" style="margin-top:1.4rem">
+            <span class="section-title">All Pipelines — Live Status</span>
+            <span class="section-meta" id="pipelinesTimestamp"></span>
+          </div>
+          <div id="pipelinesBody"></div>
+        </div>
+      </div>
+
+      <!-- ── Facility Bookings ──────────────────────────────────────────────── -->
+      <div id="view-bookings" class="view">
+        <div class="page-title">Facility <em>Bookings</em></div>
+        <div class="summary-row" id="bookingSummary"></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="bkSearch" placeholder="Search resident or unit…">
+          <select class="filter-select" id="bkFilterFacility"><option value="">All Facilities</option></select>
+          <select class="filter-select" id="bkFilterStatus"><option value="">All Stages</option></select>
+        </div>
+        <div class="section-head">
+          <span class="section-title">Facility Booking Schedule</span>
+          <span class="section-meta" id="bookingCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>Facility</th><th>Resident</th><th>Unit</th><th>Date</th><th>Time</th><th>Pax</th><th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="bookingsBody"><tr class="empty-row"><td colspan="8">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Guest Registration ─────────────────────────────────────────────── -->
+      <div id="view-guests" class="view">
+        <div class="page-title">Guest <em>Registration</em></div>
+        <div class="guest-layout">
+          <div>
+            <div class="filter-bar" style="margin-bottom:10px">
+              <input type="text" class="filter-input" id="gsSearch" placeholder="Search visitor, host or unit…">
+              <select class="filter-select" id="gsFilterStage"><option value="">All Stages</option></select>
+            </div>
+            <div class="section-head">
+              <span class="section-title">Registered Visitors</span>
+              <span class="section-meta" id="guestCount"></span>
+            </div>
+            <table class="data-table">
+              <thead><tr>
+                <th>Visitor</th><th>Host</th><th>Unit</th><th>Phone</th><th>Stage</th><th>Date</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="guestsBody"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="form-panel">
+            <div class="form-panel-title">Register New Visitor</div>
+            <div class="form-group full">
+              <label>Resident (Type to Search)</label>
+              <div class="search-wrap">
+                <input type="text" id="guestResidentSearch" placeholder="Search name, unit or phone…" autocomplete="off" />
+                <div class="search-dropdown" id="residentDropdown"></div>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top:0.8rem">
+              <div class="form-group">
+                <label>Unit</label>
+                <input type="text" id="guestUnit" placeholder="Auto-filled or enter" />
+              </div>
+              <div class="form-group">
+                <label>Link to Facility (Opt)</label>
+                <select id="guestFacility">
+                  <option value="">— Not linked —</option>
+                  <option>Swimming Pool</option>
+                  <option>Tennis Court</option>
+                  <option>Squash Court</option>
+                  <option>Basketball Court</option>
+                  <option>Gymnasium</option>
+                  <option>Fitness Studio</option>
+                  <option>BBQ Pit</option>
+                  <option>Verandah</option>
+                </select>
+              </div>
+              <div class="form-group full">
+                <label>Visit Type</label>
+                <select id="guestVisitType">
+                  <option>Social</option>
+                  <option>Contractor</option>
+                  <option>Delivery</option>
+                  <option>Mover</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="form-group full">
+                <label>Visitor Name</label>
+                <input type="text" id="guestVisitorName" placeholder="Full name of visitor" />
+              </div>
+              <div class="form-group">
+                <label>IC / Passport (Last 4)</label>
+                <input type="text" id="guestVisitorIc" placeholder="e.g. 234A" />
+              </div>
+              <div class="form-group">
+                <label>Vehicle Plate (Opt)</label>
+                <input type="text" id="guestVehicle" placeholder="e.g. SBA1234A" />
+              </div>
+              <div class="form-group">
+                <label>Visit Date</label>
+                <input type="date" id="guestDate" />
+              </div>
+              <div class="form-group">
+                <label>Expected Time</label>
+                <input type="time" id="guestTime" />
+              </div>
+              <div class="form-group full">
+                <label>Notes</label>
+                <textarea id="guestNotes" rows="2" placeholder="Additional details…"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" id="guestRegisterBtn">Register &amp; Generate QR</button>
+              <button class="btn-secondary" id="guestClearBtn">Clear</button>
+            </div>
+            <p id="guestFormMsg" style="font-size:0.75rem;margin-top:0.6rem;color:var(--muted)"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Defect Tracking ────────────────────────────────────────────────── -->
+      <div id="view-defects" class="view">
+        <div class="page-title">Defect <em>Tracking</em></div>
+        <div class="summary-row" id="defectSummary"></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="dfSearch" placeholder="Search reference, contact or unit…">
+          <select class="filter-select" id="dfFilterUrgency">
+            <option value="">All Urgencies</option>
+            <option value="emergency">Emergency</option>
+            <option value="urgent">Urgent</option>
+            <option value="routine">Routine</option>
+          </select>
+          <select class="filter-select" id="dfFilterStage"><option value="">All Stages</option></select>
+        </div>
+        <div class="section-head">
+          <span class="section-title">Defect Tracking</span>
+          <span class="section-meta" id="defectCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>Reference</th><th>Urgency</th><th>Stage</th><th>Contact</th><th>Unit</th><th>Date</th><th>Photo</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="defectsBody"><tr class="empty-row"><td colspan="8">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Parcel Management ──────────────────────────────────────────────── -->
+      <div id="view-parcels" class="view">
+        <div class="page-title">Parcel <em>Management</em></div>
+        <div class="summary-row" id="parcelSummary"></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="pcSearch" placeholder="Search parcel ref, resident or unit…">
+          <select class="filter-select" id="pcFilterStage"><option value="">All Stages</option></select>
+        </div>
+        <div class="section-head">
+          <span class="section-title">Parcel Management</span>
+          <span class="section-meta" id="parcelCount"></span>
+        </div>
+        <table class="data-table" id="parcelsTable">
+          <thead><tr>
+            <th>Parcel Ref</th><th>Resident</th><th>Unit</th><th>Auth. Collector</th><th>Stage</th><th>Date</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="parcelsBody"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Move-In / Move-Out ─────────────────────────────────────────────── -->
+      <div id="view-move" class="view">
+        <div class="page-title">Move-In / <em>Move-Out</em></div>
+        <p class="section-meta" style="margin-bottom:1rem;font-size:0.7rem;text-align:right;color:var(--muted)">Stage moves update Wibiz directly</p>
+        <div class="summary-row" id="moveSummary"></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="mvSearch" placeholder="Search reference, contact or unit…">
+          <select class="filter-select" id="mvFilterStage"><option value="">All Stages</option></select>
+        </div>
+        <div class="section-head">
+          <span class="section-title">Move-In / Move-Out</span>
+          <span class="section-meta" id="moveCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>Reference</th><th>Stage</th><th>Contact</th><th>Unit</th><th>Date</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="moveBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Feedback & Complaints ──────────────────────────────────────────── -->
+      <div id="view-feedback" class="view">
+        <div class="page-title">Feedback &amp; <em>Complaints</em></div>
+        <div class="summary-row" id="feedbackSummary"></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="fbSearch" placeholder="Search reference, contact or unit…">
+          <select class="filter-select" id="fbFilterType">
+            <option value="">All Types</option>
+            <option value="Complaint">Complaint</option>
+            <option value="Feedback">Feedback</option>
+            <option value="Suggestion">Suggestion</option>
+          </select>
+          <select class="filter-select" id="fbFilterStage"><option value="">All Stages</option></select>
+        </div>
+        <div class="section-head">
+          <span class="section-title">Feedback &amp; Complaints</span>
+          <span class="section-meta" id="feedbackCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>Reference</th><th>Stage</th><th>Contact</th><th>Unit</th><th>Date</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="feedbackBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Resident Contacts ──────────────────────────────────────────────── -->
+      <div id="view-contacts" class="view">
+        <div class="page-title">Resident <em>Contacts</em></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="ctSearch" placeholder="Search name, unit or phone…">
+        </div>
+        <div class="section-head">
+          <span class="section-title">Resident Contacts</span>
+          <span class="section-meta" id="contactCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>Name</th><th>Unit</th><th>Phone</th><th>Tags</th>
+          </tr></thead>
+          <tbody id="contactsBody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Payments ───────────────────────────────────────────────────────── -->
+      <div id="view-payments" class="view">
+        <div class="page-title">Payments</div>
+        <div class="section-head">
+          <span class="section-title">Pending Deposits</span>
+          <span class="section-meta" id="payPendingCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Resident</th><th>Unit</th><th>For</th><th>Booking Date</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="mgmtPendingBody"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody>
+        </table>
+        <div class="section-head" style="margin-top:1.6rem">
+          <span class="section-title">Payment History</span>
+          <span class="section-meta" id="payHistCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Unit</th><th>Description</th><th>Category</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody id="mgmtPayHistBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- ── Resources ─────────────────────────────────────────────────────── -->
+      <div id="view-resources" class="view">
+        <div class="page-title">Resources</div>
+
+        <!-- Upload form -->
+        <div class="panel res-upload-panel">
+          <div class="panel-head">
+            <span class="panel-title">Upload Document</span>
+          </div>
+          <div class="res-upload-body">
+            <div class="res-form-row">
+              <label class="res-label" for="resTitle">Document Title</label>
+              <input class="res-input" type="text" id="resTitle" placeholder="e.g. 2025 Annual General Meeting Minutes" maxlength="200" />
+            </div>
+            <div class="res-form-row res-form-row--2col">
+              <div>
+                <label class="res-label" for="resCategory">Category</label>
+                <select class="res-input" id="resCategory">
+                  <option value="By-Laws">By-Laws</option>
+                  <option value="Fire Safety">Fire Safety Rules &amp; Regulations</option>
+                  <option value="Meeting Minutes">Meeting Minutes</option>
+                  <option value="Strata Title Plan">Strata Title Plan</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="res-label" for="resVisibility">Visibility</label>
+                <select class="res-input" id="resVisibility">
+                  <option value="residents">Shared with Residents</option>
+                  <option value="management">Management Only</option>
+                </select>
+              </div>
+            </div>
+            <div class="res-form-row">
+              <label class="res-label">File <span class="res-hint">(PDF, Word, or image — max 10 MB)</span></label>
+              <label class="res-file-btn" for="resFile">
+                <span class="material-symbols-outlined">attach_file</span>
+                <span id="resFileName">Choose a file…</span>
+              </label>
+              <input type="file" id="resFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" />
+            </div>
+            <button class="res-upload-btn" id="resUploadBtn">Upload Document</button>
+          </div>
+        </div>
+
+        <!-- Shared with Residents -->
+        <div class="res-section" id="resSecResident">
+          <div class="res-section-head" data-res-section="resSecResident">
+            <span class="res-section-title">Shared with Residents</span>
+            <button class="res-section-toggle" aria-label="Toggle section"><span class="material-symbols-outlined">expand_more</span></button>
+          </div>
+          <div class="res-section-body">
+            <div id="resMgmtResidentList" class="res-list"><div class="loading">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- Management Only -->
+        <div class="res-section" id="resSecPrivate">
+          <div class="res-section-head" data-res-section="resSecPrivate">
+            <span class="res-section-title">Management Only</span>
+            <button class="res-section-toggle" aria-label="Toggle section"><span class="material-symbols-outlined">expand_more</span></button>
+          </div>
+          <div class="res-section-body">
+            <div id="resMgmtPrivateList" class="res-list"><div class="loading">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Announcements ──────────────────────────────────────────────────── -->
+      <div id="view-announcements" class="view">
+        <div class="page-title"><em>Announcements</em></div>
+        <div class="ann-layout">
+          <div>
+            <div class="section-head">
+              <span class="section-title">Posted Announcements</span>
+            </div>
+            <div id="annList" style="margin-top:0"><div class="loading">Loading…</div></div>
+          </div>
+          <div class="form-panel">
+            <div class="form-panel-title">Post Announcement</div>
+            <div class="form-group full" style="margin-bottom:0.8rem">
+              <label>Title</label>
+              <input type="text" id="annTitle" />
+            </div>
+            <div class="form-group full" style="margin-bottom:0.8rem">
+              <label>Category</label>
+              <select id="annCategory">
+                <option>General</option>
+                <option>Maintenance</option>
+                <option>Rule Change</option>
+                <option>AGM / EGM</option>
+                <option>Event</option>
+                <option>Safety</option>
+              </select>
+            </div>
+            <!-- Single event date/time — shown for every category except Maintenance -->
+            <div class="form-group full" id="annEventRow" style="margin-bottom:0.8rem">
+              <label>Event date &amp; time <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+              <div style="display:flex;gap:0.6rem;margin-bottom:0.4rem">
+                <input type="date" id="annEventDate" style="flex:1" />
+                <select id="annEventTime" style="flex:1"></select>
+              </div>
+              <div style="display:flex;gap:0.6rem;align-items:center">
+                <span style="font-size:0.7rem;color:var(--muted);white-space:nowrap;min-width:4rem">Ends at</span>
+                <select id="annEventEndTime" style="flex:1"></select>
+              </div>
+            </div>
+            <!-- Maintenance window — start + end date/time (shown only for Maintenance) -->
+            <div id="annMaintRows" style="display:none">
+              <div class="form-group full" style="margin-bottom:0.8rem">
+                <label>Maintenance starts</label>
+                <div style="display:flex;gap:0.6rem">
+                  <input type="date" id="annStartDate" style="flex:1" />
+                  <select id="annStartTime" style="flex:1"></select>
+                </div>
+              </div>
+              <div class="form-group full" style="margin-bottom:0.8rem">
+                <label>Maintenance ends</label>
+                <div style="display:flex;gap:0.6rem">
+                  <input type="date" id="annEndDate" style="flex:1" />
+                  <select id="annEndTime" style="flex:1"></select>
+                </div>
+              </div>
+            </div>
+            <div class="form-group full" style="margin-bottom:0.8rem">
+              <label>Body</label>
+              <textarea id="annBody" rows="5" maxlength="3000"></textarea>
+            </div>
+            <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--muted);margin-bottom:0.6rem;cursor:pointer">
+              <input type="checkbox" id="annPinned" /> Pin to dashboard
+            </label>
+            <div id="annRsvpRow" style="display:none;margin-bottom:0.6rem">
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--muted);cursor:pointer">
+                <input type="checkbox" id="annRsvp" /> Enable RSVP for this event
+              </label>
+            </div>
+            <div id="annBlockRow" style="display:none;margin-bottom:0.9rem">
+              <div id="annBlockRowLabel" style="font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;font-weight:500">Block these facilities during maintenance</div>
+              <div id="annBlockGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="pool" /> Swimming Pool</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="tennis" /> Tennis Court</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="squash" /> Squash Court</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="basketball" /> Basketball Court</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="gym" /> Gymnasium</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="fitness" /> Fitness Studio</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="bbq" /> BBQ Pit</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="verandah" /> Verandah</label>
+                <label id="annBlockOtherLabel" style="display:none;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" id="annBlockOther" /> Other</label>
+              </div>
+              <input type="text" id="annVenueOther" placeholder="Enter venue name…" maxlength="200"
+                style="display:none;margin-top:8px;width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text);font-size:0.75rem;outline:none;box-sizing:border-box" />
+            </div>
+            <button class="btn-primary" id="annPostBtn">Post Announcement</button>
+            <p id="annMsg" style="font-size:0.75rem;margin-top:0.6rem;color:var(--muted)"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Messages / Inbox ──────────────────────────────────────────────── -->
+      <div id="view-messages" class="view">
+        <div class="inbox" id="mgmtInbox">
+
+          <!-- Sidebar: all resident conversations -->
+          <aside class="inbox__sidebar">
+            <div class="inbox__sidebar-head">
+              <h2 class="inbox__title">Messages</h2>
+              <button class="inbox__new-btn" id="mgmtInboxNewBtn">
+                <span class="material-symbols-outlined">edit_square</span>New
+              </button>
+            </div>
+            <div class="inbox__search-wrap">
+              <span class="material-symbols-outlined" aria-hidden="true">search</span>
+              <input class="inbox__search" type="search" placeholder="Search residents…" aria-label="Search conversations" />
+            </div>
+            <div class="inbox__filters" id="mgmtInboxFilters">
+              <button class="inbox__filter-tab active" data-filter="all">All</button>
+              <button class="inbox__filter-tab" data-filter="unread">Unread</button>
+              <button class="inbox__filter-tab" data-filter="resolved">Resolved</button>
+            </div>
+            <div class="inbox__list" id="mgmtInboxList">
+              <div class="inbox__loading" style="padding:1.4rem;font-size:0.82rem;color:var(--muted,#9a9088)">Loading…</div>
+            </div>
+          </aside>
+
+          <!-- Thread panel -->
+          <div class="inbox__thread" id="mgmtThread">
+            <div class="inbox__thread-header">
+              <button class="inbox__back-btn" id="mgmtInboxBack" aria-label="Back to conversations">
+                <span class="material-symbols-outlined">arrow_back</span>
+              </button>
+              <div class="inbox__thread-avatar" id="mgmtThreadAvatar" aria-hidden="true">—</div>
+              <div class="inbox__thread-meta">
+                <div class="inbox__thread-name">
+                  <span id="mgmtThreadName">Select a conversation</span>
+                  <span class="inbox__unit-tag" id="mgmtThreadUnit" style="display:none"></span>
+                </div>
+                <div class="inbox__thread-sub" id="mgmtThreadSub">Choose a resident on the left to read and reply.</div>
+              </div>
+              <button class="inbox__resolve-btn" id="mgmtResolveBtn" aria-label="Mark as resolved" style="display:none">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span id="mgmtResolveLabel">Mark Resolved</span>
+              </button>
+            </div>
+
+            <div class="inbox__messages" id="mgmtInboxMessages" role="log" aria-live="polite">
+              <div class="inbox__empty-state" style="margin:auto;text-align:center;color:var(--muted,#9a9088);font-size:0.85rem;padding:2rem">No conversation selected.</div>
+            </div>
+
+            <div class="inbox__compose">
+              <div class="inbox__compose-inner">
+                <textarea class="inbox__compose-input mgmt-compose" id="mgmtCompose"
+                  placeholder="Select a conversation to reply…" rows="1"
+                  aria-label="Reply" disabled></textarea>
+                <button class="inbox__send-btn" id="mgmtSendBtn" aria-label="Send reply" disabled>
+                  <span class="material-symbols-outlined">send</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.inbox -->
+      </div><!-- /#view-messages -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ── Message Resident Modal ──────────────────────────────────────────────── -->
+<div class="inbox-modal" id="mgmtInboxNewModal" style="display:none" role="dialog" aria-modal="true" aria-label="Message resident">
+  <div class="inbox-modal__backdrop" id="mgmtInboxModalBackdrop"></div>
+  <div class="inbox-modal__box">
+    <div class="inbox-modal__head">
+      <h3>Message Resident</h3>
+      <button class="inbox-modal__close" id="mgmtInboxModalClose" aria-label="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="inbox-modal__body">
+      <div class="inbox-modal__field">
+        <label for="mgmtConvoResident">Resident</label>
+        <select id="mgmtConvoResident"><option value="">Loading residents…</option></select>
+      </div>
+      <div class="inbox-modal__field">
+        <label for="mgmtConvoSubject">Subject <span style="opacity:.6;font-weight:400">(optional)</span></label>
+        <input id="mgmtConvoSubject" type="text" placeholder="e.g. Outstanding maintenance request" />
+      </div>
+      <div class="inbox-modal__field">
+        <label for="mgmtConvoMsg">Message</label>
+        <textarea id="mgmtConvoMsg" rows="4" placeholder="Write your message to the resident…"></textarea>
+      </div>
+      <p id="mgmtConvoErr" style="font-size:0.75rem;color:#c0392b;margin:0;min-height:1em"></p>
+    </div>
+    <div class="inbox-modal__foot">
+      <button class="inbox-modal__cancel" id="mgmtInboxModalCancel">Cancel</button>
+      <button class="inbox-modal__send" id="mgmtConvoSend">Send Message</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stage Selector Modal ───────────────────────────────────────────────── -->
+<div id="stageSelectorModal" class="modal-overlay">
+  <div class="stage-modal-box">
+    <div class="stage-modal-head">
+      <div>
+        <div class="stage-modal-title">Move Stage</div>
+        <div class="stage-modal-contact" id="stageContactName"></div>
+        <div class="stage-modal-current">Current: <span id="stageCurrentName">—</span></div>
+      </div>
+      <button class="stage-modal-close" id="stageModalClose">✕</button>
+    </div>
+    <div class="stage-modal-list" id="stageOptionsList" style="max-height:380px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="js/demo-backend.js"></script>
+<script src="js/management.controller.js"></script>
+<script>
+(function () {
+  // ── Conversation list navigation ──────────────────────────────────────────
+  var inbox   = document.getElementById('mgmtInbox');
+  var backBtn = document.getElementById('mgmtInboxBack');
+  if (inbox) {
+    inbox.addEventListener('click', function (e) {
+      if (e.target.closest('.inbox__item')) inbox.classList.add('inbox--thread-open');
+    });
+    inbox.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.inbox__item')) {
+        e.preventDefault();
+        inbox.classList.add('inbox--thread-open');
+      }
+    });
+  }
+  if (backBtn) backBtn.addEventListener('click', function () {
+    if (inbox) inbox.classList.remove('inbox--thread-open');
+  });
+
+  // ── New conversation modal ────────────────────────────────────────────────
+  var newBtn   = document.getElementById('mgmtInboxNewBtn');
+  var modal    = document.getElementById('mgmtInboxNewModal');
+  var mClose   = document.getElementById('mgmtInboxModalClose');
+  var mCancel  = document.getElementById('mgmtInboxModalCancel');
+  var mBackdrop = document.getElementById('mgmtInboxModalBackdrop');
+  function openModal()  { if (modal) { modal.style.display = 'flex'; var f = document.getElementById('mgmtConvoResident'); if (f) f.focus(); } }
+  function closeModal() { if (modal) modal.style.display = 'none'; }
+  if (newBtn)    newBtn.addEventListener('click', openModal);
+  if (mClose)    mClose.addEventListener('click', closeModal);
+  if (mCancel)   mCancel.addEventListener('click', closeModal);
+  if (mBackdrop) mBackdrop.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeModal();
+  });
+
+  // ── Compose auto-grow ─────────────────────────────────────────────────────
+  document.querySelectorAll('.inbox__compose-input').forEach(function (ta) {
+    ta.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+    });
+    // Scroll messages to bottom when compose is focused (keyboard open on mobile)
+    ta.addEventListener('focus', function () {
+      var area = this.closest('.inbox__thread');
+      if (!area) return;
+      var msgs = area.querySelector('.inbox__messages');
+      if (msgs) setTimeout(function () { msgs.scrollTop = msgs.scrollHeight; }, 350);
+    });
+  });
+
+  // ── Mobile keyboard lift ──────────────────────────────────────────────────
+  // dvh handles modern browsers; visualViewport fallback covers the rest.
+  // When the virtual keyboard opens, vvh shrinks. We detect that and set the
+  // inbox height explicitly so the compose bar stays above the keyboard.
+  if (window.visualViewport) {
+    function onKbResize() {
+      var vvh  = Math.round(window.visualViewport.height);
+      var diff = window.innerHeight - vvh;
+      var inboxEl = document.getElementById('mgmtInbox');
+      if (!inboxEl) return;
+      if (diff > 120) {
+        // Keyboard open — set explicit height so compose lifts
+        inboxEl.style.height = (vvh - 48) + 'px';
+        // Scroll messages to bottom
+        var msgs = inboxEl.querySelector('.inbox__messages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      } else {
+        // Keyboard closed — restore CSS-driven height
+        inboxEl.style.height = '';
+      }
+    }
+    window.visualViewport.addEventListener('resize', onKbResize);
+  }
+})();
+</script>
+
+</body>
+</html>

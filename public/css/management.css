@@ -1,0 +1,19 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   The Meridian — Management Portal
+   Component files live in management/ — this file is the import orchestrator.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@import url('management/_tokens.css');
+@import url('management/_sidebar.css');
+@import url('management/_layout.css');
+@import url('management/_dashboard.css');
+@import url('management/_panels.css');
+@import url('management/_table.css');
+@import url('management/_forms.css');
+@import url('management/_pipelines.css');
+@import url('management/_announcements.css');
+@import url('management/_settings.css');
+@import url('management/_resources.css');
+@import url('management/_modal.css');
+@import url('management/_utility.css');
+@import url('management/_responsive.css');

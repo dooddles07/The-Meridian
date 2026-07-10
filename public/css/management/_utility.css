@@ -1,0 +1,38 @@
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  padding: 10px 16px;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; }
+#toast.success { background: var(--green); color: #fff; }
+#toast.error   { background: var(--red);   color: #fff; }
+
+/* ── Panel Refresh ────────────────────────────────────────────────────────── */
+.panel-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.panel-refresh:hover { border-color: var(--gold); color: var(--gold); }
+.panel-refresh .material-symbols-outlined {
+  font-size: 0.9375rem;
+  line-height: 1;
+  font-variation-settings: 'wght' 300, 'opsz' 20;
+}
+.panel-refresh.spinning .material-symbols-outlined { animation: spin 0.7s linear infinite; }

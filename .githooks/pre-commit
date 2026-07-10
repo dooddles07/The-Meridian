@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Pre-commit hook: block accidental secret commits.
+# Activate once with: npm run setup-hooks
+
+FAILED=0
+
+# ── 1. Block .env files (anything named .env or *.env, except *.env.example) ──
+for f in $(git diff --cached --name-only); do
+  base="${f##*/}"
+  if [[ "$base" == ".env" ]] || [[ "$base" == *.env && "$base" != *.env.example ]]; then
+    echo "[pre-commit] BLOCKED: '$f' looks like a secrets file."
+    echo "             Remove it from staging: git restore --staged $f"
+    FAILED=1
+  fi
+done
+
+# ── 2. Scan staged diff for known secret patterns ─────────────────────────────
+DIFF=$(git diff --cached -U0 | grep "^+" | grep -v "^+++" || true)
+
+check() {
+  local label="$1" pattern="$2"
+  if echo "$DIFF" | grep -qE "$pattern"; then
+    echo "[pre-commit] BLOCKED: staged content contains a real secret — $label"
+    FAILED=1
+  fi
+}
+
+check "MongoDB URI"        'MONGO_URL=mongodb(\+srv)?://'
+check "JWT secret value"   'JWT_SECRET=[A-Za-z0-9+/]{20,}'
+check "GHL API key"        'GHL_API_KEY=[A-Za-z0-9]{20,}'
+check "GHL webhook secret" 'GHL_WEBHOOK_SECRET=[A-Za-z0-9]{12,}'
+
+if [[ $FAILED -eq 1 ]]; then
+  echo ""
+  echo "Fix the above before committing."
+  echo "If you are certain this is safe: git commit --no-verify"
+  exit 1
+fi
+
+exit 0

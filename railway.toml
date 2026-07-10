@@ -1,0 +1,8 @@
+# Build + start are defined in nixpacks.toml (so Nixpacks provisions the Node
+# toolchain). Keep this file to pin the builder, restart policy, and healthcheck.
+[build]
+builder = "nixpacks"
+
+[deploy]
+restartPolicyType = "on_failure"
+healthcheckPath = "/health"

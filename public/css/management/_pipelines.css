@@ -1,0 +1,61 @@
+/* ── Defect Summary Cells ─────────────────────────────────────────────────── */
+.defect-summary-cells { display: flex; }
+.defect-summary-cells .stage-cell {
+  border: 1px solid var(--border);
+  border-right: none;
+  background: var(--surface);
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+}
+.defect-summary-cells .stage-cell:last-child { border-right: 1px solid var(--border); }
+
+/* ── Pipelines ────────────────────────────────────────────────────────────── */
+.pipelines-section { margin-top: 20px; }
+.pipeline-block { margin-bottom: 12px; }
+.pipeline-block-title {
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 9px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.pipeline-stages {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  overflow: hidden;
+}
+
+/* ── Stage Cells ──────────────────────────────────────────────────────────── */
+.stage-cell {
+  flex: 1;
+  padding: 14px 10px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+.stage-cell:last-child { border-right: none; }
+.stage-count {
+  font-family: var(--serif);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.stage-name {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 4px;
+}

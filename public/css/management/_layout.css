@@ -1,0 +1,151 @@
+/* ── Main ─────────────────────────────────────────────────────────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Topbar ───────────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--pad);
+  height: 48px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.45);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar__date { font-size: 0.75rem; color: var(--muted); }
+.topbar__right { display: flex; align-items: center; gap: 14px; }
+
+/* ── Theme switch ────────────────────────────────────────────────────────── */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--muted);
+}
+.theme-switch__track {
+  width: 36px;
+  height: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.theme-switch__thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--gold);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-theme="dark"] .theme-switch__thumb { transform: translateX(16px); }
+[data-theme="dark"] .theme-switch__track { background: var(--gold-lt); border-color: var(--gold-dk); }
+.theme-switch__icon {
+  font-size: 0.9375rem;
+  line-height: 1;
+  font-variation-settings: 'FILL' 0, 'wght' 280, 'GRAD' 0, 'opsz' 20;
+  transition: opacity 0.2s;
+}
+[data-theme="light"] .theme-switch__icon:last-child { opacity: 0.35; }
+[data-theme="dark"] .theme-switch__icon:first-child { opacity: 0.35; }
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-refresh:hover { background: var(--surface-3); border-color: var(--gold); }
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-logout:hover { background: var(--surface-3); border-color: var(--red); color: var(--red); }
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2.5s infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes spin   { to { transform: rotate(360deg); } }
+
+/* ── Light mode — softer topbar shadow ───────────────────────────────────── */
+[data-theme="light"] .topbar {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* ── Content ──────────────────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  padding: var(--pad);
+  max-width: var(--content-max);
+  width: 100%;
+  margin: 0 auto;
+}
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Page Title ───────────────────────────────────────────────────────────── */
+.page-title {
+  font-family: var(--serif);
+  font-size: 2.125rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 22px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.page-title em { font-style: italic; color: var(--gold); font-weight: 400; }

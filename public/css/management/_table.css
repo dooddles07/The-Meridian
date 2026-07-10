@@ -1,0 +1,163 @@
+/* ── Defect photo thumbnail ────────────────────────────────────────────────── */
+.defect-thumb { width:44px; height:44px; object-fit:cover; border-radius:5px; cursor:zoom-in; border:1px solid var(--border); transition:opacity .15s; display:block; }
+.defect-thumb:hover { opacity:0.8; }
+
+/* ── Data Table ───────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; }
+/* Scroll wrapper injected by JS — carries the visual border/bg/radius so that
+   border-radius renders correctly (display:table ignores it with border-collapse:collapse) */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.data-table {
+  width: 100%;
+}
+.data-table th {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.data-table td {
+  font-size: 0.875rem;
+  color: var(--text);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  line-height: 1.45;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: linear-gradient(90deg, rgba(196,160,64,0.07) 0%, rgba(255,255,255,0.02) 100%); }
+.empty-row td {
+  text-align: center;
+  padding: 28px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* ── Status Badges ────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  font-size: 0.5rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+.badge-reported    { background: rgba(212,120,72,0.15); color: var(--orange); }
+.badge-acknowledged{ background: rgba(74,122,216,0.15); color: var(--blue); }
+.badge-in-progress { background: rgba(74,122,216,0.15); color: var(--blue); }
+.badge-resolved    { background: rgba(74,158,104,0.15); color: var(--green); }
+.badge-confirmed   { background: rgba(74,158,104,0.15); color: var(--green); }
+.badge-submitted   { background: rgba(212,120,72,0.15); color: var(--orange); }
+.badge-closed      { background: rgba(112,104,88,0.15); color: var(--muted); }
+.badge-requested   { background: rgba(212,120,72,0.15); color: var(--orange); }
+.badge-deposit-paid{ background: rgba(74,122,216,0.15); color: var(--blue); }
+.badge-received    { background: rgba(74,122,216,0.15); color: var(--blue); }
+.badge-uncollected { background: rgba(192,56,40,0.15);  color: var(--red); }
+.badge-showed      { background: rgba(74,158,104,0.15); color: var(--green); }
+/* Parcel pipeline stages */
+.badge-notified              { background: rgba(212,120,72,0.15); color: var(--orange); }
+.badge-collected             { background: rgba(74,158,104,0.15); color: var(--green); }
+.badge-uncollected-returned  { background: rgba(192,56,40,0.15);  color: var(--red); }
+/* Move-In / Move-Out pipeline stages */
+.badge-deposit-pending       { background: rgba(212,120,72,0.15); color: var(--orange); }
+.badge-completed             { background: rgba(74,158,104,0.15); color: var(--green); }
+.badge-deposit-refunded      { background: rgba(74,158,104,0.15); color: var(--green); }
+/* Feedback pipeline stages */
+.badge-under-review          { background: rgba(74,122,216,0.15); color: var(--blue); }
+.badge-default     { background: rgba(112,104,88,0.15); color: var(--muted); }
+
+/* ── Urgency Badges ───────────────────────────────────────────────────────── */
+.badge-emergency { background: rgba(192,57,43,0.12); color: #c0392b; }
+.badge-urgent    { background: rgba(211,84,0,0.12);  color: #d35400; }
+.badge-routine   { background: rgba(112,104,88,0.12); color: var(--muted); }
+
+/* Row-level urgency accent */
+.row-urgency-emergency { border-left: 3px solid #c0392b; }
+.row-urgency-urgent    { border-left: 3px solid #d35400; }
+.row-urgency-routine   { border-left: 3px solid transparent; }
+
+/* ── Booking stage action dropdown ────────────────────────────────────────── */
+.bk-stage-select {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border: 1px solid var(--border, rgba(112,104,88,0.3));
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface, #fff);
+  color: var(--text, inherit);
+  cursor: pointer;
+  max-width: 150px;
+}
+.bk-stage-select:disabled { opacity: 0.5; cursor: progress; }
+.bk-stage-none { color: var(--muted); font-size: 0.75rem; }
+.bk-syncing { color: var(--gold); font-style: italic; animation: bk-pulse 1.4s ease-in-out infinite; }
+@keyframes bk-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ── Tags ─────────────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  margin: 1px;
+}
+.tag-visitor  { border-color: rgba(112,104,88,0.4); color: var(--muted); }
+.tag-unit     { border-color: rgba(74,122,216,0.4); color: var(--blue); }
+.tag-complaint{ border-color: rgba(212,120,72,0.4); color: var(--orange); }
+.tag-parcel   { border-color: rgba(192,56,40,0.4);  color: var(--red); }
+
+/* ── View All Link ────────────────────────────────────────────────────────── */
+.view-all-link {
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.view-all-link:hover { opacity: 0.7; }
+
+/* ── Parcel table ─────────────────────────────────────────────────────────── */
+#parcelsTable { min-width: 700px; }
+
+/* Parcel stage select needs room for "Uncollected / Returned" */
+#parcelsTable .bk-stage-select {
+  max-width: none;
+  width: 175px;
+  min-width: 140px;
+}
+
+.parcel-ref-cell { max-width: 160px; }
+.parcel-code {
+  display: block;
+  font-size: 0.78rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.03em;
+  color: var(--gold, #c9a84c);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.parcel-auth {
+  font-size: 0.82rem;
+  max-width: 130px;
+  word-break: break-word;
+}
+.cell-muted { color: var(--muted); }
+.nowrap { white-space: nowrap; }

@@ -1,0 +1,120 @@
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button, input, select, textarea { font: inherit; }
+
+/* ── Design Tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds — dark warm parchment (evil twin of member portal #f4f0eb) */
+  --bg:        #0c0b09;
+  --surface:   #151310;
+  --surface-2: #1d1b17;
+  --surface-3: #262320;
+
+  --border:    rgba(255,255,255,0.07);
+  --border-2:  rgba(255,255,255,0.12);
+
+  /* Text — warm off-white hierarchy (all ≥4.5:1 on --bg #0c0b09) */
+  --text:      #e0d5be;   /* 13.5:1 ✓ */
+  --text-2:    #a8a090;   /*  7.6:1 ✓ */
+  --muted:     #8a8070;   /*  5.1:1 ✓  (was #706858 @ 3.57:1 — fixed) */
+  --faint:     #857b6b;   /*  4.7:1 ✓  (was #484038 @ 1.94:1 — fixed) */
+
+  /* Gold — same warm family as member portal */
+  --gold:      #c4a040;   /*  7.9:1 ✓ */
+  --gold-dk:   #8a6c28;
+  --gold-lt:   rgba(196,160,64,0.12);
+
+  /* Status */
+  --green:     #4a9e68;   /*  6.0:1 ✓ */
+  --red:       #dc4232;   /*  4.6:1 ✓  (was #c03828 @ 3.60:1 — fixed) */
+  --blue:      #4a7ad8;   /*  4.7:1 ✓ */
+  --orange:    #d47848;   /*  6.2:1 ✓ */
+  --purple:    #8a6ad8;   /*  4.8:1 ✓ */
+
+  --sans:      'Elms Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif:     'Cormorant', serif;
+
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-pill: 9999px;
+
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.18);
+  --shadow-md:   0 2px 4px rgba(0,0,0,0.16), 0 8px 24px rgba(0,0,0,0.28), 0 20px 48px rgba(0,0,0,0.12);
+  --shadow-lg:   0 4px 8px rgba(0,0,0,0.2), 0 16px 48px rgba(0,0,0,0.42), 0 40px 96px rgba(0,0,0,0.2);
+
+  --sidebar-w: 252px;
+  --content-max: 1280px;
+  --pad:       26px;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+html { font-size: 20px; }
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(196,160,64,0.06) 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ── Film grain overlay ───────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  background-repeat: repeat;
+}
+
+html { scrollbar-width: auto; scrollbar-color: var(--faint) transparent; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
+
+/* ── Keyboard focus ring (low-vision / keyboard nav) ──────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Light mode overrides ─────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:        #f4f0eb;
+  --surface:   #ffffff;
+  --surface-2: #f3efe9;
+  --surface-3: #ece7e0;
+  --border:    rgba(0,0,0,0.1);
+  --border-2:  rgba(0,0,0,0.16);
+  --text:      #14110f;
+  --text-2:    #3f3832;
+  --muted:     #5a514a;
+  --faint:     #706860;
+  --gold:      #856728;
+  --gold-dk:   #6f5420;
+  --gold-lt:   #f0e3c6;
+  --green:     #1f6b45;
+  --red:       #9f1f16;
+  --blue:      #1f4f8b;
+  --orange:    #9a4d12;
+  --purple:    #6b4ab5;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08), 0 20px 48px rgba(0,0,0,0.05);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,0.06), 0 16px 48px rgba(0,0,0,0.14), 0 40px 96px rgba(0,0,0,0.08);
+}
+[data-theme="light"] body {
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(176,140,56,0.07) 0%, transparent 60%),
+    var(--bg);
+}

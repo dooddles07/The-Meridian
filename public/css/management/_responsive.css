@@ -1,0 +1,128 @@
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 1120px) {
+  .grid-2       { grid-template-columns: 1fr 320px; }
+  .guest-layout { grid-template-columns: 1fr 320px; }
+  .ann-layout   { grid-template-columns: 1fr 300px; }
+  .kpi-row      { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Layout collapse aligned with the 960px sidebar breakpoint so grids never
+   stay desktop-proportioned while the sidebar is off-canvas (split-screen). */
+@media (max-width: 960px) {
+  :root { --pad: 18px; }
+  .grid-2         { grid-template-columns: 1fr; }
+  .guest-layout   { grid-template-columns: 1fr; }
+  .ann-layout     { grid-template-columns: 1fr; }
+  .kpi-row        { grid-template-columns: repeat(2, 1fr); }
+  .settings-grid  { grid-template-columns: 1fr; }
+  .stage-fetch-row{ grid-template-columns: 1fr; }
+  .form-grid      { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 960px) {
+  /* Sidebar becomes overlay — frees full viewport width for split-screen */
+  .sidebar {
+    transform: translateX(-110%);
+    border-radius: 0 20px 20px 0;
+    transition: transform 0.22s ease;
+    z-index: 110;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.open { display: block; }
+  .sidebar-toggle { display: flex; align-items: center; }
+  .main { margin-left: 0; overflow-x: hidden; }
+
+  /* Topbar — hide non-essential elements */
+  .topbar__date { display: none; }
+  .live-badge   { display: none; }
+}
+
+@media (max-width: 760px) {
+  html { font-size: 18px; }
+}
+
+@media (max-width: 680px) {
+  :root { --pad: 14px; }
+
+  /* KPI drops to 2 cols at this boundary (was 3 cols from 680–1120px) */
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+
+  /* Prevent filter selects from being crushed when the filter bar wraps */
+  .filter-select { min-width: 120px; }
+
+  /* Scrollable date tabs */
+  .date-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .date-tab  { padding: 8px 12px; white-space: nowrap; }
+
+  /* Table cells tighter */
+  .data-table th, .data-table td { padding: 8px 10px; font-size: 0.8125rem; }
+
+  /* Parcel stage select — keep wide enough for "Uncollected / Returned" */
+  #parcelsTable .bk-stage-select { width: 160px; min-width: 130px; font-size: 0.7rem; }
+
+  /* Summary row wraps */
+  .summary-row  { flex-wrap: wrap; }
+  .summary-cell { min-width: 50%; }
+
+  /* Pipeline / defect cells wrap instead of cramming */
+  .pipeline-stages          { flex-wrap: wrap; }
+  .pipeline-stages .stage-cell { min-width: 50%; border-bottom: 1px solid var(--border); }
+  .defect-summary-cells     { flex-wrap: wrap; }
+  .defect-summary-cells .stage-cell { min-width: 50%; border-bottom: 1px solid var(--border); }
+
+  /* Typography */
+  .page-title { font-size: 1.5rem; margin-bottom: 14px; }
+
+  /* Panels */
+  .panel-head { padding: 9px 12px; }
+  .ann-item   { padding: 13px 15px; }
+  .ann-footer { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+@media (max-width: 480px) {
+  :root { --pad: 12px; }
+  html { font-size: 16px; }
+
+  /* Facility-block checkboxes stack so long labels don't clip */
+  #annBlockGrid { grid-template-columns: 1fr !important; }
+
+  /* KPI goes single column on very small phones */
+  .kpi-row { grid-template-columns: 1fr; }
+
+  /* KPI value and card tighter at 1-col full-width */
+  .kpi-card { padding: 14px 16px; }
+  .kpi-value { font-size: 2rem; }
+
+  /* Page title smaller on phones */
+  .page-title { font-size: 1.35rem; margin-bottom: 12px; }
+
+  /* Pipeline stages: one per row */
+  .pipeline-stages .stage-cell,
+  .defect-summary-cells .stage-cell { min-width: 100%; }
+
+  /* Summary cells stack full-width */
+  .summary-cell { min-width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .summary-cell:last-child { border-bottom: none; }
+
+  /* Filter bar — stack each control full width */
+  .filter-bar { gap: 6px; }
+  .filter-input, .filter-select { width: 100%; min-width: 0; flex: none; }
+
+  /* Table cells more compact on very small phones */
+  .data-table th, .data-table td { padding: 7px 8px; font-size: 0.75rem; }
+
+  /* Parcel: select still fits longest stage label at smallest size */
+  #parcelsTable .bk-stage-select { width: 145px; min-width: 120px; font-size: 0.65rem; }
+  .parcel-auth { max-width: 90px; font-size: 0.72rem; }
+
+  /* Form actions stack */
+  .form-actions { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; text-align: center; justify-content: center; }
+
+  /* REFRESH + LOGOUT buttons — hide text, show icon only */
+  .btn-refresh, .btn-logout { font-size: 0; padding: 7px 9px; }
+
+  /* Theme toggle — hide text labels, show track only */
+  .theme-switch__icon { display: none; }
+}

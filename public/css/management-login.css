@@ -1,0 +1,184 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+
+/* ── Tokens ───────────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #080808;
+  --card-bg:   transparent;
+  --text:      #e8dfc8;
+  --muted:     #7a7060;
+  --faint:     #3a3530;
+  --gold:      #c9a84c;
+  --gold-hov:  #e8c56a;
+  --input-bg:  #111;
+  --input-bdr: #2a2520;
+  --border:    rgba(255,255,255,0.07);
+  --red:       #d9534f;
+}
+[data-theme="light"] {
+  --bg:        #f4f0eb;
+  --text:      #14110f;
+  --muted:     #5a514a;
+  --faint:     #9a9088;
+  --gold:      #856728;
+  --gold-hov:  #6f5420;
+  --input-bg:  #faf7f4;
+  --input-bdr: #cfc6ba;
+  --border:    rgba(0,0,0,0.1);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Tenor Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.22s ease, color 0.22s ease;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: min(360px, 100% - 2rem);
+}
+
+.brand {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.2rem;
+  font-weight: 300;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+.brand em { font-style: italic; font-weight: 400; }
+
+.subtitle {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: 2.4rem;
+}
+
+.form-wrap {
+  width: 100%;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+.form-wrap.open {
+  max-height: 460px; /* headroom for zoomed text / short landscape phones so submit isn't clipped */
+  opacity: 1;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+}
+.field label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.field input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-bdr);
+  border-bottom-color: var(--gold);
+  color: var(--text);
+  font-family: 'Tenor Sans', sans-serif;
+  font-size: 0.92rem;
+  padding: 0.6rem 0;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field input:focus { border-bottom-color: var(--gold-hov); }
+.field input::placeholder { color: var(--faint); }
+
+.err {
+  font-size: 0.8rem;
+  color: var(--red);
+  min-height: 1.1rem;
+  margin-bottom: 0.6rem;
+}
+
+.btn {
+  width: 100%;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  font-family: 'Tenor Sans', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn:hover { background: var(--gold-hov); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#signInLanding { margin-bottom: 1rem; }
+
+.powered {
+  margin-top: 2.4rem;
+  font-size: 0.7rem;
+  color: var(--faint);
+  letter-spacing: 0.1em;
+}
+
+/* ── Theme switch ─────────────────────────────────────────────────────────── */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--muted);
+}
+.theme-switch__track {
+  width: 36px;
+  height: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.theme-switch__thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--gold);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-theme="dark"] .theme-switch__thumb { transform: translateX(16px); }
+[data-theme="dark"] .theme-switch__track { background: rgba(196,160,64,0.12); border-color: rgba(196,160,64,0.3); }
+[data-theme="light"] .theme-switch__track { background: rgba(0,0,0,0.06); }
+.theme-switch__icon {
+  font-size: 0.9375rem;
+  line-height: 1;
+  font-variation-settings: 'FILL' 0, 'wght' 280, 'GRAD' 0, 'opsz' 20;
+  transition: opacity 0.2s;
+}
+[data-theme="light"] .theme-switch__icon:last-child { opacity: 0.35; }
+[data-theme="dark"] .theme-switch__icon:first-child { opacity: 0.35; }
+.page-theme-switch {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+}

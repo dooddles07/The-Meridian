@@ -1,0 +1,114 @@
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 1060px) {
+  :root { --content-max: 100%; }
+  .form-layout   { grid-template-columns: 1fr 260px; }
+  .form-row      { grid-template-columns: 1fr; }
+  .dash-grid     { grid-template-columns: 1fr 280px; }
+  .facility-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Layout collapse aligned with the 960px sidebar breakpoint so grids never
+   stay desktop-proportioned while the sidebar is off-canvas (split-screen). */
+@media (max-width: 960px) {
+  .form-layout      { grid-template-columns: 1fr; }
+  .form-col-right   { display: none; }
+  .guest-bottom-row { grid-template-columns: 1fr; }
+  .dash-grid      { grid-template-columns: 1fr; }
+  .quick-strip    { grid-template-columns: repeat(2, 1fr); }
+  .matters-row    { grid-template-columns: 1fr 1fr; }
+  .matters-card:nth-child(2) { border-right: none; }
+  .matters-card:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+  }
+  .facility-grid  { grid-template-columns: repeat(2, 1fr); }
+  .move-grid      { grid-template-columns: 1fr; }
+  .parcel-layout  { grid-template-columns: 1fr; }
+  .move-info-row  { grid-template-columns: 1fr; }
+  .move-main-row  { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 960px) {
+  /* Sidebar becomes overlay — frees full viewport width for split-screen */
+  .sidebar {
+    transform: translateX(-110%);
+    border-radius: 0 20px 20px 0;
+    transition: transform 0.28s ease;
+    z-index: 200;
+  }
+  .sidebar.sidebar--open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.4);
+  }
+  .main { margin-left: 0; }
+  .sidebar__toggle { display: flex; }
+  .topbar-date { display: none; }
+}
+
+@media (max-width: 720px) {
+  :root { --pad: 16px; }
+
+  /* Payment panel stacks on mobile */
+  .payment-grid { grid-template-columns: 1fr; }
+
+  /* Typography */
+  .page-title { font-size: 1.5rem; margin-bottom: 14px; }
+
+  /* Dashboard */
+  .matters-row { grid-template-columns: 1fr; }
+  .matters-card { border-right: none; }
+  .matters-card:nth-child(3) { grid-column: auto; border-top: 1px solid var(--border); }
+  .dash-grid   { grid-template-columns: 1fr; }
+  .quick-strip { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .quick-card  { padding: 14px 10px; gap: 8px; border-radius: var(--radius-sm); }
+  .quick-icon  { width: 34px; height: 34px; }
+  .quick-label-text { font-size: 0.5625rem; }
+
+  /* Booking */
+  .facility-grid { grid-template-columns: repeat(2, 1fr); }
+  .booking-row   { flex-wrap: wrap; gap: 4px; }
+
+  /* Forms */
+  .form-layout      { grid-template-columns: 1fr; }
+  .form-col-right   { display: none; }
+  .guest-bottom-row { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; gap: 8px; }
+  .form-section { padding: 14px; }
+  .stage-row  { flex-wrap: wrap; }
+  .stage-cell { min-width: 33.33%; border-bottom: 1px solid var(--border); }
+
+  /* Records & panels */
+  .move-grid  { grid-template-columns: 1fr; }
+  .parcel-layout { grid-template-columns: 1fr; }
+  .rec-summary { flex-wrap: wrap; }
+  .rec-name { white-space: normal; overflow-wrap: break-word; word-break: break-word; }
+  .data-table th, .data-table td { padding: 8px 10px; font-size: 0.8125rem; }
+
+  /* Overflow containment — tables scroll via their .bk-table-scroll wrapper,
+     so the table itself stays a normal table (keeps column width distribution). */
+  .main { overflow-x: hidden; }
+
+  /* Modal */
+  .bk-row { grid-template-columns: 1fr; }
+  .modal-box { max-height: 95vh; border-radius: var(--radius-md); }
+}
+
+@media (max-width: 480px) {
+  .facility-grid { grid-template-columns: 1fr; }
+  .quick-strip   { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .quick-card    { padding: 14px 10px; gap: 8px; border-radius: var(--radius-md); }
+  .quick-icon    { width: 36px; height: 36px; }
+  .quick-label-text { font-size: 0.5625rem; }
+  .stage-cell    { min-width: 50%; }
+  .ann-card      { padding: 14px 16px; }
+  .panel-head    { padding: 9px 12px; }
+}
+
+@media (max-width: 420px) {
+  :root { --pad: 12px; }
+  .matters-row { grid-template-columns: 1fr; }
+  .move-grid   { grid-template-columns: 1fr; }
+  .form-actions { flex-direction: column; }
+  .btn-dark, .btn-outline { width: 100%; justify-content: center; }
+}

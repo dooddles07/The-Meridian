@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Meridian — Resident Portal</title>
+  <link rel="icon" type="image/png" href="asset/logomark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&family=Elms+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <link rel="stylesheet" href="css/portal.css" />
+  <link rel="stylesheet" href="css/inbox.css" />
+  <style>
+    /* ── RSVP section inside announcement cards ── */
+    .ann-rsvp { margin-top:14px; padding-top:12px; border-top:1px solid var(--border,rgba(133,103,40,.15)); }
+    .ann-rsvp__label { font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold,#856728); margin-bottom:8px; }
+    .ann-rsvp__btns { display:flex; gap:8px; margin-bottom:10px; }
+    .ann-rsvp__btn { padding:7px 18px; border-radius:20px; border:1.5px solid var(--border,rgba(133,103,40,.25)); background:transparent; font-size:0.82rem; font-weight:600; font-family:inherit; cursor:pointer; color:var(--text-muted,#5a514a); transition:border-color .15s,background .15s,color .15s; }
+    .ann-rsvp__yes.ann-rsvp__active { border-color:#27ae60; background:rgba(39,174,96,.12); color:#27ae60; }
+    .ann-rsvp__no.ann-rsvp__active  { border-color:#c0392b; background:rgba(192,57,43,.1);  color:#c0392b; }
+    .ann-rsvp__btn:hover:not(.ann-rsvp__active) { border-color:var(--gold,#856728); color:var(--gold,#856728); }
+    .ann-rsvp__count { margin-bottom:8px; }
+    .ann-rsvp__count.ann-rsvp__hidden { display:none; }
+    .ann-rsvp__count-label { font-size:0.78rem; color:var(--text-muted,#5a514a); display:flex; align-items:center; gap:8px; }
+    .ann-rsvp__num { width:64px; padding:5px 8px; border:1px solid var(--border,rgba(133,103,40,.25)); border-radius:5px; font-size:0.85rem; font-family:inherit; background:transparent; color:inherit; text-align:center; }
+    .ann-rsvp__footer { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; }
+    .ann-rsvp__submit { padding:7px 20px; border-radius:20px; border:none; background:var(--gold,#856728); color:#fff; font-size:0.82rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s; }
+    .ann-rsvp__submit:hover:not(:disabled) { opacity:0.88; }
+    .ann-rsvp__submit:disabled { opacity:0.5; cursor:not-allowed; }
+    .ann-rsvp__submit.ann-rsvp__hidden { display:none; }
+    .ann-rsvp__closed { font-size:0.78rem; color:var(--text-muted,#5a514a); font-style:italic; }
+    .ann-rsvp__status { font-size:0.78rem; color:var(--text-muted,#5a514a); min-height:1em; }
+    /* ── Urgency selector for defect reports ── */
+    .urgency-selector { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:8px; }
+    .urgency-option { position:relative; }
+    .urgency-option input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+    .urgency-label { display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid var(--border,rgba(133,103,40,.25)); border-radius:8px; cursor:pointer; transition:border-color .15s,background .15s; background:var(--surface,#fafaf8); }
+    .urgency-option input[type="radio"]:checked + .urgency-label { border-color:var(--gold,#856728); background:rgba(133,103,40,0.07); }
+    .urgency-icon { font-size:1.25rem; flex-shrink:0; color:var(--text-2,#5a514a); line-height:1; }
+    .urgency-option input[type="radio"]:checked + .urgency-label .urgency-icon { color:var(--gold,#856728); }
+    .urgency-text { min-width:0; }
+    .urgency-text strong { font-weight:600; font-size:0.875rem; display:block; }
+    .urgency-text small { font-size:0.75rem; color:var(--text-2,#5a514a); display:block; line-height:1.3; white-space:normal; }
+    .urgency-notice { display:flex; align-items:center; gap:8px; margin-top:10px; padding:10px 12px; border-radius:6px; background:rgba(192,57,43,0.08); border-left:3px solid #c0392b; color:#c0392b; font-size:0.82rem; font-weight:500; }
+    .urgency-notice .material-symbols-outlined { font-size:1.1rem; flex-shrink:0; }
+    @media (max-width:560px) {
+      .urgency-label { flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:10px 6px; gap:6px; }
+      .urgency-text strong { font-size:0.78rem; }
+      .urgency-icon { font-size:1.1rem; }
+    }
+    /* ── Messages: sidebar unread badge (design lives in inbox.css) ── */
+    .sidebar__msg-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; margin-left:6px; border-radius:9px; background:#c0392b; color:#fff; font-size:0.68rem; font-weight:700; line-height:1; }
+    /* My Bookings — collapsible note row */
+    .bk-note-toggle { color:var(--gold,#856728); font-weight:400; cursor:pointer; white-space:nowrap; font-size:14px;}
+    .bk-note-toggle .phi { font-size:0.7rem; }
+    .data-table tr.bk-note-open > td { border-bottom:none !important; }
+    .data-table tr.bk-note-row > td { border-top:none !important; padding-top:0; }
+    .inbox__item-time--unit { font-size:0.66rem; color:var(--gold,#856728); font-weight:600; }
+    /* ── Payments ── */
+    .pay-summary { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .pay-stat { flex:1; min-width:140px; background:var(--surface,#fff); border:1px solid var(--border,rgba(133,103,40,.18)); border-radius:10px; padding:14px 16px; }
+    .pay-stat__label { font-size:0.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--text-2,#9a9088); margin-bottom:4px; }
+    .pay-stat__value { font-size:1.2rem; font-weight:600; color:var(--text,#14110f); }
+    .pay-stat__value.due { color:#c0392b; }
+    .pay-card { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--surface,#fff); border:1px solid var(--border,rgba(133,103,40,.18)); border-radius:10px; margin-bottom:8px; flex-wrap:wrap; }
+    .pay-card__body { flex:1; min-width:0; }
+    .pay-card__right { text-align:right; flex-shrink:0; }
+    .pay-card__desc { font-weight:600; font-size:0.9rem; color:var(--text,#14110f); }
+    .pay-card__meta { font-size:0.75rem; color:var(--text-2,#9a9088); margin-top:2px; }
+    .pay-card__amt { font-size:1rem; font-weight:600; white-space:nowrap; }
+    .pay-tag { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.68rem; font-weight:600; letter-spacing:.03em; text-transform:capitalize; }
+    .pay-tag.paid { background:rgba(39,174,96,.14); color:#27ae60; }
+    .pay-tag.pending { background:rgba(133,103,40,.14); color:var(--gold,#856728); }
+    .pay-tag.overdue { background:rgba(192,57,43,.12); color:#c0392b; }
+    .pay-tag.refunded { background:rgba(90,81,74,.12); color:var(--text-2,#5a514a); }
+    .pay-sub-head { font-size:.625rem; letter-spacing:.12em; text-transform:uppercase; font-weight:700; color:var(--gold,#856728); margin:0 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border,rgba(133,103,40,.1)); }
+    .pay-due { display:flex; align-items:center; gap:14px; padding:12px 14px; background:var(--surface,#fff); border:1px solid rgba(192,57,43,.25); border-left:3px solid #c0392b; border-radius:10px; margin-bottom:8px; flex-wrap:wrap; }
+    .pay-due__body { flex:1; min-width:0; }
+    .pay-due__desc { font-weight:600; font-size:0.875rem; color:var(--text,#14110f); }
+    .pay-due__slot { font-weight:400; color:var(--muted,#9a9088); }
+    .pay-due__meta { font-size:0.72rem; color:var(--text-2,#9a9088); margin-top:2px; }
+    .pay-due__right { text-align:right; flex-shrink:0; }
+    .pay-due__amt { font-size:.9rem; font-weight:700; color:var(--text,#14110f); margin-bottom:5px; }
+    .pay-pay-btn { padding:7px 16px; border:none; border-radius:8px; background:var(--gold,#856728); color:#fff; font-size:0.78rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
+    .pay-pay-btn:hover:not(:disabled) { opacity:.88; }
+    .pay-pay-btn:disabled { opacity:.5; cursor:not-allowed; }
+    @media (max-width:480px) {
+      .pay-due { flex-direction:column; align-items:stretch; gap:8px; }
+      .pay-due__right { display:flex; align-items:center; justify-content:space-between; text-align:left; }
+      .pay-due__amt { margin-bottom:0; }
+      .pay-pay-btn { flex-shrink:0; }
+      .pay-card__right { width:100%; display:flex; align-items:center; justify-content:space-between; text-align:left; margin-top:4px; }
+    }
+    .pay-facility-title { font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text,#14110f); line-height:1.3; }
+    .pay-facility-detail { font-size:0.8rem; color:var(--text-2,#9a9088); margin-top:3px; line-height:1.4; }
+    /* ── Verandah split-fee card ── */
+    .pay-due--verandah { flex-direction:column; align-items:stretch; gap:0; padding:0; }
+    .pay-due--verandah .pay-due__body { padding:11px 14px 9px; border-bottom:1px solid rgba(192,57,43,.14); }
+    .pay-fee-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--border,rgba(133,103,40,.1)); }
+    .pay-fee-row:last-child { border-bottom:none; }
+    .pay-fee-row__name { flex:1; font-size:0.84rem; font-weight:600; color:var(--text,#14110f); }
+    .pay-fee-row__right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+    .pay-fee-row__amt { font-size:0.84rem; font-weight:700; white-space:nowrap; min-width:82px; text-align:right; color:var(--text,#14110f); }
+    @media (max-width:480px) {
+      .pay-fee-row { flex-wrap:wrap; gap:5px; }
+      .pay-fee-row__right { width:100%; justify-content:space-between; }
+    }
+    .pay-history-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:none; border-top:1px solid var(--border,rgba(133,103,40,.12)); padding:10px 0 0; margin-top:14px; font-size:0.78rem; font-weight:600; color:var(--text-2,#9a9088); cursor:pointer; font-family:inherit; }
+    .pay-history-toggle:hover { color:var(--text,#14110f); }
+    .pay-links { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    /* ── Payment modal ── */
+    .pay-modal-box { max-width:620px; width:96vw; display:flex; flex-direction:column; max-height:92vh; }
+    .pay-frame-wrap { flex:1; min-height:0; background:var(--bg,#faf8f5); }
+    .pay-frame { width:100%; height:clamp(360px,56vh,540px); border:0; display:block; }
+    .pay-modal-foot { padding:12px 16px; border-top:1px solid var(--border,rgba(133,103,40,.15)); flex-shrink:0; }
+    .pay-modal-foot .btn-dark { width:100%; text-align:center; justify-content:center; }
+    @media (max-width:520px) {
+      #payModal { align-items:flex-end; padding:0; }
+      .pay-modal-box { width:100%; max-height:94vh; border-radius:20px 20px 0 0; }
+      .pay-modal-foot { padding:10px 14px 22px; }
+    }
+  </style>
+  <script>
+    (function(){
+      var t=localStorage.getItem('meridian-portal-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+      document.documentElement.dataset.theme=t;
+    })();
+  </script>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">The <em>Meridian</em></div>
+    <div class="login-sub">Resident Portal · The Meridian</div>
+    <p class="login-desc">Sign in with your registered unit number and email address to access resident services.</p>
+    <div class="login-field">
+      <label for="loginUnit">Unit Number</label>
+      <input type="text" id="loginUnit" placeholder="e.g. #05-12" autocomplete="off" />
+    </div>
+    <div class="login-field">
+      <label for="loginEmail">Email Address</label>
+      <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email" />
+    </div>
+    <p class="login-err" id="loginErr"></p>
+    <button class="btn-login" id="loginBtn">Access Resident Portal</button>
+    <div class="login-footer">
+      <!-- <span>Trouble signing in? <a href="#">Contact management office</a></span><br> -->
+      <!-- <a href="https://wa.me/6565001941" target="_blank" class="wa-link">🟢 WhatsApp support</a> -->
+      <button class="theme-switch" data-theme-toggle role="switch" aria-label="Toggle colour scheme">
+        <span class="material-symbols-outlined theme-switch__icon">light_mode</span>
+        <span class="theme-switch__track"><span class="theme-switch__thumb"></span></span>
+        <span class="material-symbols-outlined theme-switch__icon">dark_mode</span>
+      </button>
+    </div>
+    <p class="powered">Powered by <span>Wibiz</span></p>
+  </div>
+</div>
+
+<!-- ── PORTAL ─────────────────────────────────────────────────────────────── -->
+<div id="portal-shell">
+  <div class="shell">
+
+    <div class="sidebar__overlay" id="sbOverlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <div class="sidebar__logo">The <em>Meridian</em></div>
+        <div class="sidebar__tagline">Resident Portal</div>
+      </div>
+
+      <div class="sidebar__user">
+        <div class="sidebar__avatar" id="sbAvatar">MO</div>
+        <div class="sidebar__user-info">
+          <div class="sidebar__name" id="sbName">Resident</div>
+          <div class="sidebar__unit" id="sbUnit">Unit —</div>
+          <div class="sidebar__badge" id="sbBadge">Resident</div>
+        </div>
+      </div>
+
+      <div class="sidebar__divider"></div>
+      <div class="sidebar__item sidebar__item--active" data-view="dashboard"><span class="material-symbols-outlined sidebar__icon">home</span> My Dashboard</div>
+
+      <div class="sidebar__divider"></div>
+      <div class="sidebar__section">Services</div>
+      <div class="sidebar__item" data-view="booking"><span class="material-symbols-outlined sidebar__icon">calendar_month</span> Facility Booking</div>
+      <div class="sidebar__item" data-view="guests"><span class="material-symbols-outlined sidebar__icon">supervisor_account</span> Guest &amp; Visitors</div>
+      <div class="sidebar__item" data-view="defects"><span class="material-symbols-outlined sidebar__icon">build</span> Defect Reports</div>
+      <div class="sidebar__item" data-view="parcels"><span class="material-symbols-outlined sidebar__icon">inventory_2</span> Parcel Management</div>
+      <div class="sidebar__item" data-view="move"><span class="material-symbols-outlined sidebar__icon">local_shipping</span> Move In / Out</div>
+      <div class="sidebar__item" data-view="messages"><span class="material-symbols-outlined sidebar__icon">forum</span> Messages <span class="sidebar__msg-badge" id="msgBadge" style="display:none"></span></div>
+      <div class="sidebar__item" data-view="feedback"><span class="material-symbols-outlined sidebar__icon">chat</span> Feedback</div>
+      <div class="sidebar__item" data-view="notices"><span class="material-symbols-outlined sidebar__icon">article</span> Announcements </div>
+      <div class="sidebar__item" data-view="payments"><span class="material-symbols-outlined sidebar__icon">credit_card</span> Payments</div>
+      <div class="sidebar__item" data-view="resources"><span class="material-symbols-outlined sidebar__icon">folder_open</span> Resources</div>
+
+      <div class="sidebar__logout" id="logoutBtn">Logout</div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar__toggle" id="sbToggle" aria-label="Menu">
+            <span></span><span></span><span></span>
+          </button>
+          <span class="topbar-date" id="topbarDate"></span>
+        </div>
+        <button class="theme-switch" data-theme-toggle role="switch" aria-label="Toggle colour scheme">
+          <span class="material-symbols-outlined theme-switch__icon">light_mode</span>
+          <span class="theme-switch__track"><span class="theme-switch__thumb"></span></span>
+          <span class="material-symbols-outlined theme-switch__icon">dark_mode</span>
+        </button>
+      </header>
+
+      <div class="content">
+
+        <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+        <div id="view-dashboard" class="view active">
+          <div id="noticeBanner" style="display:none"></div>
+          <div id="parcelNoticeBanner" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;background:rgba(133,103,40,0.08);border-left:3px solid var(--gold,#856728);display:flex;align-items:center;gap:10px;font-size:0.875rem;cursor:pointer" data-view="parcels">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--gold,#856728);flex-shrink:0">inventory_2</span>
+            <span id="parcelNoticeText"></span>
+            <span style="margin-left:auto;color:var(--gold,#856728);font-weight:600;white-space:nowrap">View →</span>
+          </div>
+
+          <div class="matters-row">
+            <div class="matters-card gold-top" data-view="booking" style="cursor:pointer">
+              <div class="matters-eyebrow">Your Next Booking</div>
+              <div class="matters-value" id="nextBookingTitle">No upcoming bookings</div>
+              <div class="matters-sub"  id="nextBookingTime"></div>
+              <a class="matters-link">Book a facility →</a>
+            </div>
+            <div class="matters-card blue-top" data-view="notices" style="cursor:pointer">
+              <div class="matters-eyebrow">Upcoming Event</div>
+              <div class="matters-value" id="upcomingEventTitle">No upcoming events</div>
+              <div class="matters-sub"  id="upcomingEventSub"></div>
+            </div>
+            <div class="matters-card cyan-top" data-view="notices" style="cursor:pointer">
+              <div class="matters-eyebrow">Maintenance Alert</div>
+              <div class="matters-value" id="alertTitle">No active alerts</div>
+              <div class="matters-sub"  id="alertSub"></div>
+            </div>
+          </div>
+
+          <div class="quick-strip">
+            <div class="quick-card" data-view="booking">
+              <div class="quick-icon"><span class="material-symbols-outlined">calendar_month</span></div>
+              <div class="quick-label-text">Book Facility</div>
+            </div>
+            <div class="quick-card" data-view="guests">
+              <div class="quick-icon"><span class="material-symbols-outlined">supervisor_account</span></div>
+              <div class="quick-label-text">Register Guest</div>
+            </div>
+            <div class="quick-card" data-view="defects">
+              <div class="quick-icon"><span class="material-symbols-outlined">build</span></div>
+              <div class="quick-label-text">Report Defect</div>
+            </div>
+            <div class="quick-card" data-view="payments">
+              <div class="quick-icon"><span class="material-symbols-outlined">credit_card</span></div>
+              <div class="quick-label-text">Pay Deposit</div>
+            </div>
+          </div>
+
+          <div class="dash-grid">
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">Upcoming Bookings</span>
+                <span class="panel-meta" id="bookingCountBadge">0 Active</span>
+              </div>
+              <div id="dashBookings"><div class="panel-empty">No bookings on record.</div></div>
+              <a class="panel-link" style="padding:0.6rem 1rem;border-top:1px solid var(--border)" data-view="booking">Book a facility →</a>
+            </div>
+            <div class="panel dash-notices">
+              <div class="panel-head">
+                <span class="panel-title">Upcoming Notices</span>
+                <a class="panel-meta" data-view="notices">All →</a>
+              </div>
+              <div id="dashNotices"><div class="panel-empty">No notices.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Facility Booking ────────────────────────────────────────────── -->
+        <div id="view-booking" class="view">
+          <div class="page-title">Facility <em>Booking</em></div>
+          <div class="facility-grid" id="facilityGrid">
+            <div style="color:var(--muted);font-size:0.8rem">Loading facilities…</div>
+          </div>
+          <div class="panel" style="margin-bottom:1rem">
+            <div class="panel-head">
+              <span class="panel-title">Upcoming Bookings</span>
+              <span class="panel-meta" id="myUpcomingCount">0 Active</span>
+            </div>
+            <div id="myUpcomingList">
+              <div class="panel-empty">No upcoming bookings. Select a facility above to get started.</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Booking History</span>
+              <span class="panel-meta" id="myHistoryCount">0 Records</span>
+            </div>
+            <div id="myHistoryList">
+              <div class="panel-empty">No past bookings on record.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Guest & Visitors ───────────────────────────────────────────── -->
+        <div id="view-guests" class="view">
+          <div class="page-title">Guest <em>&amp; Visitor Registration</em></div>
+          <div class="form-section">
+            <div class="form-section-title">Register a Visitor</div>
+            <div class="form-group">
+              <label>Visitor Type</label>
+              <select id="gVisitorType">
+                <option value="">— Select visitor type —</option>
+                <option value="Social Guest">Social Guest</option>
+                <option value="Contractor">Contractor</option>
+                <option value="Delivery">Delivery</option>
+                <option value="Mover">Mover</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Visitor Full Name</label>
+              <input type="text" id="gVisitorName" placeholder="Full name of visitor" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Visitor Email</label>
+                <input type="email" id="gVisitorEmail" placeholder="visitor@email.com" />
+              </div>
+              <div class="form-group">
+                <label>Visitor Phone (Optional)</label>
+                <input type="tel" id="gVisitorPhone" placeholder="e.g. +65 9123 4567" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Visit Date</label>
+                <input type="date" id="gDate" />
+              </div>
+              <div class="form-group">
+                <label>Duration</label>
+                <select id="gDuration">
+                  <option>Single Visit (Day)</option>
+                  <option>Multi-Day (specify in notes)</option>
+                  <option>Long-Term (1 month)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Linked facility booking <span style="font-weight:400;opacity:.7">(optional)</span></label>
+              <select id="gLinkedBooking">
+                <option value="">— No linked booking —</option>
+              </select>
+              <div id="gBookingStatus" style="display:none;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-dark" id="gRegisterBtn">Register Visitor</button>
+              <button class="btn-outline" id="gResetBtn">Reset</button>
+            </div>
+            <p class="form-msg" id="gMsg"></p>
+          </div>
+          <div class="guest-bottom-row">
+            <div class="panel" style="border:1px solid var(--border)">
+              <div class="panel-head">
+                <span class="panel-title">My Registered Guests</span>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="panel-refresh" id="refreshGuests" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+                  <span class="panel-meta" id="myGuestsCount">0 Total</span>
+                </div>
+              </div>
+              <div id="myGuestsList"><div class="panel-empty">No registered guests on record.</div></div>
+            </div>
+            <div class="rules-panel">
+              <div class="rules-title">Guest Rules</div>
+              <div class="rule-item">🏊 Pool — max 4 guests per unit</div>
+              <div class="rule-item">🎾 Tennis / Squash — max 3 guests</div>
+              <div class="rule-item">🏀 Basketball — max 12 total occupants</div>
+              <div class="rule-item">💪 Gym / Fitness — no guests</div>
+              <div class="rule-item">🧖 Steam Rooms — no guests</div>
+              <div class="rule-item">👶 Under 12 at pool — parent must be present</div>
+              <div class="rule-item">👥 All guests must be accompanied by a resident</div>
+              <div class="rule-item" style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border)">📅 Guests for a facility event require a confirmed booking before they can be registered</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Defect Reports ──────────────────────────────────────────────── -->
+        <div id="view-defects" class="view">
+          <div class="page-title">Defect <em>Reporting</em></div>
+          <div class="stage-row" id="defectStages"></div>
+          <div class="form-layout">
+            <div class="form-section">
+              <div class="form-section-title">Submit a New Report</div>
+              <div class="form-group">
+                <label>Describe the Issue</label>
+                <textarea id="dDesc" rows="4" maxlength="1000" placeholder="e.g. Water leaking from ceiling in master bathroom…"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Location</label>
+                <select id="dLocation">
+                  <option>Inside My Unit</option>
+                  <option>Common Area — Corridor</option>
+                  <option>Common Area — Lift Lobby</option>
+                  <option>Common Area — Carpark</option>
+                  <option>Facility Area</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Primary Category</label>
+                  <select id="dCategory">
+                    <option>Plumbing</option>
+                    <option>Electrical</option>
+                    <option>Structural</option>
+                    <option>Pest Control</option>
+                    <option>Lift / Escalator</option>
+                    <option>Air Conditioning</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Secondary Category <span class="opt">(if applicable)</span></label>
+                  <select id="dSecondaryCategory">
+                    <option value="">— none —</option>
+                    <option>Plumbing</option>
+                    <option>Electrical</option>
+                    <option>Structural</option>
+                    <option>Pest Control</option>
+                    <option>Lift / Escalator</option>
+                    <option>Air Conditioning</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Urgency Level</label>
+                <div class="urgency-selector">
+                  <label class="urgency-option">
+                    <input type="radio" name="dUrgency" value="Routine" checked />
+                    <span class="urgency-label">
+                      <span class="material-symbols-outlined urgency-icon">build_circle</span>
+                      <span class="urgency-text">
+                        <strong>Routine</strong>
+                        <!-- <small>Can wait for regular maintenance</small> -->
+                      </span>
+                    </span>
+                  </label>
+                  <label class="urgency-option">
+                    <input type="radio" name="dUrgency" value="Urgent" />
+                    <span class="urgency-label">
+                      <span class="material-symbols-outlined urgency-icon">warning</span>
+                      <span class="urgency-text">
+                        <strong>Urgent</strong>
+                        <!-- <small>Safety risk or affects multiple units</small> -->
+                      </span>
+                    </span>
+                  </label>
+                  <label class="urgency-option">
+                    <input type="radio" name="dUrgency" value="Emergency" />
+                    <span class="urgency-label">
+                      <span class="material-symbols-outlined urgency-icon">crisis_alert</span>
+                      <span class="urgency-text">
+                        <strong>Emergency</strong>
+                        <!-- <small>Immediate danger or severe water/gas damage</small> -->
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                <div class="urgency-notice" id="dUrgencyMsg" style="display:none;">
+                  <span class="material-symbols-outlined">notifications_active</span>
+                  <span>The guardhouse will be notified immediately and a contractor may be called out.</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Attach Photo <span class="opt">(optional)</span></label>
+                <label class="file-upload-btn" for="dPhoto">
+                  <span class="material-symbols-outlined" style="font-size:18px;line-height:1;flex-shrink:0;display:flex;align-items:center">attach_file</span>
+                  <span id="dPhotoName" class="file-upload-name">Choose a photo…</span>
+                </label>
+                <input type="file" id="dPhoto" accept="image/*" style="display:none" />
+              </div>
+              <div class="form-actions">
+                <button class="btn-dark" id="dSubmitBtn">Submit Report</button>
+                <button class="btn-outline" id="dCancelBtn">Cancel</button>
+              </div>
+              <p class="form-msg" id="dMsg"></p>
+            </div>
+            <div class="panel" style="border:1px solid var(--border)">
+              <div class="panel-head">
+                <span class="panel-title">My Reports</span>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="panel-refresh" id="refreshDefects" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+                  <span class="panel-meta" id="myDefectsCount">0 Total</span>
+                </div>
+              </div>
+              <div id="myDefects"><div class="panel-empty">No defect reports on record.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Parcel Management ───────────────────────────────────────────── -->
+        <div id="view-parcels" class="view">
+          <div class="page-title">Parcel <em>Management</em></div>
+          <div class="parcel-layout">
+            <div class="form-section">
+              <div class="form-section-title">Notify Guardhouse of an Expected Parcel</div>
+              <ol class="pc-flow">
+                <li><span class="pc-step">1</span> Enter the reference from your delivery notification</li>
+                <li><span class="pc-step">2</span> The guardhouse receives &amp; holds your parcel</li>
+                <li><span class="pc-step">3</span> Collect it within 7 days — after that it's returned</li>
+              </ol>
+              <div class="form-group">
+                <label>Parcel Reference <span class="req">*</span></label>
+                <input type="text" id="pcRef" placeholder="e.g. SPX123456789 / tracking no." />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Courier / Sender</label>
+                  <input type="text" id="pcCourier" placeholder="e.g. Shopee, Ninja Van, Lazada" />
+                </div>
+                <div class="form-group">
+                  <label>Description <span class="opt">(optional)</span></label>
+                  <input type="text" id="pcDesc" placeholder="e.g. Large box, fragile" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Authorized Collector <span class="opt">(if someone else will collect)</span></label>
+                <input type="text" id="pcCollector" placeholder="e.g. John Tan (spouse)" />
+              </div>
+              <div class="form-actions">
+                <button class="btn-dark" id="pcSubmitBtn">Notify Guardhouse</button>
+              </div>
+              <p class="form-msg" id="pcMsg"></p>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><span class="panel-title">My Parcels</span><div style="display:flex;align-items:center;gap:0.5rem"><button class="panel-refresh" id="refreshParcels" title="Refresh"><span class="material-symbols-outlined">refresh</span></button><span class="panel-meta" id="parcelCount">—</span></div></div>
+              <div id="parcelList"><div class="panel-empty">No parcels on record.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Move In / Out ──────────────────────────────────────────────── -->
+        <div id="view-move" class="view">
+          <div class="page-title">Move-In / <em>Move-Out</em></div>
+          <div class="move-info-row">
+            <details class="collapsible-panel">
+              <summary><span class="panel-title">Move Rules</span><span class="material-symbols-outlined cp-toggle">expand_more</span></summary>
+              <div class="collapsible-panel__body">
+                <div class="rule-item">✅ Minimum <strong>7 working days</strong> advance booking</div>
+                <div class="rule-item">✅ Permitted: <strong>Mon–Fri, 9am–5pm only</strong></div>
+                <div class="rule-item">❌ No weekend or public holiday moves</div>
+                <div class="rule-item">❌ No moves day before / after gazetted holidays</div>
+                <div class="rule-item">💰 Refundable deposit: <strong>S$2,000</strong></div>
+                <div class="rule-item">📄 Admin fee: <strong>S$200</strong> non-refundable</div>
+                <div class="rule-item">🔍 Post-move inspection required for deposit refund</div>
+                <div class="rule-item">🏗 Renovation: max <strong>80 working days</strong></div>
+              </div>
+            </details>
+            <details class="collapsible-panel">
+              <summary><span class="panel-title">Checklist</span><span class="material-symbols-outlined cp-toggle">expand_more</span></summary>
+              <div class="collapsible-panel__body">
+                <div class="check-item">☐ Book service lift at least 7 days ahead</div>
+                <div class="check-item">☐ Pay S$2,000 refundable deposit</div>
+                <div class="check-item">☐ Pay S$200 admin fee</div>
+                <div class="check-item">☐ Acknowledge house rules</div>
+                <div class="check-item">☐ Provide moving company and vehicle details</div>
+                <div class="check-item">☐ Ensure common areas clean after move</div>
+                <div class="check-item">☐ Return all access cards and transponders</div>
+                <div class="check-item">☐ Notify management of updated resident details</div>
+              </div>
+            </details>
+          </div>
+          <div class="move-main-row">
+            <div class="form-section">
+              <div class="form-section-title">Book Service Lift</div>
+              <div class="form-group">
+                <label>Move Type</label>
+                <select id="moveType">
+                  <option value="Move-In">Move-In</option>
+                  <option value="Move-Out">Move-Out</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Date</label>
+                  <input type="date" id="moveDate" />
+                </div>
+                <div class="form-group">
+                  <label>Time</label>
+                  <select id="moveTime">
+                    <option value="">Select a time slot</option>
+                    <option value="9:00 AM">9:00 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="11:00 AM">11:00 AM</option>
+                    <option value="12:00 PM">12:00 PM (Noon)</option>
+                    <option value="1:00 PM">1:00 PM</option>
+                    <option value="2:00 PM">2:00 PM</option>
+                    <option value="3:00 PM">3:00 PM</option>
+                    <option value="4:00 PM">4:00 PM</option>
+                    <option value="5:00 PM">5:00 PM</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Notes</label>
+                <textarea id="moveNotes" rows="3" maxlength="500" placeholder="e.g. Moving company name, vehicle plate, special items…"></textarea>
+              </div>
+              <div class="form-actions">
+                <button class="btn-dark" id="moveSubmitBtn">Submit Booking Request</button>
+              </div>
+              <p class="form-msg" id="moveMsg"></p>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">My Move Bookings</span>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="panel-refresh" id="refreshMoves" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+                  <span class="panel-meta" id="myMovesCount">0 Total</span>
+                </div>
+              </div>
+              <div id="myMovesList"><div class="panel-empty">No move bookings on record.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Feedback ────────────────────────────────────────────────────── -->
+        <div id="view-feedback" class="view">
+          <div class="page-title"><em>Feedback</em> &amp; Complaints</div>
+          <div class="form-layout">
+            <div class="form-section">
+              <div class="form-section-title">Submit Feedback or Complaint</div>
+              <div class="form-group">
+                <label>Type</label>
+                <select id="fbType">
+                  <option>Complaint</option>
+                  <option>Feedback</option>
+                  <option>Suggestion</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <select id="fbCategory">
+                  <option>Noise</option>
+                  <option>Cleanliness</option>
+                  <option>Security</option>
+                  <option>Maintenance</option>
+                  <option>Neighbour Dispute</option>
+                  <option>Facility Condition</option>
+                  <option>Staff Conduct</option>
+                  <option>Others</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>What Happened?</label>
+                <textarea id="fbDesc" rows="5" maxlength="2000" placeholder="Describe the incident in detail…"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Date of Incident</label>
+                  <input type="date" id="fbDate" />
+                </div>
+                <div class="form-group">
+                  <label>Time of Incident <span class="opt">(optional)</span></label>
+                  <select id="fbTime">
+                    <option value="">Select approximate time</option>
+                    <option value="12:00 AM">12:00 AM (Midnight)</option>
+                    <option value="1:00 AM">1:00 AM</option>
+                    <option value="2:00 AM">2:00 AM</option>
+                    <option value="3:00 AM">3:00 AM</option>
+                    <option value="4:00 AM">4:00 AM</option>
+                    <option value="5:00 AM">5:00 AM</option>
+                    <option value="6:00 AM">6:00 AM</option>
+                    <option value="7:00 AM">7:00 AM</option>
+                    <option value="8:00 AM">8:00 AM</option>
+                    <option value="9:00 AM">9:00 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="11:00 AM">11:00 AM</option>
+                    <option value="12:00 PM">12:00 PM (Noon)</option>
+                    <option value="1:00 PM">1:00 PM</option>
+                    <option value="2:00 PM">2:00 PM</option>
+                    <option value="3:00 PM">3:00 PM</option>
+                    <option value="4:00 PM">4:00 PM</option>
+                    <option value="5:00 PM">5:00 PM</option>
+                    <option value="6:00 PM">6:00 PM</option>
+                    <option value="7:00 PM">7:00 PM</option>
+                    <option value="8:00 PM">8:00 PM</option>
+                    <option value="9:00 PM">9:00 PM</option>
+                    <option value="10:00 PM">10:00 PM</option>
+                    <option value="11:00 PM">11:00 PM</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-info">
+                A reference number is issued on submission. Management responds within <strong>48 hours</strong>. Unresolved cases are auto-escalated.
+              </div>
+              <div class="form-actions">
+                <button class="btn-dark" id="fbSubmitBtn">Submit</button>
+                <button class="btn-outline" id="fbCancelBtn">Cancel</button>
+              </div>
+              <p class="form-msg" id="fbMsg"></p>
+            </div>
+            <div class="panel" style="border:1px solid var(--border)">
+              <div class="panel-head">
+                <span class="panel-title">My Submissions</span>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="panel-refresh" id="refreshFeedback" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+                  <span class="panel-meta" id="myFeedbackCount">0 Total</span>
+                </div>
+              </div>
+              <div id="myFeedback"><div class="panel-empty">No submissions on record.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Notices & AGM ───────────────────────────────────────────────── -->
+        <div id="view-notices" class="view">
+          <div class="page-title">Announcements</div>
+          <div id="noticesList">
+            <div class="notices-empty">
+              <span class="material-symbols-outlined notices-empty__icon">campaign</span>
+              <div class="notices-empty__title">No notices posted yet</div>
+              <div class="notices-empty__sub">Management will post building notices, updates, and maintenance alerts here.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Payments ───────────────────────────────────────────────────── -->
+        <div id="view-payments" class="view">
+          <div class="page-title">Payments</div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Payments</span>
+              <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+                <span id="payLastUpdated" class="pay-last-updated"></span>
+                <button class="panel-refresh" id="refreshPayments" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
+              </div>
+            </div>
+            <div id="payContainer"><div class="panel-empty">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- ── Resources ─────────────────────────────────────────────────── -->
+        <div id="view-resources" class="view">
+          <div class="page-title">Resources</div>
+          <p class="res-intro">Download by-laws, fire safety guidelines, meeting minutes, and other building documents.</p>
+          <div id="resourcesContainer"><div class="panel-empty">Loading…</div></div>
+        </div>
+
+        <!-- ── Messages / Inbox ───────────────────────────────────────────── -->
+        <div id="view-messages" class="view">
+          <div class="inbox" id="memberInbox">
+
+            <!-- Sidebar: conversation list -->
+            <aside class="inbox__sidebar">
+              <div class="inbox__sidebar-head">
+                <h2 class="inbox__title">Messages</h2>
+                <button class="inbox__new-btn" id="inboxNewBtn">
+                  <span class="material-symbols-outlined">edit_square</span>New
+                </button>
+              </div>
+              <!-- Conversations (populated by JS) -->
+              <div class="inbox__list" id="inboxList">
+                <div class="inbox__loading" style="padding:1.4rem;font-size:0.82rem;color:var(--text-2,#9a9088)">Loading…</div>
+              </div>
+            </aside>
+
+            <!-- Thread: message view -->
+            <div class="inbox__thread">
+              <div class="inbox__thread-header">
+                <button class="inbox__back-btn" id="inboxBackBtn" aria-label="Back to conversations">
+                  <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <div class="inbox__thread-avatar" aria-hidden="true">M</div>
+                <div class="inbox__thread-meta">
+                  <div class="inbox__thread-name">Management</div>
+                  <div class="inbox__thread-sub">Usually replies within 1 business day</div>
+                </div>
+              </div>
+
+              <div class="inbox__messages" id="inboxMessages" role="log" aria-live="polite">
+                <div class="inbox__empty-state" style="margin:auto;text-align:center;color:var(--text-2,#9a9088);font-size:0.85rem;padding:2rem">Loading your messages…</div>
+              </div>
+
+              <!-- Compose bar -->
+              <div class="inbox__compose">
+                <div class="inbox__compose-inner">
+                  <textarea class="inbox__compose-input" id="inboxCompose"
+                    placeholder="Write a message…" rows="1"
+                    aria-label="Message"></textarea>
+                  <button class="inbox__send-btn" id="inboxSendBtn" aria-label="Send message">
+                    <span class="material-symbols-outlined">send</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /.inbox -->
+        </div><!-- /#view-messages -->
+
+        <!-- New Conversation Modal -->
+        <div class="inbox-modal" id="inboxNewModal" style="display:none" role="dialog" aria-modal="true" aria-label="New conversation">
+          <div class="inbox-modal__backdrop" id="inboxModalBackdrop"></div>
+          <div class="inbox-modal__box">
+            <div class="inbox-modal__head">
+              <h3>New Conversation</h3>
+              <button class="inbox-modal__close" id="inboxModalClose" aria-label="Close">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div class="inbox-modal__body">
+              <div class="inbox-modal__field">
+                <label for="newConvoSubject">Subject</label>
+                <input id="newConvoSubject" type="text" placeholder="e.g. Parking allocation query" />
+              </div>
+              <div class="inbox-modal__field">
+                <label for="newConvoMsg">Message</label>
+                <textarea id="newConvoMsg" rows="4" maxlength="2000" placeholder="Describe your enquiry…"></textarea>
+              </div>
+            </div>
+            <div class="inbox-modal__foot">
+              <button class="inbox-modal__cancel" id="inboxModalCancel">Cancel</button>
+              <button class="inbox-modal__send" id="inboxModalSend">Send Message</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /main -->
+  </div><!-- /shell -->
+</div><!-- /portal-shell -->
+
+<!-- ── Booking modal ─────────────────────────────────────────────────────── -->
+<div id="bookingModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Book Facility</span>
+      <button class="modal-close" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="modal-body" id="bookingFormHost"></div>
+  </div>
+</div>
+
+
+<!-- ── Payment modal ─────────────────────────────────────────────────────────── -->
+<div id="payModal" class="modal-overlay">
+  <div class="modal-box pay-modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="payModalTitle">Pay Deposit</span>
+      <button class="modal-close" id="payModalClose">✕</button>
+    </div>
+    <div class="pay-frame-wrap">
+      <iframe id="payFrame" class="pay-frame" title="Secure payment" allow="payment"></iframe>
+    </div>
+    <div class="pay-modal-foot">
+      <button class="btn-dark" id="payDoneBtn">I've Completed Payment</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="loadingOverlay" class="hidden"><div class="loading-spinner"></div><div class="loading-text">Loading your data…</div></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="js/demo-backend.js"></script>
+<script src="js/portal.controller.js"></script>
+<script>
+(function () {
+  // ── Inbox UI (design shell — wired to backend in implementation phase) ──
+  const inbox   = document.getElementById('memberInbox');
+  const backBtn = document.getElementById('inboxBackBtn');
+  const newBtn  = document.getElementById('inboxNewBtn');
+  const modal   = document.getElementById('inboxNewModal');
+  const mClose  = document.getElementById('inboxModalClose');
+  const mCancel = document.getElementById('inboxModalCancel');
+  const mBack   = document.getElementById('inboxModalBackdrop');
+  const compose = document.getElementById('inboxCompose');
+
+  // Mobile: open thread when an item is tapped or activated via keyboard
+  if (inbox) {
+    inbox.addEventListener('click', function (e) {
+      if (e.target.closest('.inbox__item')) inbox.classList.add('inbox--thread-open');
+    });
+    inbox.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.inbox__item')) {
+        e.preventDefault();
+        inbox.classList.add('inbox--thread-open');
+      }
+    });
+  }
+  // Mobile: back to list
+  if (backBtn) backBtn.addEventListener('click', function () {
+    inbox && inbox.classList.remove('inbox--thread-open');
+  });
+
+  // New conversation modal
+  function openModal()  { if (modal) { modal.style.display = 'flex'; document.getElementById('newConvoSubject').focus(); } }
+  function closeModal() { if (modal) modal.style.display = 'none'; }
+  if (newBtn)  newBtn.addEventListener('click', openModal);
+  if (mClose)  mClose.addEventListener('click', closeModal);
+  if (mCancel) mCancel.addEventListener('click', closeModal);
+  if (mBack)   mBack.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal && modal.style.display !== 'none') closeModal();
+  });
+
+  // Auto-grow compose textarea + scroll-to-bottom on focus (mobile keyboard opens)
+  if (compose) {
+    compose.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+    });
+    compose.addEventListener('focus', function () {
+      var msgs = document.getElementById('inboxMessages');
+      if (msgs) setTimeout(function () { msgs.scrollTop = msgs.scrollHeight; }, 350);
+    });
+  }
+
+  // Mobile keyboard lift — visualViewport fallback for browsers where dvh
+  // doesn't shrink when the virtual keyboard opens
+  if (window.visualViewport) {
+    function onKbResize() {
+      var vvh  = Math.round(window.visualViewport.height);
+      var diff = window.innerHeight - vvh;
+      var inboxEl = document.getElementById('memberInbox');
+      if (!inboxEl) return;
+      if (diff > 120) {
+        inboxEl.style.height = (vvh - 48) + 'px';
+        var msgs = document.getElementById('inboxMessages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      } else {
+        inboxEl.style.height = '';
+      }
+    }
+    window.visualViewport.addEventListener('resize', onKbResize);
+  }
+})();
+</script>
+
+</body>
+</html>

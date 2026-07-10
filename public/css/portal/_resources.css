@@ -1,0 +1,105 @@
+/* ── Resources view — residents portal ────────────────────────────────────── */
+
+.res-intro {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 1.2rem;
+}
+
+/* Category group */
+.res-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: clip;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+}
+
+.res-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.res-group-icon {
+  font-size: 1rem;
+  color: var(--gold);
+}
+
+.res-group-name {
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Individual document rows */
+.res-group-items { padding: 4px 0; }
+
+.res-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.res-item:last-child { border-bottom: none; }
+
+.res-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.res-item-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.res-item-meta {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Download button */
+.res-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--gold);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.res-download-btn:hover:not(:disabled) {
+  background: var(--gold);
+  color: #fff;
+}
+.res-download-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.res-download-btn .material-symbols-outlined { font-size: 1rem; }
+
+@media (max-width: 600px) {
+  .res-download-btn span:not(.material-symbols-outlined) { display: none; }
+  .res-download-btn { padding: 5px 8px; }
+}

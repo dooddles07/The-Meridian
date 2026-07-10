@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Meridian — Management</title>
+  <link rel="icon" type="image/png" href="asset/logomark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Tenor+Sans&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,300,0,0" rel="stylesheet" />
+  <link rel="stylesheet" href="css/management-login.css" />
+  <script>
+    (function(){
+      var t=localStorage.getItem('meridian-mgmt-theme')||'dark';
+      document.documentElement.dataset.theme=t;
+    })();
+  </script>
+</head>
+<body>
+
+  <div class="card">
+    <div class="brand">The <em>Meridian</em></div>
+    <p class="subtitle">This dashboard is restricted to authorised staff.</p>
+
+    <button class="btn" id="signInLanding">SIGN IN</button>
+
+    <div class="form-wrap" id="formWrap">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" placeholder="username" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      <p class="err" id="errMsg"></p>
+      <button class="btn" id="submitBtn">SIGN IN</button>
+    </div>
+
+    <p class="powered">The Meridian &middot; Management Console</p>
+  </div>
+
+  <button class="theme-switch page-theme-switch" data-theme-toggle role="switch" aria-label="Toggle colour scheme">
+    <span class="material-symbols-outlined theme-switch__icon">light_mode</span>
+    <span class="theme-switch__track"><span class="theme-switch__thumb"></span></span>
+    <span class="material-symbols-outlined theme-switch__icon">dark_mode</span>
+  </button>
+
+  <script src="js/demo-backend.js"></script>
+  <script src="js/management-login.controller.js"></script>
+
+</body>
+</html>

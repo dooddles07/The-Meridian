@@ -1,0 +1,32 @@
+name: Dependency Audit
+
+on:
+  push:
+    paths:
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+  schedule:
+    - cron: '0 2 * * 1'  # Every Monday at 02:00 UTC
+
+jobs:
+  audit:
+    name: npm audit (production)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Run audit
+        run: npm audit --production --audit-level=high

@@ -1,0 +1,115 @@
+/* ── Panel ────────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: clip;
+  box-shadow: var(--shadow-md);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.panel-title {
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.panel-meta { font-size: 0.6875rem; color: var(--muted); }
+
+/* ── Section Head ─────────────────────────────────────────────────────────── */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.section-title {
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.section-meta { font-size: 0.6875rem; color: var(--muted); }
+
+/* ── Summary Row ──────────────────────────────────────────────────────────── */
+.summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.summary-cell {
+  flex: 1;
+  padding: 14px 12px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.summary-cell:last-child { border-right: none; }
+.summary-count {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.summary-label {
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* ── Filter Bar ───────────────────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.filter-input, .filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.filter-input { flex: 1; min-width: 160px; }
+.filter-input::placeholder { color: var(--muted); }
+.filter-input:focus, .filter-select:focus { border-color: var(--gold); }
+.filter-select { cursor: pointer; }
+
+/* ── Right Column ─────────────────────────────────────────────────────────── */
+.right-col { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Pinned Notices ───────────────────────────────────────────────────────── */
+.pinned-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: default;
+}
+.pinned-item:last-child { border-bottom: none; }
+.pinned-title { font-size: 0.875rem; color: var(--text); margin-bottom: 3px; }
+.pinned-body  { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

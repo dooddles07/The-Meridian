@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Meridian — Guardhouse Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Tenor+Sans&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/guardhouse.css" />
+</head>
+<body>
+
+<!-- ── Login screen ──────────────────────────────────────────────────────────── -->
+<div id="gh-login" class="gh-login-wrap">
+  <div class="gh-login-card">
+    <div class="gh-login-title">The <em>Meridian</em></div>
+    <div class="gh-login-subtitle">Guardhouse · Verification System</div>
+
+    <div class="gh-login-field">
+      <label class="gh-login-label" for="ghUsername">Username</label>
+      <input id="ghUsername" class="gh-login-input" type="text"
+        placeholder="guardhouse" autocomplete="username" />
+    </div>
+    <div class="gh-login-field" style="margin-bottom:1.4rem">
+      <label class="gh-login-label" for="ghPassword">Password</label>
+      <input id="ghPassword" class="gh-login-input" type="password"
+        placeholder="••••••••" autocomplete="current-password" />
+    </div>
+
+    <p id="ghLoginErr" class="gh-login-err" role="alert" aria-live="polite"></p>
+    <button id="ghLoginBtn" class="gh-login-submit">Sign In</button>
+    <p class="gh-login-footer">The Meridian · Guardhouse Station</p>
+  </div>
+</div>
+
+<!-- ── Main portal ─────────────────────────────────────────────────────────── -->
+<div id="gh-portal" style="display:none;flex-direction:column;min-height:100vh">
+
+  <!-- Topbar -->
+  <div class="gh-topbar">
+    <div>
+      <div class="gh-brand">The <em>Meridian</em></div>
+      <div class="gh-brand-sub">Guardhouse · Verification System</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1.8rem">
+      <div>
+        <div class="gh-clock" id="ghClock" aria-live="off">00:00:00</div>
+        <div class="gh-date"  id="ghDate"></div>
+      </div>
+      <button id="ghLogout" class="gh-logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="gh-body">
+
+    <!-- ── Left: Scanner ──────────────────────────────────────────────────── -->
+    <div class="gh-scanner">
+
+      <!-- Camera viewfinder -->
+      <div>
+        <div class="gh-section-label">QR Scanner</div>
+        <div class="gh-viewfinder" id="ghViewfinder">
+          <video id="ghVideo" playsinline muted aria-hidden="true"></video>
+          <canvas id="ghCanvas" style="display:none" aria-hidden="true"></canvas>
+
+          <div class="gh-brackets"><div class="gh-brackets-b"></div></div>
+          <div class="gh-scanline" id="ghScanline" style="display:none" aria-hidden="true"></div>
+
+          <div class="gh-finder-idle" id="ghFinderIdle">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="2" width="16" height="16" rx="1" stroke="#c9a84c" stroke-width="2" fill="none"/>
+              <rect x="30" y="2" width="16" height="16" rx="1" stroke="#c9a84c" stroke-width="2" fill="none"/>
+              <rect x="2" y="30" width="16" height="16" rx="1" stroke="#c9a84c" stroke-width="2" fill="none"/>
+              <rect x="6" y="6" width="8" height="8" fill="#c9a84c"/>
+              <rect x="34" y="6" width="8" height="8" fill="#c9a84c"/>
+              <rect x="6" y="34" width="8" height="8" fill="#c9a84c"/>
+              <line x1="30" y1="30" x2="46" y2="46" stroke="#c9a84c" stroke-width="2"/>
+              <line x1="30" y1="46" x2="46" y2="30" stroke="#c9a84c" stroke-width="2"/>
+            </svg>
+            <div class="gh-finder-idle-text">Camera inactive</div>
+          </div>
+        </div>
+        <button class="gh-cam-btn" id="ghCamBtn">
+          <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span>
+          Start Camera
+        </button>
+      </div>
+
+      <!-- Manual entry -->
+      <div>
+        <div class="gh-section-label">Manual Entry</div>
+        <div class="gh-manual">
+          <input class="gh-input" id="ghManualInput" type="text"
+            placeholder="Enter guest reference (e.g. GST-20260620-1234)"
+            aria-label="Guest reference number" />
+          <button class="gh-verify-btn" id="ghManualBtn">Verify</button>
+        </div>
+        <p class="gh-hint">Scan the QR or type the guest reference. Valid only on the scheduled visit date.</p>
+      </div>
+
+      <!-- Result card -->
+      <div class="gh-result" id="ghResult" role="region" aria-label="Verification result" aria-live="polite">
+        <div class="gh-result-header">
+          <div class="gh-result-status grey" id="ghStatusDot" aria-hidden="true"></div>
+          <div class="gh-result-title grey" id="ghStatusTitle">Awaiting scan</div>
+        </div>
+        <div class="gh-result-body" id="ghResultBody">
+          <div class="gh-result-idle">Scan a QR code or enter a reference manually to verify a visitor pass.</div>
+        </div>
+      </div>
+
+      <!-- ── Parcel checker ──────────────────────────────────────────────── -->
+      <div class="gh-parcel">
+        <div class="gh-section-label">Parcel Checker</div>
+        <div class="gh-manual">
+          <input class="gh-input" id="ghParcelInput" type="text"
+            placeholder="Enter parcel reference"
+            aria-label="Parcel reference number" />
+          <button class="gh-verify-btn" id="ghParcelBtn">Check</button>
+        </div>
+        <p class="gh-hint">Look up a resident's expected parcel, then mark it held, collected, or uncollected.</p>
+        <div class="gh-parcel-result" id="ghParcelResult" style="display:none" role="region" aria-live="polite"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Right: Logs (visitors + parcels) ───────────────────────────────── -->
+    <div class="gh-logs">
+
+      <!-- Visitor log -->
+      <div class="gh-log-panel">
+        <div class="gh-log-header">
+          <div class="gh-log-title">Today's Visitor Log</div>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <span class="gh-log-count" id="ghLogCount" aria-live="polite">0 entries</span>
+            <button class="gh-log-clear" id="ghClearBtn">Clear</button>
+          </div>
+        </div>
+        <div class="gh-log-body" id="ghLogBody" role="log" aria-label="Visitor log">
+          <div class="gh-log-empty">
+            <div class="gh-log-empty-icon"><span class="material-symbols-outlined">assignment</span></div>
+            <div class="gh-log-empty-text">No visitors logged today</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parcel log -->
+      <div class="gh-log-panel">
+        <div class="gh-log-header">
+          <div class="gh-log-title">Today's Parcel Log</div>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <span class="gh-log-count" id="ghParcelLogCount" aria-live="polite">0 entries</span>
+            <button class="gh-log-clear" id="ghParcelClearBtn">Clear</button>
+          </div>
+        </div>
+        <div class="gh-log-body" id="ghParcelLogBody" role="log" aria-label="Parcel log">
+          <div class="gh-log-empty">
+            <div class="gh-log-empty-icon"><span class="material-symbols-outlined">inventory_2</span></div>
+            <div class="gh-log-empty-text">No parcels logged today</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /gh-body -->
+</div><!-- /gh-portal -->
+
+<div id="ghToast" role="status" aria-live="polite"></div>
+
+<!-- QR decode library (jsQR) + controller -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="js/demo-backend.js"></script>
+<script src="js/guardhouse.controller.js"></script>
+
+</body>
+</html>

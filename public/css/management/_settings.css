@@ -1,0 +1,135 @@
+/* ── Loading indicator ────────────────────────────────────────────────────── */
+.loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* ── Settings ─────────────────────────────────────────────────────────────── */
+.settings-section { margin-bottom: 28px; }
+.settings-title {
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.settings-label {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+.settings-input {
+  display: block;
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(196,160,64,0.15);
+}
+
+/* ── Stage Fetch ──────────────────────────────────────────────────────────── */
+.stage-fetch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stage-fetch-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.stage-fetch-title {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.btn-fetch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background 0.15s;
+}
+.btn-fetch:hover { background: rgba(255,255,255,0.06); }
+.stage-list { font-size: 0.75rem; color: var(--muted); line-height: 2; }
+.stage-list-item { display: flex; align-items: center; gap: 8px; }
+.stage-list-id { font-family: 'Courier New', monospace; font-size: 0.6875rem; color: var(--gold-dk); }
+
+/* ── Connection Probe ─────────────────────────────────────────────────────── */
+.probe-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.btn-probe {
+  background: var(--gold);
+  color: #080808;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-probe:hover { opacity: 0.85; }
+.btn-probe-secondary {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-probe-secondary:hover { background: var(--surface-3); }
+.probe-result {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.probe-result th {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 400;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.probe-result td { font-size: 0.8125rem; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.probe-result tr:last-child td { border-bottom: none; }
+.status-ok  { color: var(--green); }
+.status-err { color: var(--red); }

@@ -1,0 +1,18 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   The Meridian — Resident Portal
+   Component files live in portal/ — this file is the import orchestrator.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@import url('portal/_tokens.css');
+@import url('portal/_login.css');
+@import url('portal/_sidebar.css');
+@import url('portal/_layout.css');
+@import url('portal/_panels.css');
+@import url('portal/_dashboard.css');
+@import url('portal/_booking.css');
+@import url('portal/_forms.css');
+@import url('portal/_records.css');
+@import url('portal/_resources.css');
+@import url('portal/_modal.css');
+@import url('portal/_utility.css');
+@import url('portal/_responsive.css');

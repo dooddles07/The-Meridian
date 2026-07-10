@@ -1,0 +1,12 @@
+{
+  "name": "meridian-portal-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Meridian — Community Living Portal (portfolio demo). Runs fully client-side: the Node server (./backend) serves the static frontend (./public); all data is mocked in-browser (public/js/demo-backend.js).",
+  "scripts": {
+    "start": "cd backend && node server.js"
+  },
+  "devDependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

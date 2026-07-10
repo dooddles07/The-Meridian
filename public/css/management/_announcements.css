@@ -1,0 +1,140 @@
+/* ── Announcements ────────────────────────────────────────────────────────── */
+.ann-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 7px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s ease-out;
+  position: relative;
+}
+.ann-item:hover {
+  border-color: var(--border-2);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.45);
+  transform: translateY(-1px);
+  z-index: 1;
+}
+.ann-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ann-category {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--gold-lt);
+  color: var(--gold);
+  border: 1px solid rgba(196,160,64,0.25);
+}
+.ann-category.maint  { background: rgba(74,122,216,0.1);  color: var(--blue);   border-color: rgba(74,122,216,0.25); }
+.ann-category.rule   { background: rgba(138,106,216,0.1); color: var(--purple); border-color: rgba(138,106,216,0.25); }
+.ann-category.agm    { background: rgba(58,134,78,0.1);   color: #3a864e;       border-color: rgba(58,134,78,0.25); }
+.ann-category.event  { background: rgba(193,72,112,0.08); color: #c14870;       border-color: rgba(193,72,112,0.2); }
+.ann-category.safety { background: rgba(181,96,27,0.08);  color: #b5601b;       border-color: rgba(181,96,27,0.2); }
+.ann-item--pinned { border-left: 2px solid var(--gold); }
+.ann-pin {
+  font-size: 0.875rem;
+  color: var(--gold);
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  line-height: 1;
+}
+.ann-title { font-size: 0.9375rem; color: var(--text); margin-bottom: 4px; font-weight: 500; }
+.ann-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gold, #856728);
+  background: rgba(133, 103, 40, 0.1);
+  border: 1px solid rgba(133, 103, 40, 0.25);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-bottom: 6px;
+}
+.ann-event-icon { font-size: 0.875rem; font-variation-settings: 'FILL' 1, 'wght' 400, 'opsz' 20; }
+.ann-body  { font-size: 0.8125rem; color: var(--text-2); line-height: 1.7; }
+.ann-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 0.5625rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.ann-delete {
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.5625rem;
+  background: none;
+  border: none;
+  font-family: var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: opacity 0.15s;
+  padding: 0;
+}
+.ann-delete:hover { opacity: 0.7; }
+
+/* ── Unpin button ─────────────────────────────────────────────────────────── */
+.ann-unpin-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 4px;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 1px;
+}
+.ann-unpin-btn:hover { background: rgba(196,160,64,0.12); }
+.ann-unpin-btn:hover .ann-pin { opacity: 0.55; }
+
+/* ── Unpin confirmation modal ─────────────────────────────────────────────── */
+#annUnpinModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+#annUnpinModal.open { display: flex; }
+.ann-unpin-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+}
+.ann-unpin-dialog {
+  position: relative;
+  background: var(--surface, #1a1a1a);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 10px);
+  padding: 24px 28px;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+}
+.ann-unpin-msg {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.ann-unpin-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0 0 20px;
+  line-height: 1.55;
+}
+.ann-unpin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
