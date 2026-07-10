@@ -1949,7 +1949,7 @@
   // ── Logout ─────────────────────────────────────────────────────────────────────
   bind('logoutBtn', () => {
     ['mgmtToken', 'mgmtUser', 'mgmtLastView', 'mgmtDataSnapshot'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
-    window.location.href = 'management-login.html';
+    window.location.href = 'index.html';
   });
 
   function bind(id, h) { const el = $(id); if (el) el.addEventListener('click', h); }

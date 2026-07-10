@@ -64,7 +64,7 @@
   $('ghLogout').addEventListener('click', () => {
     stopCamera();
     sessionStorage.removeItem(GH_SESS);
-    window.location.reload();
+    window.location.href = 'index.html';
   });
 
   // ── Live clock ─────────────────────────────────────────────────────────────

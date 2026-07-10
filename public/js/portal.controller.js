@@ -2521,7 +2521,7 @@
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  bind('logoutBtn', () => { authToken = null; [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); window.location.reload(); });
+  bind('logoutBtn', () => { authToken = null; [SESS, TOKEN_KEY, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); window.location.href = 'index.html'; });
 
   // ── Mobile sidebar toggle ────────────────────────────────────────────────
   const _sidebar  = document.querySelector('.sidebar');
