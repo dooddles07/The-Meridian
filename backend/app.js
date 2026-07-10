@@ -1,8 +1,6 @@
-// Shared Express app — the real API. Mounted directly by server.js for local dev
-// and re-exported by ../api/index.js as a single Vercel Serverless Function.
-// Static file serving is NOT handled here: locally server.js adds it after this
-// app; on Vercel, static files are served by the platform (outputDirectory),
-// only /api/* is rewritten to this function.
+// Shared Express app — the real API, mounted by server.js alongside static file
+// serving (this file only handles /api/*; server.js adds static + the frontend's
+// own CSP after it).
 
 require('dotenv').config();
 require('./config/logging');
@@ -21,8 +19,12 @@ const { errorHandler } = require('./middleware/auth.middleware');
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
-app.use(cors({ origin: false })); // same-origin only — frontend and API share one domain
+// Scoped to /api — this app is mounted inside server.js alongside static file
+// serving. An unscoped helmet() here would overwrite server.js's own CSP (which
+// allows the frontend's inline theme-toggle scripts + CDN assets) on EVERY
+// response, including static pages, silently breaking them.
+app.use('/api', helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
+app.use('/api', cors({ origin: false })); // same-origin only — frontend and API share one domain
 app.use(express.json());
 
 // Connect once per warm serverless container; skip if already connecting/connected.
@@ -46,10 +48,6 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'The Lumina API is running.', db: mongoose.connection.readyState === 1, timestamp: new Date().toISOString() });
 });
 
-// Mounted at the full /api/* path (not a bare prefix) so this app works
-// identically whether Express sees the path directly (local dev, server.js
-// mounts this at '/') or via a Vercel rewrite that preserves the original
-// /api/... URL when forwarding to this serverless function.
 app.use('/api/auth',          require('./routes/auth.routes'));
 app.use('/api/booking',       require('./routes/booking.routes'));
 app.use('/api/guest',         require('./routes/guest.routes'));
