@@ -1,10 +1,10 @@
 (function () {
   'use strict';
 
-  // verify.controller.js — Guardhouse Portal
+  // verify.controller.js - Guardhouse Portal
   // Auth: POST /api/auth/guardhouse/login (username: guardhouse, password: guard123)
   // QR decode: jsQR library (loaded by the page)
-  // Log: stored in sessionStorage (clears when tab closes — intentional for shift changes)
+  // Log: stored in sessionStorage (clears when tab closes - intentional for shift changes)
 
   const GH_SESS = 'gh_session';
   const GH_LOG  = 'gh_log';
@@ -177,7 +177,7 @@
     const reference = extractReference(raw);
     _currentPass = null;
     if (!reference) {
-      showResult('INVALID — Deny Entry', 'red', { 'Reason': 'No reference provided', 'Scanned At': nowSGT() });
+      showResult('INVALID - Deny Entry', 'red', { 'Reason': 'No reference provided', 'Scanned At': nowSGT() });
       return;
     }
 
@@ -191,23 +191,23 @@
       });
       data = await res.json();
     } catch {
-      showResult('ERROR — Try Again', 'red', { 'Reference': reference, 'Reason': 'Could not reach the verification server' });
+      showResult('ERROR - Try Again', 'red', { 'Reference': reference, 'Reason': 'Could not reach the verification server' });
       return;
     }
 
     // Not found / invalid.
     if (!data || !data.success || !data.found) {
-      showResult('INVALID — Deny Entry', 'red', { 'Reference': reference, 'Reason': 'No matching guest pass found', 'Scanned At': nowSGT() });
+      showResult('INVALID - Deny Entry', 'red', { 'Reference': reference, 'Reason': 'No matching guest pass found', 'Scanned At': nowSGT() });
       addLog({ type: 'red', label: 'Denied', name: reference, meta: 'No matching pass' });
       return;
     }
 
-    // Date gate — valid only on the scheduled visit day.
+    // Date gate - valid only on the scheduled visit day.
     const today = todaySGT();
     if (data.visitDate && data.visitDate !== today) {
       const future = data.visitDate > today;
-      const title  = future ? 'NOT VALID YET — Deny Entry' : 'EXPIRED — Deny Entry';
-      const reason = future ? `Scheduled for ${data.visitDate} — not valid until then` : `Pass was for ${data.visitDate} and has expired`;
+      const title  = future ? 'NOT VALID YET - Deny Entry' : 'EXPIRED - Deny Entry';
+      const reason = future ? `Scheduled for ${data.visitDate} - not valid until then` : `Pass was for ${data.visitDate} and has expired`;
       showResult(title, 'red', { 'Reference': data.reference, 'Visitor': data.visitor, 'Host Unit': data.hostUnit, 'Scheduled': data.visitDate, 'Today': today, 'Reason': reason });
       addLog({ type: 'red', label: 'Denied', name: data.visitor || data.reference, meta: `${data.reference} · ${future ? 'not yet' : 'expired'} (${data.visitDate})` });
       return;
@@ -215,7 +215,7 @@
 
     // Valid for today.
     _currentPass = { ref: data.reference, hostId: data.hostContactId, oppId: data.opportunityId, visitor: data.visitor, hostUnit: data.hostUnit };
-    showResult('VALID — Admit Visitor', 'green', { 'Reference': data.reference, 'Visitor': data.visitor || '—', 'Host Unit': data.hostUnit || '—', 'Visit Date': data.visitDate || '—', 'Verified At': nowSGT() });
+    showResult('VALID - Admit Visitor', 'green', { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '', 'Visit Date': data.visitDate || ' - ', 'Verified At': nowSGT() });
     addLog({ key: `guest:${data.reference}`, type: 'green', label: 'Admitted', name: data.visitor || data.reference, meta: `${data.reference} · Unit ${data.hostUnit}` });
   }
 
@@ -298,7 +298,7 @@
     'Collected':              'green',
     'Uncollected / Returned': 'red',
   };
-  // Stages that finalise a parcel — locked from further changes unless overridden.
+  // Stages that finalise a parcel - locked from further changes unless overridden.
   const PARCEL_LOCKED = ['Collected', 'Uncollected / Returned'];
   if ($('ghParcelBtn')) $('ghParcelBtn').addEventListener('click', checkParcel);
   if ($('ghParcelInput')) $('ghParcelInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkParcel(); });
@@ -329,7 +329,7 @@
     const locked = PARCEL_LOCKED.includes(p.stage) && !p._override;
     const body = locked
       ? `<div class="gh-parcel-locked">
-           Finalised as <strong>${esc(label)}</strong> — locked.
+           Finalised as <strong>${esc(label)}</strong> - locked.
            <button class="gh-parcel-override" onclick="parcelOverride()">Override status</button>
          </div>`
       : `<div class="gh-parcel-actions">
@@ -345,7 +345,7 @@
         <div class="gh-parcel-head">
           <div>
             <div class="gh-parcel-ref">${esc(p.reference)}</div>
-            <div class="gh-parcel-sub">${esc(p.resident || '—')}${p.unit ? ' · #' + esc(p.unit) : ''}</div>
+            <div class="gh-parcel-sub">${esc(p.resident || ' - ')}${p.unit ? ' · #' + esc(p.unit) : ''}</div>
             ${collectorRow}
           </div>
           <span class="gh-parcel-stage ${cls}">${esc(label)}</span>
@@ -392,11 +392,11 @@
   let _logEntries = [];
   let _logPoll    = null;
 
-  // Function declarations (hoisted) — safe to call from showPortal() at startup.
+  // Function declarations (hoisted) - safe to call from showPortal() at startup.
   async function addLog(entry) {
     try {
       await fetch('/api/guardhouse/log', { method: 'POST', headers: _logHeaders(true), body: JSON.stringify(entry) });
-    } catch { /* non-fatal — the action itself already succeeded */ }
+    } catch { /* non-fatal - the action itself already succeeded */ }
     renderLog();
   }
 
@@ -460,8 +460,8 @@
     clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3000);
   }
 
-  // Restore an existing session and boot the portal LAST — after every top-level
-  // const above is initialized — so showPortal()/renderLog() can safely read them.
+  // Restore an existing session and boot the portal LAST - after every top-level
+  // const above is initialized - so showPortal()/renderLog() can safely read them.
   if (session) showPortal();
 
 })();

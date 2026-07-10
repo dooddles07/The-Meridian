@@ -142,7 +142,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--gold);
   margin-bottom: 18px;
 }
-.eyebrow::before, .eyebrow::after { content: '—'; opacity: .5; margin: 0 .6em; }
+.eyebrow::before, .eyebrow::after { content: ''; display: inline-block; width: 26px; height: 1px; background: currentColor; opacity: .45; vertical-align: middle; margin: 0 .7em; }
 
 .wordmark {
   font-family: var(--serif);

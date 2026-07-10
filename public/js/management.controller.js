@@ -125,7 +125,7 @@
     }
     sel.innerHTML = html;
   }
-  ['annEventTime', 'annEventEndTime', 'annStartTime', 'annEndTime'].forEach(id => fillTimeOptions($(id), '— Time —'));
+  ['annEventTime', 'annEventEndTime', 'annStartTime', 'annEndTime'].forEach(id => fillTimeOptions($(id), 'Time'));
   // Combine a date input ("YYYY-MM-DD") + time select ("HH:MM") into an SGT ISO string.
   const combineDateTime = (date, time) => (date && time) ? `${date}T${time}:00${SGT_OFFSET}` : '';
   // Show maintenance start/end fields only for the Maintenance category.
@@ -155,7 +155,7 @@
   if ($('annCategory')) $('annCategory').addEventListener('change', syncAnnCategoryFields);
   syncAnnCategoryFields();
 
-  // "Other" venue checkbox — show/hide the free-text input
+  // "Other" venue checkbox - show/hide the free-text input
   if ($('annBlockOther')) {
     $('annBlockOther').addEventListener('change', () => {
       if ($('annVenueOther')) $('annVenueOther').style.display = $('annBlockOther').checked ? '' : 'none';
@@ -235,9 +235,9 @@
     });
   }
 
-  // ── Facility bookings — all residents, live from GHL ──────────────────────────
+  // ── Facility bookings - all residents, live from GHL ──────────────────────────
   function bkDateLabel(iso) {
-    if (!iso) return '—';
+    if (!iso) return ' - ';
     return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
   }
   function bkBadge(status) {
@@ -256,7 +256,7 @@
   // no linked pipeline opportunity yet.
   function bkStageSelect(b, stages) {
     if (!b.oppId) {
-      return `<span class="bk-stage-none bk-syncing" title="Pipeline opportunity not yet created — auto-refreshing in a few seconds.">Syncing…</span>`;
+      return `<span class="bk-stage-none bk-syncing" title="Pipeline opportunity not yet created - auto-refreshing in a few seconds.">Syncing…</span>`;
     }
     const opts = stages.map(s => `<option value="${esc(s)}" ${s === b.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
     return `<select class="bk-stage-select" data-opp="${esc(b.oppId)}">${opts}</select>`;
@@ -285,7 +285,7 @@
         ? items.map(b => `<tr>
             <td>${esc(b.facility)}</td>
             <td>${esc(b.resident || 'Resident')}</td>
-            <td>${b.unit ? '#' + esc(b.unit) : '—'}</td>
+            <td>${b.unit ? '#' + esc(b.unit) : ' - '}</td>
             <td>${esc(bkDateLabel(b.date))}</td>
             <td style="white-space:nowrap">${esc(b.slot)}</td>
             <td>${b.pax || 1}</td>
@@ -402,7 +402,7 @@
     }
   });
 
-  // ── Registered guests — all residents, live from GHL ──────────────────────────
+  // ── Registered guests - all residents, live from GHL ──────────────────────────
   function gBadge(stage) {
     const map = {
       'Registered':  'badge-submitted',     // amber (new)
@@ -414,7 +414,7 @@
     return `<span class="badge ${map[stage] || 'badge-default'}">${esc(stage || 'Registered')}</span>`;
   }
   function gStageSelect(g, stages) {
-    if (!g.oppId) return `<span class="bk-stage-none">—</span>`;
+    if (!g.oppId) return `<span class="bk-stage-none"> - </span>`;
     const opts = stages.map(s => `<option value="${esc(s)}" ${s === g.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
     return `<select class="bk-stage-select g-stage-select" data-opp="${esc(g.oppId)}">${opts}</select>`;
   }
@@ -436,10 +436,10 @@
         ? items.map(g => `<tr>
             <td>${esc(g.visitor)}</td>
             <td>${esc(g.host)}</td>
-            <td>${g.unit ? '#' + esc(g.unit) : '—'}</td>
-            <td>${esc(g.phone || '—')}</td>
+            <td>${g.unit ? '#' + esc(g.unit) : ''}</td>
+            <td>${esc(g.phone || '')}</td>
             <td>${gBadge(g.stage)}</td>
-            <td style="white-space:nowrap">${g.visitDate ? esc(bkDateLabel(g.visitDate)) : '—'}</td>
+            <td style="white-space:nowrap">${g.visitDate ? esc(bkDateLabel(g.visitDate)) : ''}</td>
             <td>${gStageSelect(g, stages)}</td>
           </tr>`).join('')
         : `<tr class="empty-row"><td colspan="7">No registered guests.</td></tr>`;
@@ -502,7 +502,7 @@
   // ── Generic pipeline panels (defect / parcel / move / feedback) ───────────────
   function oppBadge(stage) {
     const slug = String(stage || '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
-    return `<span class="badge badge-${slug || 'default'}">${esc(stage || '—')}</span>`;
+    return `<span class="badge badge-${slug || 'default'}">${esc(stage || '')}</span>`;
   }
   function urgencyBadge(u) {
     const key = String(u || '').toLowerCase().match(/emergency|urgent|routine/)?.[0] || 'routine';
@@ -513,7 +513,7 @@
     return `row-urgency-${key}`;
   };
   function oppStageSelect(it, pipeline, stages) {
-    if (!it.oppId) return `<span class="bk-stage-none">—</span>`;
+    if (!it.oppId) return `<span class="bk-stage-none"> - </span>`;
     const opts = stages.map(s => `<option value="${esc(s)}" ${s === it.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
     return `<select class="bk-stage-select" data-opp="${esc(it.oppId)}" data-pipeline="${esc(pipeline)}">${opts}</select>`;
   }
@@ -537,18 +537,18 @@
           const overdue = daysSince(it.createdAt) >= 7 && !DONE.includes(it.stage);
           const dateCell = it.createdAt
             ? `${esc(bkDateLabel(it.createdAt.slice(0, 10)))}${overdue ? ` <span class="badge badge-uncollected" title="Uncollected for 7+ days">7d+</span>` : ''}`
-            : '—';
+            : ' - ';
           const photoCell = isDefect
             ? (it.photo
                 ? `<td><img src="${it.photo}" alt="defect photo" class="defect-thumb" data-photo="${esc(it.photo)}" title="Click to enlarge" /></td>`
-                : '<td style="color:var(--text-muted,#9a9088)">—</td>')
+                : '<td style="color:var(--text-muted,#9a9088)"> - </td>')
             : '';
           return `<tr class="${isDefect ? urgencyRowClass(it.urgency) : ''}">
             <td>${esc(it.reference)}</td>
             ${isDefect ? `<td>${urgencyBadge(it.urgency)}</td>` : ''}
             <td>${oppBadge(it.stage)}</td>
             <td>${esc(it.contact)}</td>
-            <td>${it.unit ? '#' + esc(it.unit) : '—'}</td>
+            <td>${it.unit ? '#' + esc(it.unit) : ' - '}</td>
             <td style="white-space:nowrap">${dateCell}</td>
             ${photoCell}
             <td>${oppStageSelect(it, pipeline, stages)}</td>
@@ -601,7 +601,7 @@
     return { items, stages };
   }
   const PIPE_DONE = new Set(['Collected','Uncollected / Returned','Resolved','Closed','Completed','Departed','Cancelled']);
-  const _pipeSnap = {}; // pipeline → { items, stages } — used for dashboard summary
+  const _pipeSnap = {}; // pipeline → { items, stages } - used for dashboard summary
   let _allBookings = [];
   let _allGuests   = [];
   let _annItems    = [];
@@ -783,20 +783,20 @@
           const ref  = it.reference || '';
           const authM = ref.match(/\[Auth:\s*([^\]]+)\]/);
           const auth  = authM ? authM[1].trim() : '';
-          const code  = ref.split(' — ')[0].trim() || ref;
+          const code  = ref.split('')[0].trim() || ref;
           const overdue = daysSince(it.createdAt) >= 7 && !PIPE_DONE.has(it.stage);
           const dateCell = it.createdAt
             ? `${esc(bkDateLabel(it.createdAt.slice(0,10)))}${overdue ? ' <span class="badge badge-uncollected" title="7+ days uncollected">7d+</span>' : ''}`
-            : '—';
+            : '';
           const opts = stages.map(s => `<option value="${esc(s)}" ${s===it.stage?'selected':''}>${esc(s)}</option>`).join('');
           const stageSelect = it.oppId
             ? `<select class="bk-stage-select" data-opp="${esc(it.oppId)}" data-pipeline="parcel">${opts}</select>`
-            : `<span class="bk-stage-none">—</span>`;
+            : `<span class="bk-stage-none"> - </span>`;
           return `<tr>
             <td class="parcel-ref-cell"><span class="parcel-code">${esc(code)}</span></td>
             <td>${esc(it.contact)}</td>
-            <td class="nowrap">${it.unit ? '#' + esc(it.unit) : '—'}</td>
-            <td class="parcel-auth">${auth ? esc(auth) : '<span class="cell-muted">—</span>'}</td>
+            <td class="nowrap">${it.unit ? '#' + esc(it.unit) : ' - '}</td>
+            <td class="parcel-auth">${auth ? esc(auth) : '<span class="cell-muted"> - </span>'}</td>
             <td>${oppBadge(it.stage)}</td>
             <td class="nowrap">${dateCell}</td>
             <td>${stageSelect}</td>
@@ -946,8 +946,8 @@
     body.innerHTML = list.length
       ? list.map(c => `<tr>
           <td>${esc(c.name)}</td>
-          <td>${c.unit ? '#' + esc(c.unit) : '—'}</td>
-          <td>${esc(c.phone || '—')}</td>
+          <td>${c.unit ? '#' + esc(c.unit) : ''}</td>
+          <td>${esc(c.phone || '')}</td>
           <td><span class="tag tag-unit">${esc(c.type)}</span>${c.ghlLinked ? ' <span class="tag">GHL ✓</span>' : ''}</td>
         </tr>`).join('')
       : `<tr class="empty-row"><td colspan="4">No resident accounts.</td></tr>`;
@@ -996,7 +996,7 @@
     if (!a.eventAt) return '';
     if (!a.eventEndAt) return annEventLabel(a.eventAt);
     return annDate(a.eventAt) === annDate(a.eventEndAt)
-      ? `${annEventLabel(a.eventAt)} – ${annTimeOnly(a.eventEndAt)}`
+      ? `${annEventLabel(a.eventAt)} - ${annTimeOnly(a.eventEndAt)}`
       : `${annEventLabel(a.eventAt)} → ${annEventLabel(a.eventEndAt)}`;
   }
 
@@ -1131,7 +1131,7 @@
               listEl.innerHTML = d.responses.length
                 ? d.responses.map(rv => `
                   <div class="rsvp-row">
-                    <span class="rsvp-unit">#${esc(rv.resident_unit || '—')}</span>
+                    <span class="rsvp-unit">#${esc(rv.resident_unit || '')}</span>
                     <span>${esc(rv.resident_name || 'Resident')}</span>
                     <span class="${rv.response === 'yes' ? 'rsvp-resp-yes' : 'rsvp-resp-no'}">${rv.response === 'yes' ? `✓ ${rv.attendee_count} attending` : '✗ Declined'}</span>
                   </div>`).join('')
@@ -1188,7 +1188,7 @@
           const list = data.contacts || [];
           if (!dropdown) return;
           dropdown.innerHTML = list.length
-            ? list.map((c, i) => `<div class="search-option" data-i="${i}">${esc(c.name)} <span style="color:var(--muted)">· ${esc(c.unit || '—')} · ${esc(c.email || '')}</span></div>`).join('')
+            ? list.map((c, i) => `<div class="search-option" data-i="${i}">${esc(c.name)} <span style="color:var(--muted)">· ${esc(c.unit || '')} · ${esc(c.email || '')}</span></div>`).join('')
             : '<div class="search-option" style="color:var(--muted)">No matches</div>';
           dropdown.classList.add('open');
           dropdown.querySelectorAll('.search-option[data-i]').forEach(el => el.addEventListener('click', () => {
@@ -1222,13 +1222,13 @@
     if (window.Swal) {
       const cells = [
         ['Resident (Host)', hostName + (hostUnit ? ' · ' + hostUnit : '')],
-        ['Visitor Type',    visitorType || '—'],
+        ['Visitor Type',    visitorType || ''],
         ['Visitor Name',    name],
-        ['IC / Passport',   ic      || '—'],
-        ['Vehicle',         vehicle || '—'],
+        ['IC / Passport',   ic      || ''],
+        ['Vehicle',         vehicle || ''],
         ['Visit Date',      date],
-        ['Time',            time    || '—'],
-        ['Facility',        facility || '—'],
+        ['Time',            time    || ''],
+        ['Facility',        facility || ''],
       ].map(([lbl, val]) =>
         `<div>
           <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">${lbl}</div>
@@ -1290,7 +1290,7 @@
               </div>
               <div>
                 <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#a5a3f5;font-weight:700;margin-bottom:2px">Reference</div>
-                <div style="color:#a5a3f5;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${esc(data.reference || '—')}</div>
+                <div style="color:#a5a3f5;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${esc(data.reference || '')}</div>
               </div>
             </div>
             <div style="background:#faf7f2;border-radius:6px;padding:10px 12px;font-size:0.82rem;color:#5a514a">QR pass sent to resident.</div>
@@ -1322,13 +1322,13 @@
   bind('runProbeBtn', () => { $('probeResult').innerHTML = '<div style="padding:1rem;color:var(--orange);font-size:0.82rem">Data API not connected. Rebuild it and re-run the probe.</div>'; });
   bind('rawDataBtn', () => {
     const box = $('rawDataResult'); if (!box) return;
-    if (box.style.display === 'none') { box.style.display = 'block'; $('rawDataPre').textContent = 'No data — API not connected.'; }
+    if (box.style.display === 'none') { box.style.display = 'block'; $('rawDataPre').textContent = 'No data - API not connected.'; }
     else { box.style.display = 'none'; }
   });
 
   // ── Payments (deposits + history across all residents) ─────────────────────────
   function payDate(iso) {
-    return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '—';
+    return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
   }
   function payMoney(n, cur) {
     return `${cur || 'SGD'} ${(Number(n) || 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1356,9 +1356,9 @@
       if (pBody) {
         pBody.innerHTML = _mgmtPending.length
           ? _mgmtPending.map((d, i) => `<tr>
-              <td>${esc(d.resident || '—')}</td><td>${d.unit ? '#' + esc(d.unit) : '—'}</td>
-              <td>${esc(d.desc)}</td><td>${d.date ? esc(payDate(d.date)) : '—'}</td>
-              <td>${d.amount ? esc(payMoney(d.amount, 'SGD')) : '—'}</td>
+              <td>${esc(d.resident || '')}</td><td>${d.unit ? '#' + esc(d.unit) : ''}</td>
+              <td>${esc(d.desc)}</td><td>${d.date ? esc(payDate(d.date)) : ''}</td>
+              <td>${d.amount ? esc(payMoney(d.amount, 'SGD')) : ''}</td>
               <td><span class="tag" style="background:rgba(49,46,129,.15);color:var(--gold,#312e81)">Deposit Pending</span></td>
               <td><button class="btn-primary" style="padding:5px 12px;font-size:0.72rem" data-paid="${i}">Mark as Paid</button></td>
             </tr>`).join('')
@@ -1392,8 +1392,8 @@
       if (hBody) {
         hBody.innerHTML = histRows.length
           ? histRows.map(p => `<tr>
-              <td>${p.date ? esc(payDate(p.date)) : '—'}</td><td>${p.unit ? '#' + esc(p.unit) : '—'}</td>
-              <td>${esc(p.desc)}</td><td>${esc(p.category)}</td><td>${p.amount != null ? esc(payMoney(p.amount, p.currency)) : '—'}</td>
+              <td>${p.date ? esc(payDate(p.date)) : ''}</td><td>${p.unit ? '#' + esc(p.unit) : ''}</td>
+              <td>${esc(p.desc)}</td><td>${esc(p.category)}</td><td>${p.amount != null ? esc(payMoney(p.amount, p.currency)) : ''}</td>
               <td><span class="tag" style="background:${tagStyle(p.status)}">${esc(p.status)}</span></td>
             </tr>`).join('')
           : '<tr class="empty-row"><td colspan="6">No payment records yet.</td></tr>';
@@ -1413,7 +1413,7 @@
       });
       const data = await res.json();
       if (!data.success) { toast(data.message || 'Could not confirm.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; return; }
-      toast('Marked paid — booking confirmed.');
+      toast('Marked paid - booking confirmed.');
       loadPaymentsPanel();
     } catch { toast('Connection error.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; }
   }
@@ -1470,7 +1470,7 @@
   _livePanelMgmt('view-feedback',      loadFeedback);
   _livePanelMgmt('view-announcements', loadAnnouncements);
 
-  // ── Resident messages — wired to the shared inbox design (inbox.css) ────────────
+  // ── Resident messages - wired to the shared inbox design (inbox.css) ────────────
   let _mgmtConvoId = null, _mgmtConvoName = '', _mgmtConvoResolved = false;
   let _mgmtConvos = [], _mgmtFilter = 'all', _mgmtSearch = '';
   function mgmtClock(iso) {
@@ -1507,7 +1507,7 @@
     }
   }
   // Render the conversation list filtered by the active tab. Resolved threads live
-  // under the "Resolved" tab and drop out of "All"/"Unread" — the active queue.
+  // under the "Resolved" tab and drop out of "All"/"Unread" - the active queue.
   function renderConversations() {
     const listEl = $('mgmtInboxList');
     if (!listEl) return;
@@ -1671,7 +1671,7 @@
       const res  = await fetch('/api/management/messages-residents', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       const list = (data.success && data.residents) ? data.residents : [];
-      sel.innerHTML = '<option value="">— Select a resident —</option>'
+      sel.innerHTML = '<option value="">Select a resident</option>'
         + list.map((r, i) => `<option value="${i}">${esc(r.name)}${r.unit ? ` · #${esc(r.unit)}` : ''}</option>`).join('');
       sel._residents = list;
       sel.dataset.loaded = '1';

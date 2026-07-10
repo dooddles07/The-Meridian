@@ -1,12 +1,12 @@
 /* =============================================================================
- * demo-backend.js — PORTFOLIO DEMO
+ * demo-backend.js - PORTFOLIO DEMO
  *
  * Makes The Lumina portal run with ZERO backend and ZERO external connections.
  * It must be loaded BEFORE each portal's controller script. It does three things:
  *
  *   1. Auto-enters every portal (no login) by seeding a demo session.
  *   2. Overrides window.fetch to intercept every "/api/..." request and answer it
- *      from an in-browser store (localStorage) — nothing ever hits the network.
+ *      from an in-browser store (localStorage) - nothing ever hits the network.
  *   3. Seeds realistic demo data so every screen is populated.
  *
  * All three portals (resident / management / guardhouse) share the same browser
@@ -76,9 +76,9 @@
         { name: 'Sofia Reyes', unit: '09-14', email: 'sofia.reyes@example.com', phone: '+65 9345 8890', type: 'Owner', ghlLinked: false, contact_id: 'demo-contact-4' },
       ],
       bookings: [
-        row('Confirmed',      'pool',   'Swimming Pool', '🏊', me, daysFromNow(2),  '9:00 AM – 10:00 AM', 2, ''),
-        row('Deposit Pending','bbq',    'BBQ Pit',       '🍖', me, daysFromNow(5),  '6:00 PM – 8:00 PM',  8, 'Family gathering'),
-        row('Completed',      'tennis', 'Tennis Court',  '🎾', me, daysFromNow(-6), '7:00 AM – 8:00 AM',  2, ''),
+        row('Confirmed',      'pool',   'Swimming Pool', '🏊', me, daysFromNow(2),  '9:00 AM - 10:00 AM', 2, ''),
+        row('Deposit Pending','bbq',    'BBQ Pit',       '🍖', me, daysFromNow(5),  '6:00 PM - 8:00 PM',  8, 'Family gathering'),
+        row('Completed',      'tennis', 'Tennis Court',  '🎾', me, daysFromNow(-6), '7:00 AM - 8:00 AM',  2, ''),
       ],
       guests: [
         guest('Jane Lim',   'jane.lim@example.com',   '+65 9800 1122', 'Family & Friends', daysFromNow(1), 'Registered',  me),
@@ -97,11 +97,11 @@
         feedback('Suggestion', 'Community Events', 'Please organise a weekend farmers market at the verandah.', '', '', 'Submitted', me),
       ],
       moves: [
-        move('Move-In', daysFromNow(9), '10:00 AM – 1:00 PM', 'Bulky furniture, need service lift.', 'Deposit Pending', me),
+        move('Move-In', daysFromNow(9), '10:00 AM - 1:00 PM', 'Bulky furniture, need service lift.', 'Deposit Pending', me),
       ],
       payments: [
-        pay('BBQ Pit — refundable deposit', 200, 'Deposit', 'paid',    'DEP-BBQ001', 'demo-opp-bbq',  '', me),
-        pay('Move-In — admin fee + deposit', 2200, 'Deposit', 'paid',   'DEP-MOV001', 'demo-opp-move', '', me),
+        pay('BBQ Pit - refundable deposit', 200, 'Deposit', 'paid',    'DEP-BBQ001', 'demo-opp-bbq',  '', me),
+        pay('Move-In - admin fee + deposit', 2200, 'Deposit', 'paid',   'DEP-MOV001', 'demo-opp-move', '', me),
       ],
       announcements: [
         ann('Scheduled Water Tank Cleaning', 'Water supply will be interrupted on the maintenance date below. Please store water in advance.', 'Maintenance', { pinned: true, eventAt: daysFromNow(4) + 'T09:00:00+08:00', eventEndAt: daysFromNow(4) + 'T14:00:00+08:00', blocked_facilities: ['pool'] }),
@@ -112,7 +112,7 @@
       conversations: [
         convo(me, [
           { sender: 'resident',   sender_name: 'Alex Tan',   body: 'Hi, could you confirm the visitor parking rules for weekends?', minsAgo: 180 },
-          { sender: 'management', sender_name: 'Management', body: 'Hello Alex — weekend visitor parking is free up to 4 hours at lots V1–V8. Just register the vehicle at the guardhouse.', minsAgo: 120 },
+          { sender: 'management', sender_name: 'Management', body: 'Hello Alex - weekend visitor parking is free up to 4 hours at lots V1 - V8. Just register the vehicle at the guardhouse.', minsAgo: 120 },
         ], false),
       ],
       resources: [
@@ -158,7 +158,7 @@
       return { id: uid('demo-convo'), contact_id: m.contact_id, resident_name: m.name, resident_unit: m.unit, resident_email: m.email, last_message_at: last.createdAt, last_message_preview: last.body.slice(0, 80), last_sender: last.sender, unread_management: 0, unread_resident: 0, resolved: !!resolved, messages: messages };
     }
     function resource(title, category, fileName, fileType) {
-      var text = 'The Lumina — ' + title + '\n\nThis is a demo document included with the portfolio build.';
+      var text = 'The Lumina · ' + title + '\n\nThis is a demo document included with the portfolio build.';
       var data = 'data:' + fileType + ';base64,' + btoa(unescape(encodeURIComponent(text)));
       return { id: uid('demo-res'), title: title, category: category, visibility: 'residents', file_data: data, file_name: fileName, file_type: fileType, file_size: text.length, uploaded_by: 'Management', createdAt: nowISO() };
     }
@@ -173,11 +173,11 @@
   // Map a stored collection item → the generic "opportunity" shape the resident
   // "My …" panels and the management pipeline tables consume.
   function oppName(kind, it) {
-    if (kind === 'guest')   return it.reference + ' — ' + it.visitor + ' (#' + it.unit + ')';
-    if (kind === 'parcel')  return it.ref + ' — ' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
+    if (kind === 'guest')   return it.reference + '' + it.visitor + ' (#' + it.unit + ')';
+    if (kind === 'parcel')  return it.ref + '' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
     if (kind === 'defect')  return (it.category ? it.category + ': ' : '') + it.desc;
-    if (kind === 'feedback')return (it.type ? it.type + ' — ' : '') + it.desc;
-    if (kind === 'move')    return it.move_type + ' — ' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
+    if (kind === 'feedback')return (it.type ? it.type + '' : '') + it.desc;
+    if (kind === 'move')    return it.move_type + '' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
     return it.desc || it.name || '';
   }
   function toOpp(kind, it) {
@@ -293,7 +293,7 @@
       if (bk) { bk.status = 'Confirmed'; bk.stage = 'Confirmed'; }
       db.payments.unshift({ id: uid('demo-pay'), description: body.description || 'Booking deposit', amount: amt, currency: 'SGD', category: 'Deposit', status: 'paid', reference: 'DEP-' + String(body.opportunity_id || uid('')).slice(-6).toUpperCase(), opportunity_id: body.opportunity_id || '', fee_label: body.fee_label || '', resident_unit: body.unit || DEMO_MEMBER.unit, resident_email: (body.email || DEMO_MEMBER.email), paid_at: nowISO(), due_at: null, createdAt: nowISO() });
       persist();
-      return ok({ message: 'Deposit paid — your booking is now confirmed.', amount: amt, stage: 'Confirmed' });
+      return ok({ message: 'Deposit paid - your booking is now confirmed.', amount: amt, stage: 'Confirmed' });
     }
     if (p === '/api/payments/confirm' && method === 'POST') return ok({ message: 'Booking confirmed.' });
 
@@ -522,5 +522,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Portfolio demo — running fully client-side (no backend, no database, no external calls).', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Portfolio demo - running fully client-side (no backend, no database, no external calls).', 'color:#312e81;font-weight:bold');
 })();

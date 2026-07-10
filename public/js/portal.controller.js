@@ -19,7 +19,7 @@
 
   // ── Authenticated fetch ────────────────────────────────────────────────────
   // The resident session token (set on login) is attached to every same-origin
-  // /api/ call. The backend derives identity from this token — the portal no longer
+  // /api/ call. The backend derives identity from this token - the portal no longer
   // proves who it is by sending contact_id/email in the request. Shadows the global
   // fetch so every existing call site is covered without change.
   let authToken = null;
@@ -29,7 +29,7 @@
       opts = { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + authToken } };
     }
     return _rawFetch(url, opts).then(res => {
-      // A 401 on a non-login API call means the session is gone/expired — bounce to login.
+      // A 401 on a non-login API call means the session is gone/expired - bounce to login.
       if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
         handleAuthExpired();
       }
@@ -84,7 +84,7 @@
     { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, capacity: 'Event space · 40 pax', maxAdvanceDays: 31, maxBlocksPerDay: 2, note: 'Bookings are in 4-hour blocks. Max 2 blocks per day, up to 1 month in advance. Private functions only.', notePlaceholder: 'e.g. Private dinner for 20 pax, tables arranged in U-shape, need PA system' },
   ];
   const facByKey   = key => FACILITIES.find(f => f.key === key);
-  const hoursLabel = f   => `${fmtHour(f.open)}–${fmtHour(f.close)}`;
+  const hoursLabel = f   => `${fmtHour(f.open)} - ${fmtHour(f.close)}`;
   function fmtHour(h) { const ap = h >= 12 ? 'pm' : 'am'; const hr = h % 12 === 0 ? 12 : h % 12; return `${hr}${ap}`; }
   function addDays(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
 
@@ -103,7 +103,7 @@
     const slotMins = f.slot * 60;
     const closeMin = f.close * 60;
     for (let m = f.open * 60; m + slotMins <= closeMin; m += (f.slotStep || 15)) {
-      out.push(`${fmtMins(m)} – ${fmtMins(m + slotMins)}`);
+      out.push(`${fmtMins(m)} - ${fmtMins(m + slotMins)}`);
     }
     return out;
   }
@@ -115,16 +115,16 @@
     return h * 60 + m;
   }
 
-  // Parse the START time of a slot string ("9:15 AM – 10:15 AM") → minutes.
+  // Parse the START time of a slot string ("9:15 AM - 10:15 AM") → minutes.
   function parseSlotStart(slotStr) {
-    const [time, ap] = slotStr.split(' – ')[0].trim().split(' ');
+    const [time, ap] = slotStr.split(' - ')[0].trim().split(' ');
     const [h, m]     = time.split(':').map(Number);
     const hours = ap === 'PM' && h !== 12 ? h + 12 : ap === 'AM' && h === 12 ? 0 : h;
     return hours * 60 + m;
   }
   // Parse the END time of a slot string → minutes.
   function parseSlotEnd(slotStr) {
-    const [time, ap] = slotStr.split(' – ')[1].trim().split(' ');
+    const [time, ap] = slotStr.split(' - ')[1].trim().split(' ');
     const [h, m]     = time.split(':').map(Number);
     const hours = ap === 'PM' && h !== 12 ? h + 12 : ap === 'AM' && h === 12 ? 0 : h;
     return hours * 60 + m;
@@ -132,7 +132,7 @@
 
   // Fetch already-booked ranges (SGT minutes) for a facility/date from the server.
   // GHL is the shared source of truth, so this reflects EVERY resident's bookings.
-  // Fails open to [] — the server's createBooking guard is the authoritative block.
+  // Fails open to [] - the server's createBooking guard is the authoritative block.
   async function fetchBusyRanges(facilityKey, date, excludeId) {
     try {
       let url = `/api/booking/availability?facilityKey=${encodeURIComponent(facilityKey)}&date=${encodeURIComponent(date)}`;
@@ -143,7 +143,7 @@
     } catch { return []; }
   }
 
-  // Rebuild the slot dropdown for the selected date — disables past slots (today)
+  // Rebuild the slot dropdown for the selected date - disables past slots (today)
   // AND any slot overlapping an already-confirmed booking (from the server/GHL).
   async function refreshSlots(f) {
     const dateVal = $('bkDate') && $('bkDate').value;
@@ -152,7 +152,7 @@
     if (!select) return;
 
     if (!dateVal) {
-      select.innerHTML = `<option value="">— select a date first —</option>`;
+      select.innerHTML = `<option value="">select a date first</option>`;
       if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = ''; }
       return;
     }
@@ -164,7 +164,7 @@
 
     // Loading state while availability is fetched.
     select.disabled  = true;
-    select.innerHTML = `<option value="">— checking availability… —</option>`;
+    select.innerHTML = `<option value="">checking availability…</option>`;
     if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = 'Checking availability…'; }
 
     const busy = await fetchBusyRanges(f.key, dateVal, _editing ? _editing.id : '');
@@ -182,11 +182,11 @@
       if (past)   pastCount++;
       if (booked) bookedCount++;
       const disabled = past || booked;
-      const label    = booked ? `${s}  —  booked` : s;
+      const label    = booked ? `${s} - booked` : s;
       return `<option value="${esc(s)}" ${disabled ? 'disabled' : ''}>${esc(label)}</option>`;
     }).join('');
 
-    select.innerHTML = `<option value="">— choose a time slot —</option>` + options;
+    select.innerHTML = `<option value="">choose a time slot</option>` + options;
 
     // Restore previous selection only if it's still bookable.
     if (prevVal) {
@@ -200,8 +200,8 @@
     if (avail === 0) {
       hint.className = 'bk-slot-hint err';
       hint.innerHTML = isToday
-        ? '⚠ No slots available today — please select a future date.'
-        : '⚠ Fully booked — please select another date.';
+        ? '⚠ No slots available today - please select a future date.'
+        : '⚠ Fully booked - please select another date.';
     } else {
       hint.className = 'bk-slot-hint';
       const parts = [`<span class="bk-hint-ok">✓ ${avail} available</span>`];
@@ -212,10 +212,10 @@
   }
   function todaySGT() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); }
   function fmtDate(iso) {
-    if (!iso) return '—';
+    if (!iso) return ' - ';
     return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
   }
-  // Bookings are persisted SERVER-SIDE in MongoDB (the source of truth) — never in the
+  // Bookings are persisted SERVER-SIDE in MongoDB (the source of truth) - never in the
   // browser, so they're consistent across devices and both portals. We keep an
   // in-memory cache hydrated from /api/booking/mine (see loadBookings); create/edit/
   // cancel hit the API (which writes Mongo) and then refresh this cache.
@@ -224,8 +224,7 @@
   const getBookings  = () => _bookings;
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
   // The full text a resident typed for defects/parcels/moves/feedback (GHL only keeps
-  // a short opp name) is persisted in the live MongoDB on submit and read back here —
-  // never in localStorage, so it's consistent across every device and both portals.
+  // a short opp name) is persisted in the live MongoDB on submit and read back here - // never in localStorage, so it's consistent across every device and both portals.
   // Returns newest-first rows in the shape renderRecords expects as `saved`.
   const fetchMine = async (type) => {
     if (!member || (!member.contact_id && !member.email)) return [];
@@ -286,7 +285,7 @@
 
     $('sbAvatar').textContent = (member.initials || 'R').toUpperCase();
     $('sbName').textContent   = member.name || 'Resident';
-    $('sbUnit').textContent   = `Unit ${member.unit || '—'}`;
+    $('sbUnit').textContent   = `Unit ${member.unit || ' - '}`;
     const rType = (member.type || '').trim();
     $('sbBadge').textContent  = (rType === 'Owner' || rType === 'Tenant') ? `Resident (${rType})` : 'Resident';
 
@@ -296,7 +295,7 @@
 
     const today = todaySGT();
     const gDateEl = $('gDate'); if (gDateEl) { gDateEl.min = today; gDateEl.value = today; }
-    // fbDate intentionally has no min — incidents may have occurred in the past.
+    // fbDate intentionally has no min - incidents may have occurred in the past.
 
     renderFacilities(); renderMyBookings(); renderDashboardBookings();
     updateFbCategories();
@@ -310,11 +309,11 @@
     // Live payments: refresh pending deposits while the panel is open so a new
     // booking's deposit appears once GHL creates its opportunity (a few seconds
     // after booking), without a manual reload.
-    // Refresh only Pending Deposits on poll — re-rendering the history would collapse
+    // Refresh only Pending Deposits on poll - re-rendering the history would collapse
     // any open record dropdown the resident is reading.
     setInterval(() => {
       const v = $('view-payments');
-      // Never refresh while the payment window is open — re-rendering the panel
+      // Never refresh while the payment window is open - re-rendering the panel
       // underneath an in-progress payment is what was interrupting it.
       if (v && v.classList.contains('active') && !_isPayModalOpen()) {
         const hint = $('payLastUpdated');
@@ -338,11 +337,11 @@
     // Completed, Cancelled) shows without a manual refresh. syncBookingStatuses
     // re-renders silently and keeps the last data on a transient failure.
     _livePanel('view-booking',  syncBookingStatuses);
-    // Announcements (dedicated tab) and Resources — so newly published notices and
+    // Announcements (dedicated tab) and Resources - so newly published notices and
     // newly uploaded documents appear without a manual refresh.
     _livePanel('view-notices',   loadNotices);
     _livePanel('view-resources', loadResources);
-    // Dashboard shows both announcements and booking cards — refresh both.
+    // Dashboard shows both announcements and booking cards - refresh both.
     _livePanel('view-dashboard', () => { loadNotices(); syncBookingStatuses(); });
   }
 
@@ -416,7 +415,7 @@
               <input type="date" id="bkDate" min="${todaySGT()}" ${maxDate ? `max="${maxDate}"` : ''} />
             </div>
             <div class="bk-field">
-              <label>Pax${f.maxPax === 1 ? ' — residents only' : ` (max ${f.maxPax})`}</label>
+              <label>Pax${f.maxPax === 1 ? ' - residents only' : ` (max ${f.maxPax})`}</label>
               <input type="number" id="bkPax" min="1" max="${f.maxPax}" value="1"
                 ${f.maxPax === 1 ? 'readonly class="bk-locked"' : ''} />
             </div>
@@ -424,7 +423,7 @@
           <div class="bk-field">
             <label>Time Slot</label>
             <div class="bk-select-wrap">
-              <select id="bkSlot"><option value="">— select a date first —</option></select>
+              <select id="bkSlot"><option value="">select a date first</option></select>
               <span class="bk-select-chevron">▾</span>
             </div>
             <div class="bk-slot-hint" id="bkSlotHint"></div>
@@ -455,7 +454,7 @@
         sel.value = _editing.slot;
         if (!sel.value) {
           const hint = $('bkSlotHint');
-          if (hint) { hint.className = 'bk-slot-hint bk-slot-hint--warn'; hint.textContent = 'Your original slot is no longer available — please choose another.'; }
+          if (hint) { hint.className = 'bk-slot-hint bk-slot-hint--warn'; hint.textContent = 'Your original slot is no longer available - please choose another.'; }
         }
       });
     }
@@ -467,7 +466,7 @@
         <span style="font-size:1.5rem;line-height:1">${f.emoji || '🏢'}</span>
         <div>
           <div style="font-size:1rem;font-weight:500;color:#14110f">${esc(f.name)}</div>
-          <div style="font-size:0.65rem;color:#312e81;letter-spacing:0.08em;text-transform:uppercase">Unit ${esc(member.unit || '—')}</div>
+          <div style="font-size:0.65rem;color:#312e81;letter-spacing:0.08em;text-transform:uppercase">Unit ${esc(member.unit || '')}</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px${notes ? ';margin-bottom:14px' : ''}">
@@ -485,7 +484,7 @@
         </div>
         <div>
           <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">Member</div>
-          <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(member.name || '—')}</div>
+          <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(member.name || '')}</div>
         </div>
       </div>
       ${notes ? `<div style="background:#faf7f2;border-radius:6px;padding:10px 12px">
@@ -688,7 +687,7 @@
 
   // Quantum payment links per deposit facility / move. Each entry is one or more fees.
   // DEMO: external payment links removed. "Pay Deposit" opens a local mock payment
-  // page (public/demo-pay.html) in the modal iframe — no external call is made.
+  // page (public/demo-pay.html) in the modal iframe - no external call is made.
   const PAY_LINKS = {
     bbq:  [{ label: 'Refundable Deposit', url: 'demo-pay.html' }],
     pool: [{ label: 'Refundable Deposit', url: 'demo-pay.html' }],
@@ -852,7 +851,7 @@
       .filter(b => b.date >= today && !isFinished(b.status))
       .sort((a, b) => a.date.localeCompare(b.date));
     const prev = sel.value;
-    sel.innerHTML = '<option value="">— No linked booking —</option>'
+    sel.innerHTML = '<option value="">No linked booking</option>'
       + upcoming.map(b => {
           const label = `${b.emoji || ''} ${b.facilityName} · ${fmtDate(b.date)} · ${b.slot}`;
           return `<option value="${esc(b.id)}">${esc(label)}</option>`;
@@ -878,7 +877,7 @@
     statusEl.style.display = '';
     if (booking.status === 'Confirmed') {
       statusEl.style.cssText = 'display:block;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5;background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3)';
-      statusEl.textContent = '✓ Booking confirmed — your visitors can be registered.';
+      statusEl.textContent = '✓ Booking confirmed - your visitors can be registered.';
       if (btn) btn.disabled = false;
     } else {
       statusEl.style.cssText = 'display:block;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5;background:rgba(192,57,43,.08);color:#c0392b;border:1px solid rgba(192,57,43,.25)';
@@ -887,7 +886,7 @@
     }
   }
 
-  // Hydrate the in-memory booking cache from the server (MongoDB — the source of
+  // Hydrate the in-memory booking cache from the server (MongoDB - the source of
   // truth, with the live GHL pipeline stage overlaid). Replaces the booking list
   // wholesale, so cancellations / management stage moves are always reflected.
   // Keeps the cache on a failed/non-success response so a transient error can't wipe
@@ -980,7 +979,7 @@
     if (cnt) cnt.textContent = (items ? items.length : 0) + ' Total';
     if (!items || !items.length) { el.innerHTML = `<div class="panel-empty">${emptyMsg}</div>`; return; }
     // Defect opportunity names carry the reported issue (sometimes prefixed with an
-    // [urgency] tag) — surface that as the title + a body row, not just the date.
+    // [urgency] tag) - surface that as the title + a body row, not just the date.
     const cleanIssue = (s) => String(s || '').replace(/^\[(?:emergency|urgent|routine)\]\s*/i, '').trim();
     const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
     const daySGT = (iso) => { try { return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); } catch { return ''; } };
@@ -989,9 +988,9 @@
       const badge = stageBadge(item.stage);
       const date  = item.createdAt
         ? new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
-        : '—';
+        : ' - ';
       const issue = opts.kind === 'defect' ? cleanIssue(item.name) : '';
-      // The GHL opp name is "<category> | — #unit", not the typed text. Recover the
+      // The GHL opp name is "<category> | - #unit", not the typed text. Recover the
       // resident's full description from local history: prefer same category + same
       // day, then same day, then next in order. Each saved entry is used once.
       let sv = null;
@@ -1054,7 +1053,7 @@
         return `<div class="rec-qr">
           <img src="${qrUrl}" alt="Guest Pass QR" class="qr-img" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-          <div class="qr-err" style="display:none">QR unavailable — show reference code at guardhouse.</div>
+          <div class="qr-err" style="display:none">QR unavailable - show reference code at guardhouse.</div>
           <a href="${qrUrl}&download=1" class="qr-dl-btn" target="_blank" rel="noopener">
             <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-2px">download</span> Download QR
           </a>
@@ -1080,22 +1079,22 @@
         <div class="rec-body">
           ${opts.kind === 'defect' ? (() => {
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
-            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '—';
-            const cat   = (sv && sv.category) || issue.split('|')[0].split('—')[0].trim() || '—';
-            const urg   = (sv && sv.urgency) || (item.name.match(/\[(emergency|urgent|routine)\]/i) || [])[1] || '—';
+            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
+            const cat   = (sv && sv.category) || issue.split('|')[0].split('')[0].trim() || '';
+            const urg   = (sv && sv.urgency) || (item.name.match(/\[(emergency|urgent|routine)\]/i) || [])[1] || '';
             return `
               <div class="rec-field"><span class="rec-label">Submitted date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Category</span>${esc(cat)}</div>
-              <div class="rec-field"><span class="rec-label">Location</span>${esc((sv && sv.location) || '—')}</div>
+              <div class="rec-field"><span class="rec-label">Location</span>${esc((sv && sv.location) || '')}</div>
               <div class="rec-field"><span class="rec-label">Urgency Level</span>${esc(urg)}</div>
-              <div class="rec-field"><span class="rec-label">Issue</span>${esc((sv && sv.desc) || '—')}</div>`;
+              <div class="rec-field"><span class="rec-label">Issue</span>${esc((sv && sv.desc) || '')}</div>`;
           })() : opts.kind === 'parcel' ? (() => {
             // Fall back to the parcel's GHL custom fields when no local copy exists.
             const cf = (re) => { const f = (item.customFields || []).find(c => re.test(c.label || '')); return f ? (f.fieldValueString || '') : ''; };
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
-            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '—';
-            const ref   = (sv && sv.ref) || cf(/reference|tracking/i) || (REF_RE.exec(item.name) || [])[0] || cleanIssue(item.name) || '—';
+            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
+            const ref   = (sv && sv.ref) || cf(/reference|tracking/i) || (REF_RE.exec(item.name) || [])[0] || cleanIssue(item.name) || '';
             const courier   = (sv && sv.courier) || cf(/courier|sender/i);
             const descTxt   = (sv && sv.desc) || cf(/description|item|content/i);
             const collector = (sv && sv.collector && sv.collector.trim()) || cf(/collector|authoriz/i);
@@ -1103,35 +1102,35 @@
               <div class="rec-field"><span class="rec-label">Date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Parcel Reference</span>${esc(ref)}</div>
-              <div class="rec-field"><span class="rec-label">Courier / Sender</span>${esc(courier || '—')}</div>
-              <div class="rec-field"><span class="rec-label">Description</span>${esc(descTxt || '—')}</div>
+              <div class="rec-field"><span class="rec-label">Courier / Sender</span>${esc(courier || '')}</div>
+              <div class="rec-field"><span class="rec-label">Description</span>${esc(descTxt || '')}</div>
               ${collector ? `<div class="rec-field"><span class="rec-label">Authorized Collector</span>${esc(collector)}</div>` : ''}`;
           })() : opts.kind === 'move' ? (() => {
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
-            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '—';
-            const mType = (sv && sv.move_type) || (item.name.split('—')[0].trim()) || '—';
-            const mDate = (sv && sv.move_date) ? fmtDate(sv.move_date) : '—';
+            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
+            const mType = (sv && sv.move_type) || (item.name.split('')[0].trim()) || '';
+            const mDate = (sv && sv.move_date) ? fmtDate(sv.move_date) : '';
             return `
               <div class="rec-field"><span class="rec-label">Submitted Date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Move Type</span>${esc(mType)}</div>
               <div class="rec-field"><span class="rec-label">Move In/Out Date</span>${esc(mDate)}</div>
-              <div class="rec-field"><span class="rec-label">Move In/Out Time</span>${esc((sv && sv.move_time) || '—')}</div>
-              <div class="rec-field"><span class="rec-label">Notes</span>${esc((sv && sv.notes) || '—')}</div>`;
+              <div class="rec-field"><span class="rec-label">Move In/Out Time</span>${esc((sv && sv.move_time) || '')}</div>
+              <div class="rec-field"><span class="rec-label">Notes</span>${esc((sv && sv.notes) || '')}</div>`;
           })() : opts.kind === 'feedback' ? (() => {
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
-            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '—';
-            const type  = (sv && sv.type) || '—';
+            const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
+            const type  = (sv && sv.type) || '';
             const descLabel = type === 'Complaint' ? 'What Happened?' : type === 'Suggestion' ? 'Your Suggestion' : type === 'Feedback' ? 'Your Feedback' : 'Details';
-            const incDate = (sv && sv.incident_date) ? fmtDate(sv.incident_date) : '—';
+            const incDate = (sv && sv.incident_date) ? fmtDate(sv.incident_date) : '';
             return `
               <div class="rec-field"><span class="rec-label">Submitted Date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Type</span>${esc(type)}</div>
-              <div class="rec-field"><span class="rec-label">Category</span>${esc((sv && sv.category) || '—')}</div>
+              <div class="rec-field"><span class="rec-label">Category</span>${esc((sv && sv.category) || '')}</div>
               <div class="rec-field"><span class="rec-label">Date of Incident</span>${esc(incDate)}</div>
-              <div class="rec-field"><span class="rec-label">Time of Incident</span>${esc((sv && sv.incident_time) || '—')}</div>
-              <div class="rec-field"><span class="rec-label">${esc(descLabel)}</span>${esc((sv && sv.desc) || '—')}</div>`;
+              <div class="rec-field"><span class="rec-label">Time of Incident</span>${esc((sv && sv.incident_time) || '')}</div>
+              <div class="rec-field"><span class="rec-label">${esc(descLabel)}</span>${esc((sv && sv.desc) || '')}</div>`;
           })() : `
           ${refRow}${fields}${qrHtml}
           <div class="rec-field"><span class="rec-label">Submitted</span>${date}</div>`}
@@ -1160,14 +1159,14 @@
     const el  = $('myGuestsList');
     const cnt = $('myGuestsCount');
     if (!el || !member) return;
-    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID — please log out and back in.</div>'; return; }
+    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
       const res  = await fetch(oppUrl('guest'));
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load guests.')}</div>`; return; }
-      // Extract visitor name from "GST-YYYYMMDD-#### — Visitor Name (#unit)"
-      const GUEST_VISITOR_RE = /—\s*(.+?)\s*(?:\(#?[^)]+\))?\s*$/;
+      // Extract visitor name from "GST-YYYYMMDD-#### - Visitor Name (#unit)"
+      const GUEST_VISITOR_RE = / - \s*(.+?)\s*(?:\(#?[^)]+\))?\s*$/;
       (data.items || []).forEach(item => {
         const m = GUEST_VISITOR_RE.exec(item.name || '');
         if (m) item.displayName = m[1].trim();
@@ -1180,7 +1179,7 @@
     const el  = $('myDefects');
     const cnt = $('myDefectsCount');
     if (!el || !member) return;
-    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID — please log out and back in.</div>'; return; }
+    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
       const [res, saved] = await Promise.all([fetch(oppUrl('defect')), fetchMine('defect')]);
@@ -1226,7 +1225,7 @@
     const el  = $('myFeedback');
     const cnt = $('myFeedbackCount');
     if (!el || !member) return;
-    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID — please log out and back in.</div>'; return; }
+    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
       const [res, saved] = await Promise.all([fetch(oppUrl('feedback')), fetchMine('feedback')]);
@@ -1240,7 +1239,7 @@
     const el  = $('myMovesList');
     const cnt = $('myMovesCount');
     if (!el || !member) return;
-    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID — please log out and back in.</div>'; return; }
+    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
       const [res, saved] = await Promise.all([fetch(oppUrl('move')), fetchMine('move')]);
@@ -1254,7 +1253,7 @@
     const el  = $('parcelList');
     const cnt = $('parcelCount');
     if (!el || !member) return;
-    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID — please log out and back in.</div>'; return; }
+    if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
       const [res, saved] = await Promise.all([fetch(oppUrl('parcel')), fetchMine('parcel')]);
@@ -1299,7 +1298,7 @@
     if (!a.eventAt) return '';
     if (!a.eventEndAt) return annEventLabel(a.eventAt);
     return annDate(a.eventAt) === annDate(a.eventEndAt)
-      ? `${annEventLabel(a.eventAt)} – ${annTimeOnly(a.eventEndAt)}`
+      ? `${annEventLabel(a.eventAt)} - ${annTimeOnly(a.eventEndAt)}`
       : `${annEventLabel(a.eventAt)} → ${annEventLabel(a.eventEndAt)}`;
   }
   async function loadNotices() {
@@ -1349,7 +1348,7 @@
           </div>
           <div class="ann-rsvp__footer">
             ${closed
-              ? '<span class="ann-rsvp__closed">Responses are closed — this event is less than 24 hours away.</span>'
+              ? '<span class="ann-rsvp__closed">Responses are closed - this event is less than 24 hours away.</span>'
               : `<button class="ann-rsvp__submit${existing ? '' : ' ann-rsvp__hidden'}">${existing ? 'Change my response' : 'Submit'}</button>`}
             <div class="ann-rsvp__status">${isYes ? `You're attending${count > 1 ? ` with ${count - 1} guest${count - 1 !== 1 ? 's' : ''}` : ''}.` : isNo ? "You're not attending." : ''}</div>
           </div>
@@ -1443,7 +1442,7 @@
       if (pinned) {
         const snippet = pinned.body.length > 140 ? pinned.body.slice(0, 140) + '…' : pinned.body;
         banner.style.display = '';
-        banner.innerHTML = `<div class="notice-banner"><span class="notice-banner-tag">Pinned</span><div class="notice-banner-text"><strong>${esc(pinned.title)}</strong> — ${esc(snippet)}</div></div>`;
+        banner.innerHTML = `<div class="notice-banner"><span class="notice-banner-tag">Pinned</span><div class="notice-banner-text"><strong>${esc(pinned.title)}</strong> - ${esc(snippet)}</div></div>`;
       } else {
         banner.style.display = 'none';
       }
@@ -1477,13 +1476,13 @@
     return `${(Number(n) < 0 ? '-' : '')}${cur || 'SGD'} ${v}`;
   }
   function payDate(iso) {
-    return iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '—';
+    return iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : ' - ';
   }
   // Move is one payment: SGD 200 admin fee + SGD 2000 refundable deposit = SGD 2200.
   // On completion the SGD 2000 deposit is refunded (shown on the Deposit Refunded card).
   const MOVE_REFUNDABLE_DEPOSIT = 2000;
   const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 600, move: 2200, default: 50 };
-  // "Requested" is retired — a deposit is outstanding only while at "Deposit Pending".
+  // "Requested" is retired - a deposit is outstanding only while at "Deposit Pending".
   const DEPOSIT_STAGES = new Set(['Deposit Pending']);
   // Derive the facility key from a GHL opportunity name.
   function _facKeyFromOppName(name) {
@@ -1501,8 +1500,8 @@
       const n = (itemName || '').toLowerCase();
       return n.includes('move out') ? 'Move Out' : 'Move In';
     }
-    // Unknown key — extract the readable part before the first dash/em-dash in the GHL opp name.
-    return (itemName || '').split(/\s*[—\-–]\s*/)[0].trim() || 'Facility Booking';
+    // Unknown key - extract the readable part before the first dash/em-dash in the GHL opp name.
+    return (itemName || '').split(/\s*[ - \- - ]\s*/)[0].trim() || 'Facility Booking';
   }
 
   // Format a stored booking's date/slot/pax as "15 Jun 2026 · 2:00 PM · 10 pax".
@@ -1510,7 +1509,7 @@
     const dateStr = dateISO
       ? new Date(dateISO + 'T00:00:00+08:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
       : '';
-    const timeStr = (slot || '').split(' – ')[0].trim();
+    const timeStr = (slot || '').split(' - ')[0].trim();
     const parts   = [dateStr, timeStr, pax ? pax + ' pax' : ''].filter(Boolean);
     return parts.length ? parts.join(' · ') : null;
   }
@@ -1518,9 +1517,9 @@
   // Prefer the resident's own (clean) locally-stored booking data for the
   // date/time/pax line. Matches by facility key, then narrows by the date AND
   // slot start time carried in the opportunity name so the EXACT booking (and its
-  // pax) is selected — never a different booking for the same facility. Returns
+  // pax) is selected - never a different booking for the same facility. Returns
   // null when there's no confident local match.
-  const _slotStartKey = slot => (slot || '').split(' – ')[0].trim().replace(/\s+/g, '').toUpperCase();
+  const _slotStartKey = slot => (slot || '').split(' - ')[0].trim().replace(/\s+/g, '').toUpperCase();
   function _localBookingDetail(key, item) {
     if (!key || key === 'default' || key === 'move') return null;
     let list = getBookings().filter(b => b.facilityKey === key);
@@ -1550,7 +1549,7 @@
     let time = cf(/\btime\b|\bslot\b/i);
     let pax  = cf(/\bpax\b|\bguests?\b|\battendees?\b|\bnumber.?of/i);
     if (!date) { const m = /(\d{4}-\d{2}-\d{2})/.exec(item.name || ''); if (m) date = m[1]; }
-    if (!time) { const m = /(\d{1,2}:\d{2}\s*(?:AM|PM)?(?:\s*[–\-]\s*\d{1,2}:\d{2}\s*(?:AM|PM)?)?)/.exec(item.name || ''); if (m) time = m[1].trim(); }
+    if (!time) { const m = /(\d{1,2}:\d{2}\s*(?:AM|PM)?(?:\s*[ - \-]\s*\d{1,2}:\d{2}\s*(?:AM|PM)?)?)/.exec(item.name || ''); if (m) time = m[1].trim(); }
     if (!pax)  { const m = /·\s*(\d+)\s*pax/i.exec(item.name || ''); if (m) pax = m[1]; }
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       date = new Date(date + 'T00:00:00+08:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' });
@@ -1643,8 +1642,7 @@
   }
 
   // pending/confirmed/refunded are arrays of [item, type] tuples ('facility' | 'move').
-  // Payment History shows paid (Confirmed/Completed) AND Deposit Refunded records —
-  // the latter mainly move-in/out deposits returned after the move completes.
+  // Payment History shows paid (Confirmed/Completed) AND Deposit Refunded records - // the latter mainly move-in/out deposits returned after the move completes.
   function _renderPayBlock(pending, confirmed, refunded, paidFeeSet = new Set()) {
     const historyCount = confirmed.length + refunded.length;
     if (!pending.length && !historyCount)
@@ -1677,7 +1675,7 @@
   // The payment runs in the modal's secure iframe. We deliberately do NOT poll or
   // auto-close it while it's open: a background poll used to close the window
   // mid-payment (any transient fetch error made it look like the booking had left
-  // Deposit Pending). The resident stays in control — they close it themselves, or
+  // Deposit Pending). The resident stays in control - they close it themselves, or
   // tap "I've Completed Payment" to confirm (see confirmCurrentPayment).
   const _isPayModalOpen = () => !!$('payModal') && $('payModal').classList.contains('open');
   let _payPoll = null;
@@ -1701,7 +1699,7 @@
   // The resident pays inside the secure payment-link window, then taps "I've Completed
   // Payment" to confirm. That advances their OWN booking to Confirmed and records the
   // payment (the server verifies the booking belongs to them). Just CLOSING the dialog
-  // (✕ / tapping outside) never confirms — it only refreshes the view.
+  // (✕ / tapping outside) never confirms - it only refreshes the view.
   async function confirmCurrentPayment() {
     const ctx = _payCtx;
     _payCtx = null;
@@ -1722,7 +1720,7 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         });
         const d = await r.json().catch(() => ({}));
-        if (d.success) toast('Payment confirmed — your booking is now confirmed.', 'ok');
+        if (d.success) toast('Payment confirmed - your booking is now confirmed.', 'ok');
         else           toast(d.message || 'Could not confirm your payment. Please try again.', 'err');
       } catch {
         toast('Connection error confirming your payment. Please try again.', 'err');
@@ -1763,11 +1761,11 @@
           .filter(p => p.opportunity_id && p.fee_label)
           .map(p => `${p.opportunity_id}_${p.fee_label}`)
       );
-      // Server is the source of truth (GHL/Mongo) — no localStorage. Deposit facilities
+      // Server is the source of truth (GHL/Mongo) - no localStorage. Deposit facilities
       // with a linked opportunity, named so the card can detect the facility + show details.
       const facItems = (bRes.items || [])
         .filter(b => b.oppId)
-        .map(b => ({ id: b.oppId, stage: b.stage, name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' — ') }))
+        .map(b => ({ id: b.oppId, stage: b.stage, name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
         .filter(o => _facKeyFromOppName(o.name));
       const moveItems = mRes.items || [];
 
@@ -1780,13 +1778,13 @@
         ...moveItems.filter(o => o.stage === 'Confirmed' || o.stage === 'Completed').map(o => [o, 'move']),
       ];
       // Deposit Refunded (move-in/out deposits returned after the move) belongs in
-      // Payment History too — only the move pipeline has this stage.
+      // Payment History too - only the move pipeline has this stage.
       const refunded = [
         ...moveItems.filter(o => o.stage === 'Deposit Refunded').map(o => [o, 'move']),
       ];
       // GHL's appointment workflow can spawn a DUPLICATE opportunity for the same
       // booking. After paying, one is Confirmed but the duplicate lingers at Deposit
-      // Pending — drop any pending item whose booking (type + name) is already
+      // Pending - drop any pending item whose booking (type + name) is already
       // confirmed, and collapse duplicate pendings to one.
       const bookingKey  = (o, t) => `${t}:${String(o.name || '').toLowerCase().replace(/\s+/g, ' ').trim()}`;
       // A booking that's already confirmed OR refunded shouldn't also show as pending.
@@ -1807,7 +1805,7 @@
           const amt      = btn.dataset.feeAmount || btn.dataset.amount || '';
           if (feeLabel) {
             const fee = VERANDAH_FEES.find(f => f.feeLabel === feeLabel);
-            if (fee) { url = fee.url; title = `Pay ${fee.label} — The Verandah`; payLabel = fee.label; }
+            if (fee) { url = fee.url; title = `Pay ${fee.label} - The Verandah`; payLabel = fee.label; }
           } else {
             const fees = PAY_LINKS[btn.dataset.payKey] || [];
             if (fees.length) { url = fees[0].url; title = 'Pay Deposit'; payLabel = fees[0].label; }
@@ -1833,7 +1831,7 @@
     if (hint) hint.textContent = 'Updated just now';
   }
 
-  // ── Messages (resident ↔ management) — wired to the shared inbox design ─────────
+  // ── Messages (resident ↔ management) - wired to the shared inbox design ─────────
   function msgQuery() {
     const qs = new URLSearchParams();
     if (member && member.contact_id) qs.set('contact_id', member.contact_id);
@@ -1994,7 +1992,7 @@
     const cells = rows.map(([lbl, val]) =>
       `<div>
         <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#312e81;font-weight:700;margin-bottom:2px">${lbl}</div>
-        <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(val || '—')}</div>
+        <div style="color:#14110f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(val || ' - ')}</div>
       </div>`).join('');
     return `<div style="text-align:left;font-size:0.88rem;line-height:1.6;color:#3f3832">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px${body ? ';margin-bottom:14px' : ''}">${cells}</div>
@@ -2050,11 +2048,11 @@
     $('fbDesc')?.addEventListener('blur', () => fieldErr('fbDesc', $('fbDesc').value.trim() ? '' : 'Description is required.'));
   }
   validateInline();
-  const NOT_LIVE = 'This form is not connected yet — it will submit to management once the backend is reconnected.';
+  const NOT_LIVE = 'This form is not connected yet - it will submit to management once the backend is reconnected.';
 
   // ── Move date validation helpers ──────────────────────────────────────────
   function calcMinMoveDate() {
-    // Count 7 working days (Mon–Fri) forward from today SGT.
+    // Count 7 working days (Mon - Fri) forward from today SGT.
     const parts = todaySGT().split('-').map(Number);
     const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
     let count = 0;
@@ -2096,10 +2094,10 @@
     if (moveDateErr) { setMsg('moveMsg', moveDateErr, true); return; }
     if (!move_time) { setMsg('moveMsg', 'Please select a time slot.', true); return; }
     const { isConfirmed: mvOk } = await swalReview('Review Move Request', [
-      ['Move Type', move_type || '—'],
+      ['Move Type', move_type || ''],
       ['Date',      fmtDate(move_date)],
       ['Time',      move_time],
-      ['Unit',      member?.unit || '—'],
+      ['Unit',      member?.unit || ''],
     ], notes || null);
     if (!mvOk) return;
     const btn = $('moveSubmitBtn');
@@ -2124,7 +2122,7 @@
         const mvPanel = $('myMovesList');
         if (mvPanel) mvPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
         setTimeout(() => loadMyMoves(), 3000);
-        // Move-in/out needs a deposit — prompt to visit Payments tab.
+        // Move-in/out needs a deposit - prompt to visit Payments tab.
         if (window.Swal) {
           window.Swal.fire({
             icon:               'success',
@@ -2167,7 +2165,7 @@
       ['Visitor Type', visitorType],
       ['Name',         name],
       ['Email',        email],
-      ['Phone',        phone || '—'],
+      ['Phone',        phone || ''],
       ['Visit Date',   fmtDate(date)],
       ['Duration',     duration],
     ];
@@ -2196,7 +2194,7 @@
         ['Visitor',    name],
         ['Type',       visitorType],
         ['Visit Date', fmtDate(date)],
-        ['Reference',  data.reference || '—'],
+        ['Reference',  data.reference || ''],
       ], 'The guardhouse has been notified.' + (data.reference ? ` Pass ref: ${data.reference}.` : ''));
       $('gVisitorType').value = '';
       if ($('gLinkedBooking')) { $('gLinkedBooking').value = ''; updateGuestBookingStatus(); }
@@ -2265,10 +2263,10 @@
     }
     const catDisplay = secondaryCategory ? `${category} + ${secondaryCategory}` : category;
     const { isConfirmed: dOk } = await swalReview('Review Defect Report', [
-      ['Category', catDisplay || '—'],
-      ['Urgency',  urgency  || '—'],
-      ['Location', location || '—'],
-      ['Unit',     member?.unit || '—'],
+      ['Category', catDisplay || ''],
+      ['Urgency',  urgency  || ''],
+      ['Location', location || ''],
+      ['Unit',     member?.unit || ''],
     ], desc);
     if (!dOk) return;
     const btn = $('dSubmitBtn');
@@ -2284,10 +2282,10 @@
       setMsg('dMsg', '');
       // Full submission is persisted server-side in MongoDB by POST /api/defect.
       swalDone('Report Submitted', [
-        ['Category', catDisplay || '—'],
-        ['Urgency',  urgency  || '—'],
-        ['Location', location || '—'],
-        ['Unit',     member?.unit || '—'],
+        ['Category', catDisplay || ''],
+        ['Urgency',  urgency  || ''],
+        ['Location', location || ''],
+        ['Unit',     member?.unit || ''],
       ], desc);
       clr(['dDesc']);
       $('dSecondaryCategory').value = '';
@@ -2328,10 +2326,10 @@
     if (!ref) { setMsg('pcMsg', 'Please enter the parcel reference.', true); return; }
     const { isConfirmed: pcOk } = await swalReview('Notify Guardhouse', [
       ['Parcel Ref',          ref],
-      ['Courier/Sender',      courier   || '—'],
-      ['Description',         desc      || '—'],
-      ['Authorized Collector', collector || '—'],
-      ['Unit',                member?.unit || '—'],
+      ['Courier/Sender',      courier   || ''],
+      ['Description',         desc      || ''],
+      ['Authorized Collector', collector || ''],
+      ['Unit',                member?.unit || ''],
     ], null);
     if (!pcOk) return;
     const btn = $('pcSubmitBtn');
@@ -2353,9 +2351,9 @@
       // Full submission is persisted server-side in MongoDB by POST /api/parcel.
       swalDone('Guardhouse Notified', [
         ['Parcel Ref',          ref],
-        ['Courier/Sender',      courier   || '—'],
-        ['Authorized Collector', collector || '—'],
-        ['Unit',                member?.unit || '—'],
+        ['Courier/Sender',      courier   || ''],
+        ['Authorized Collector', collector || ''],
+        ['Unit',                member?.unit || ''],
       ], 'The guardhouse will receive and hold your parcel. Please collect it within 7 days.');
       clr(['pcRef', 'pcCourier', 'pcDesc', 'pcCollector']);
       const pcPanel = $('parcelList');
@@ -2374,10 +2372,10 @@
     const fbTime   = $('fbTime') ? $('fbTime').value : '';
     if (!desc) { setMsg('fbMsg', 'Please describe the incident.', true); return; }
     const { isConfirmed: fbOk } = await swalReview(`Review ${type || 'Submission'}`, [
-      ['Type',     type     || '—'],
-      ['Category', category || '—'],
-      ['Date',     fbDate ? fmtDate(fbDate) : '—'],
-      ['Time',     fbTime  || '—'],
+      ['Type',     type     || ''],
+      ['Category', category || ''],
+      ['Date',     fbDate ? fmtDate(fbDate) : ''],
+      ['Time',     fbTime  || ''],
     ], desc);
     if (!fbOk) return;
     const btn = $('fbSubmitBtn');
@@ -2393,10 +2391,10 @@
       setMsg('fbMsg', '');
       // Full submission is persisted server-side in MongoDB by POST /api/feedback.
       swalDone(`${type || 'Submission'} Received`, [
-        ['Type',     type     || '—'],
-        ['Category', category || '—'],
-        ['Date',     fbDate ? fmtDate(fbDate) : '—'],
-        ['Unit',     member?.unit || '—'],
+        ['Type',     type     || ''],
+        ['Category', category || ''],
+        ['Date',     fbDate ? fmtDate(fbDate) : ''],
+        ['Unit',     member?.unit || ' - '],
       ], 'Thank you. Management will review your submission and respond shortly.');
       clr(['fbDesc', 'fbDate', 'fbTime']);
       const fbPanel = $('myFeedback');
@@ -2534,11 +2532,11 @@
 
   function bind(id, h) { const el = $(id); if (el) el.addEventListener('click', h); }
 
-  // Restore an existing session and boot the portal LAST — after every top-level
-  // declaration above is initialized — so bootPortal() can safely read them.
+  // Restore an existing session and boot the portal LAST - after every top-level
+  // declaration above is initialized - so bootPortal() can safely read them.
   try { member = JSON.parse(sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || 'null'); } catch {}
   authToken = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || null;
-  // A stored session with no token predates auth (or was cleared) — force a fresh
+  // A stored session with no token predates auth (or was cleared) - force a fresh
   // login so the portal gets a valid token rather than 401-looping on every call.
   if (member && authToken) bootPortal();
   else if (member && !authToken) { [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); }); }

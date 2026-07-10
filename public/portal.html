@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Lumina — Resident Portal</title>
+  <title>The Lumina · Resident Portal</title>
   <link rel="icon" type="image/png" href="asset/logomark.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,7 +51,7 @@
     }
     /* ── Messages: sidebar unread badge (design lives in inbox.css) ── */
     .sidebar__msg-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; margin-left:6px; border-radius:9px; background:#c0392b; color:#fff; font-size:0.68rem; font-weight:700; line-height:1; }
-    /* My Bookings — collapsible note row */
+    /* My Bookings - collapsible note row */
     .bk-note-toggle { color:var(--gold,#312e81); font-weight:400; cursor:pointer; white-space:nowrap; font-size:14px;}
     .bk-note-toggle .phi { font-size:0.7rem; }
     .data-table tr.bk-note-open > td { border-bottom:none !important; }
@@ -174,7 +174,7 @@
         <div class="sidebar__avatar" id="sbAvatar">MO</div>
         <div class="sidebar__user-info">
           <div class="sidebar__name" id="sbName">Resident</div>
-          <div class="sidebar__unit" id="sbUnit">Unit —</div>
+          <div class="sidebar__unit" id="sbUnit">Unit - </div>
           <div class="sidebar__badge" id="sbBadge">Resident</div>
         </div>
       </div>
@@ -315,7 +315,7 @@
             <div class="form-group">
               <label>Visitor Type</label>
               <select id="gVisitorType">
-                <option value="">— Select visitor type —</option>
+                <option value="">Select visitor type</option>
                 <option value="Social Guest">Social Guest</option>
                 <option value="Contractor">Contractor</option>
                 <option value="Delivery">Delivery</option>
@@ -354,7 +354,7 @@
             <div class="form-group">
               <label>Linked facility booking <span style="font-weight:400;opacity:.7">(optional)</span></label>
               <select id="gLinkedBooking">
-                <option value="">— No linked booking —</option>
+                <option value="">No linked booking</option>
               </select>
               <div id="gBookingStatus" style="display:none;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5"></div>
             </div>
@@ -377,12 +377,12 @@
             </div>
             <div class="rules-panel">
               <div class="rules-title">Guest Rules</div>
-              <div class="rule-item">🏊 Pool — max 4 guests per unit</div>
-              <div class="rule-item">🎾 Tennis / Squash — max 3 guests</div>
-              <div class="rule-item">🏀 Basketball — max 12 total occupants</div>
-              <div class="rule-item">💪 Gym / Fitness — no guests</div>
-              <div class="rule-item">🧖 Steam Rooms — no guests</div>
-              <div class="rule-item">👶 Under 12 at pool — parent must be present</div>
+              <div class="rule-item">🏊 Pool - max 4 guests per unit</div>
+              <div class="rule-item">🎾 Tennis / Squash - max 3 guests</div>
+              <div class="rule-item">🏀 Basketball - max 12 total occupants</div>
+              <div class="rule-item">💪 Gym / Fitness - no guests</div>
+              <div class="rule-item">🧖 Steam Rooms - no guests</div>
+              <div class="rule-item">👶 Under 12 at pool - parent must be present</div>
               <div class="rule-item">👥 All guests must be accompanied by a resident</div>
               <div class="rule-item" style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border)">📅 Guests for a facility event require a confirmed booking before they can be registered</div>
             </div>
@@ -404,9 +404,9 @@
                 <label>Location</label>
                 <select id="dLocation">
                   <option>Inside My Unit</option>
-                  <option>Common Area — Corridor</option>
-                  <option>Common Area — Lift Lobby</option>
-                  <option>Common Area — Carpark</option>
+                  <option>Common Area - Corridor</option>
+                  <option>Common Area - Lift Lobby</option>
+                  <option>Common Area - Carpark</option>
                   <option>Facility Area</option>
                   <option>Other</option>
                 </select>
@@ -427,7 +427,7 @@
                 <div class="form-group">
                   <label>Secondary Category <span class="opt">(if applicable)</span></label>
                   <select id="dSecondaryCategory">
-                    <option value="">— none —</option>
+                    <option value="">none</option>
                     <option>Plumbing</option>
                     <option>Electrical</option>
                     <option>Structural</option>
@@ -513,7 +513,7 @@
               <ol class="pc-flow">
                 <li><span class="pc-step">1</span> Enter the reference from your delivery notification</li>
                 <li><span class="pc-step">2</span> The guardhouse receives &amp; holds your parcel</li>
-                <li><span class="pc-step">3</span> Collect it within 7 days — after that it's returned</li>
+                <li><span class="pc-step">3</span> Collect it within 7 days - after that it's returned</li>
               </ol>
               <div class="form-group">
                 <label>Parcel Reference <span class="req">*</span></label>
@@ -539,7 +539,7 @@
               <p class="form-msg" id="pcMsg"></p>
             </div>
             <div class="panel">
-              <div class="panel-head"><span class="panel-title">My Parcels</span><div style="display:flex;align-items:center;gap:0.5rem"><button class="panel-refresh" id="refreshParcels" title="Refresh"><span class="material-symbols-outlined">refresh</span></button><span class="panel-meta" id="parcelCount">—</span></div></div>
+              <div class="panel-head"><span class="panel-title">My Parcels</span><div style="display:flex;align-items:center;gap:0.5rem"><button class="panel-refresh" id="refreshParcels" title="Refresh"><span class="material-symbols-outlined">refresh</span></button><span class="panel-meta" id="parcelCount">0</span></div></div>
               <div id="parcelList"><div class="panel-empty">No parcels on record.</div></div>
             </div>
           </div>
@@ -553,7 +553,7 @@
               <summary><span class="panel-title">Move Rules</span><span class="material-symbols-outlined cp-toggle">expand_more</span></summary>
               <div class="collapsible-panel__body">
                 <div class="rule-item">✅ Minimum <strong>7 working days</strong> advance booking</div>
-                <div class="rule-item">✅ Permitted: <strong>Mon–Fri, 9am–5pm only</strong></div>
+                <div class="rule-item">✅ Permitted: <strong>Mon - Fri, 9am - 5pm only</strong></div>
                 <div class="rule-item">❌ No weekend or public holiday moves</div>
                 <div class="rule-item">❌ No moves day before / after gazetted holidays</div>
                 <div class="rule-item">💰 Refundable deposit: <strong>S$2,000</strong></div>
@@ -872,7 +872,7 @@
 <script src="js/portal.controller.js"></script>
 <script>
 (function () {
-  // ── Inbox UI (design shell — wired to backend in implementation phase) ──
+  // ── Inbox UI (design shell - wired to backend in implementation phase) ──
   const inbox   = document.getElementById('memberInbox');
   const backBtn = document.getElementById('inboxBackBtn');
   const newBtn  = document.getElementById('inboxNewBtn');
@@ -922,7 +922,7 @@
     });
   }
 
-  // Mobile keyboard lift — visualViewport fallback for browsers where dvh
+  // Mobile keyboard lift - visualViewport fallback for browsers where dvh
   // doesn't shrink when the virtual keyboard opens
   if (window.visualViewport) {
     function onKbResize() {

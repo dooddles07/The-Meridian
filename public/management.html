@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Lumina — Management Portal</title>
+  <title>The Lumina · Management Portal</title>
   <link rel="icon" type="image/png" href="asset/logomark.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -179,11 +179,11 @@
         </div>
 
         <div class="kpi-row">
-          <div class="kpi-card gold"><div class="kpi-label">Bookings</div><div class="kpi-value gold" id="kpiBookings">—</div><div class="kpi-sub">Today</div></div>
-          <div class="kpi-card blue"><div class="kpi-label">Guest Passes</div><div class="kpi-value blue" id="kpiGuests">—</div><div class="kpi-sub">0 pending</div></div>
-          <div class="kpi-card orange"><div class="kpi-label">Open Defects</div><div class="kpi-value orange" id="kpiDefects">—</div><div class="kpi-sub">Unresolved</div></div>
-          <div class="kpi-card"><div class="kpi-label">Pending Parcels</div><div class="kpi-value" id="kpiParcels">—</div><div class="kpi-sub">Awaiting collection</div></div>
-          <div class="kpi-card red"><div class="kpi-label">Open Complaints</div><div class="kpi-value red" id="kpiFeedback">—</div><div class="kpi-sub">Unresolved</div></div>
+          <div class="kpi-card gold"><div class="kpi-label">Bookings</div><div class="kpi-value gold" id="kpiBookings">0</div><div class="kpi-sub">Today</div></div>
+          <div class="kpi-card blue"><div class="kpi-label">Guest Passes</div><div class="kpi-value blue" id="kpiGuests">0</div><div class="kpi-sub">0 pending</div></div>
+          <div class="kpi-card orange"><div class="kpi-label">Open Defects</div><div class="kpi-value orange" id="kpiDefects">0</div><div class="kpi-sub">Unresolved</div></div>
+          <div class="kpi-card"><div class="kpi-label">Pending Parcels</div><div class="kpi-value" id="kpiParcels">0</div><div class="kpi-sub">Awaiting collection</div></div>
+          <div class="kpi-card red"><div class="kpi-label">Open Complaints</div><div class="kpi-value red" id="kpiFeedback">0</div><div class="kpi-sub">Unresolved</div></div>
         </div>
 
         <div class="grid-2">
@@ -220,7 +220,7 @@
 
         <div class="pipelines-section">
           <div class="section-head" style="margin-top:1.4rem">
-            <span class="section-title">All Pipelines — Live Status</span>
+            <span class="section-title">All Pipelines - Live Status</span>
             <span class="section-meta" id="pipelinesTimestamp"></span>
           </div>
           <div id="pipelinesBody"></div>
@@ -286,7 +286,7 @@
               <div class="form-group">
                 <label>Link to Facility (Opt)</label>
                 <select id="guestFacility">
-                  <option value="">— Not linked —</option>
+                  <option value="">Not linked</option>
                   <option>Swimming Pool</option>
                   <option>Tennis Court</option>
                   <option>Squash Court</option>
@@ -507,7 +507,7 @@
               </div>
             </div>
             <div class="res-form-row">
-              <label class="res-label">File <span class="res-hint">(PDF, Word, or image — max 10 MB)</span></label>
+              <label class="res-label">File <span class="res-hint">(PDF, Word, or image - max 10 MB)</span></label>
               <label class="res-file-btn" for="resFile">
                 <span class="material-symbols-outlined">attach_file</span>
                 <span id="resFileName">Choose a file…</span>
@@ -568,7 +568,7 @@
                 <option>Safety</option>
               </select>
             </div>
-            <!-- Single event date/time — shown for every category except Maintenance -->
+            <!-- Single event date/time - shown for every category except Maintenance -->
             <div class="form-group full" id="annEventRow" style="margin-bottom:0.8rem">
               <label>Event date &amp; time <span style="color:var(--muted);font-weight:400">(optional)</span></label>
               <div style="display:flex;gap:0.6rem;margin-bottom:0.4rem">
@@ -580,7 +580,7 @@
                 <select id="annEventEndTime" style="flex:1"></select>
               </div>
             </div>
-            <!-- Maintenance window — start + end date/time (shown only for Maintenance) -->
+            <!-- Maintenance window - start + end date/time (shown only for Maintenance) -->
             <div id="annMaintRows" style="display:none">
               <div class="form-group full" style="margin-bottom:0.8rem">
                 <label>Maintenance starts</label>
@@ -663,7 +663,7 @@
               <button class="inbox__back-btn" id="mgmtInboxBack" aria-label="Back to conversations">
                 <span class="material-symbols-outlined">arrow_back</span>
               </button>
-              <div class="inbox__thread-avatar" id="mgmtThreadAvatar" aria-hidden="true">—</div>
+              <div class="inbox__thread-avatar" id="mgmtThreadAvatar" aria-hidden="true"></div>
               <div class="inbox__thread-meta">
                 <div class="inbox__thread-name">
                   <span id="mgmtThreadName">Select a conversation</span>
@@ -739,7 +739,7 @@
       <div>
         <div class="stage-modal-title">Move Stage</div>
         <div class="stage-modal-contact" id="stageContactName"></div>
-        <div class="stage-modal-current">Current: <span id="stageCurrentName">—</span></div>
+        <div class="stage-modal-current">Current: <span id="stageCurrentName"></span></div>
       </div>
       <button class="stage-modal-close" id="stageModalClose">✕</button>
     </div>
@@ -812,13 +812,13 @@
       var inboxEl = document.getElementById('mgmtInbox');
       if (!inboxEl) return;
       if (diff > 120) {
-        // Keyboard open — set explicit height so compose lifts
+        // Keyboard open - set explicit height so compose lifts
         inboxEl.style.height = (vvh - 48) + 'px';
         // Scroll messages to bottom
         var msgs = inboxEl.querySelector('.inbox__messages');
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
       } else {
-        // Keyboard closed — restore CSS-driven height
+        // Keyboard closed - restore CSS-driven height
         inboxEl.style.height = '';
       }
     }
