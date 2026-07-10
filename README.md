@@ -231,7 +231,6 @@ front-end - and all real credentials, domains, and tenant identifiers have been 
 
 ```bash
 # from the repo root
-cd backend
 npm install
 npm start
 ```
