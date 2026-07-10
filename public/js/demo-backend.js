@@ -19,17 +19,20 @@
   'use strict';
 
   // ── Demo identities (used to auto-enter each portal) ────────────────────────
-  var DEMO_MEMBER = { name: 'Alex Tan', initials: 'AT', email: 'alex.tan@example.com', unit: '12-08', type: 'Owner', contact_id: 'demo-contact-1' };
+  var DEMO_MEMBER = { name: 'Brixsonn Romero', initials: 'BR', email: 'brixsonn.romero@example.com', unit: '12-09', type: 'Owner', contact_id: 'demo-contact-1' };
   var MGMT_USER   = { username: 'management', role: 'management', displayName: 'Management' };
   var GH_USER     = { username: 'guardhouse', role: 'guardhouse', displayName: 'Guardhouse' };
 
   function seedSession() {
     try {
-      if (!localStorage.getItem('meridian_member')) localStorage.setItem('meridian_member', JSON.stringify(DEMO_MEMBER));
-      if (!localStorage.getItem('meridian_token'))  localStorage.setItem('meridian_token', 'demo-token');
-      if (!localStorage.getItem('mgmtToken'))        localStorage.setItem('mgmtToken', 'demo-token');
-      if (!localStorage.getItem('mgmtUser'))         localStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER));
-      if (!sessionStorage.getItem('gh_session'))     sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'demo-token', user: GH_USER }));
+      // Overwrite each load so the fixed demo identity always reflects the current
+      // build (e.g. after a redeploy) without visitors having to clear storage.
+      var mem = JSON.stringify(DEMO_MEMBER);
+      localStorage.setItem('meridian_member', mem);   sessionStorage.setItem('meridian_member', mem);
+      localStorage.setItem('meridian_token', 'demo-token'); sessionStorage.setItem('meridian_token', 'demo-token');
+      localStorage.setItem('mgmtToken', 'demo-token'); sessionStorage.setItem('mgmtToken', 'demo-token');
+      localStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER)); sessionStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER));
+      sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'demo-token', user: GH_USER }));
     } catch (e) { /* storage may be blocked; the mock still answers */ }
   }
   seedSession();
@@ -50,7 +53,7 @@
   var DEPOSIT_FACILITIES = { bbq: true, pool: true, verandah: true };
 
   // ── Store ───────────────────────────────────────────────────────────────────
-  var DB_KEY = 'meridian_demo_db_v1';
+  var DB_KEY = 'meridian_demo_db_v2';
   var db = load();
   if (!db) { db = seedDB(); persist(); }
 
@@ -67,7 +70,7 @@
     var me = DEMO_MEMBER;
     var d = {
       residents: [
-        { name: 'Alex Tan', unit: '12-08', email: 'alex.tan@example.com', phone: '+65 9123 4567', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-1' },
+        { name: 'Brixsonn Romero', unit: '12-09', email: 'brixsonn.romero@example.com', phone: '+65 9123 4567', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-1' },
         { name: 'Priya Nair', unit: '05-11', email: 'priya.nair@example.com', phone: '+65 9222 1188', type: 'Owner', ghlLinked: true, contact_id: 'demo-contact-2' },
         { name: 'Marcus Lee', unit: '18-02', email: 'marcus.lee@example.com', phone: '+65 9777 4321', type: 'Tenant', ghlLinked: true, contact_id: 'demo-contact-3' },
         { name: 'Sofia Reyes', unit: '09-14', email: 'sofia.reyes@example.com', phone: '+65 9345 8890', type: 'Owner', ghlLinked: false, contact_id: 'demo-contact-4' },
