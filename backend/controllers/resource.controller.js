@@ -3,6 +3,15 @@ const Resource = require('../models/resource.model');
 
 const dbReady = () => mongoose.connection.readyState === 1;
 
+// Matches the client's 10MB file-size cap. Enforced server-side too since the
+// client check is only a UX nicety — a direct API call could send anything.
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+function base64Bytes(dataUrl) {
+  const comma = dataUrl.indexOf(',');
+  const raw = comma !== -1 ? dataUrl.slice(comma + 1) : dataUrl;
+  return Math.ceil(raw.length * 3 / 4);
+}
+
 const fmt = (r) => ({
   id:          String(r._id),
   title:       r.title,
@@ -82,6 +91,9 @@ async function create(req, res) {
   }
   if (!file_data) {
     return res.status(400).json({ success: false, message: 'File is required.' });
+  }
+  if (base64Bytes(String(file_data)) > MAX_FILE_BYTES) {
+    return res.status(413).json({ success: false, message: 'File is too large. Maximum size is 10 MB.' });
   }
   if (!dbReady()) {
     return res.status(503).json({ success: false, message: 'Database not connected — cannot upload.' });

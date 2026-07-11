@@ -513,11 +513,12 @@
     return { id: String(e._id), cat: e.cat, key: e.key, type: e.type, label: e.label, name: e.name, meta: e.meta, time: new Date(e.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) };
   }
 
-  // fetch override — resident signup/login, management/guardhouse login, and
-  // logout are all real (Mongo-backed, via the reference backend deployed on
+  // fetch override — resident signup/login, management/guardhouse login,
+  // logout, and the resources library (both resident and management sides)
+  // are all real (Mongo-backed, via the reference backend deployed on
   // Railway), so those paths pass through untouched (logout MUST reach the
   // real network - it's what actually clears the httpOnly session cookie
-  // server-side; the mock can't do that). Everything else stays mocked: the
+  // server-side; the mock can't do that). Everything else stays mocked: those
   // other resident/management/guardhouse data views were built against a real
   // CRM (GoHighLevel) that isn't configured here, so they'd just 503 against
   // the real backend — the mock keeps them working.
@@ -526,8 +527,13 @@
     opts = opts || {};
     try {
       var s = (typeof url === 'string') ? url : (url && url.url) || '';
-      var isRealAuth = s.indexOf('/api/auth/resident/') !== -1 || s.indexOf('/api/auth/management/login') !== -1 || s.indexOf('/api/auth/guardhouse/login') !== -1 || s.indexOf('/api/auth/logout') !== -1;
-      if (s.indexOf('/api/') !== -1 && !isRealAuth) {
+      var isRealPath = s.indexOf('/api/auth/resident/') !== -1
+        || s.indexOf('/api/auth/management/login') !== -1
+        || s.indexOf('/api/auth/guardhouse/login') !== -1
+        || s.indexOf('/api/auth/logout') !== -1
+        || s.indexOf('/api/resources') !== -1
+        || s.indexOf('/api/management/resources') !== -1;
+      if (s.indexOf('/api/') !== -1 && !isRealPath) {
         return Promise.resolve(handle(s, opts));
       }
     } catch (e) {
@@ -537,5 +543,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Running fully client-side (no backend, no database, no external calls).', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Auth + resources are live (Mongo-backed); other views run on a local mock.', 'color:#312e81;font-weight:bold');
 })();

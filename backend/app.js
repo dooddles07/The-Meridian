@@ -27,7 +27,9 @@ app.set('trust proxy', 1);
 app.use('/api', helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 app.use('/api', cors({ origin: false })); // same-origin only — frontend and API share one domain
 app.use('/api', cookieParser()); // reads the httpOnly session cookie into req.cookies
-app.use(express.json());
+// Resource uploads (base64-encoded files) blow past Express's 100kb default —
+// 15mb covers the 10MB client-side file cap plus base64's ~33% size overhead.
+app.use(express.json({ limit: '15mb' }));
 
 // Connect once per warm serverless container; skip if already connecting/connected.
 // Scoped to /api only — a DB hiccup must never 503 a static asset request in the
@@ -54,6 +56,7 @@ app.use('/api/auth',          require('./routes/auth.routes'));
 app.use('/api/resources',     require('./routes/resource.routes'));
 app.use('/api/announcements', require('./routes/announcement.routes'));
 app.use('/api/rsvp',          require('./routes/rsvp.routes'));
+app.use('/api/management',    require('./routes/management.routes'));
 
 // Scoped to /api so mounting this app alongside static file serving (local dev,
 // see server.js) still falls through to the static handler for non-API paths.
