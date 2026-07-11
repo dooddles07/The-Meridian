@@ -1006,22 +1006,20 @@
     }
   }
 
-  // Quantum payment links per deposit facility / move. Each entry is one or more fees.
-  // "Pay Deposit" opens a local mock payment page (public/checkout.html) in the modal
-  // iframe - no external call is made.
+  // Payment links per deposit facility / move. bbq/pool/verandah actually pay
+  // through a real Stripe Checkout redirect now (see startStripeCheckout) -
+  // this url is only ever used for the still-mock Move-In/Out flow. Kept as a
+  // uniform shape mainly so the "no payment link configured" disabled-state
+  // check below has one thing to look up regardless of facility.
   const PAY_LINKS = {
-    bbq:  [{ label: 'Refundable Deposit', url: 'checkout.html' }],
-    pool: [{ label: 'Refundable Deposit', url: 'checkout.html' }],
-    move: [{ label: 'Admin Fee + Refundable Deposit', url: 'checkout.html' }],
+    bbq:      [{ label: 'Refundable Deposit', url: 'checkout.html' }],
+    pool:     [{ label: 'Refundable Deposit', url: 'checkout.html' }],
+    verandah: [{ label: 'Booking Fee + Refundable Deposit', url: 'checkout.html' }],
+    move:     [{ label: 'Admin Fee + Refundable Deposit', url: 'checkout.html' }],
   };
-  const VERANDAH_FEES = [
-    { label: 'Booking Fee + Refundable Deposit', feeLabel: 'deposit', amount: 400, url: 'checkout.html' },
-  ];
-  // A facility requires a deposit if it has payment links OR is the Verandah
-  // (whose fees live in VERANDAH_FEES, not PAY_LINKS).
   function isDepositFacility(key) {
     const f = FACILITIES.find(x => x.key === key);
-    return !!(f && f.deposit) || key === 'verandah' || !!PAY_LINKS[key];
+    return !!(f && f.deposit) || !!PAY_LINKS[key];
   }
   // Append the resident's name + email so the Quantum payment link is pre-filled.
   // Sent under several common param spellings since the exact keys vary.
@@ -1823,10 +1821,14 @@
   const MOVE_REFUNDABLE_DEPOSIT = 2000;
   // bbq/pool/verandah are bootstrap fallback values only, overwritten below from
   // the server the instant the fetch resolves - the real source of truth is
-  // depositAmount in backend/config/facilities.js. move/default aren't facility
-  // bookings (they're the separate, still-mock Move-In pipeline) so they stay
-  // local literals; there's no backend config for them to drift from.
-  const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 400, move: 2200, default: 50 };
+  // depositAmount/refundableAmount in backend/config/facilities.js. move/default
+  // aren't facility bookings (they're the separate, still-mock Move-In pipeline)
+  // so they stay local literals; there's no backend config for them to drift from.
+  const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 600, move: 2200, default: 50 };
+  // Only set for facilities where part of depositAmount is a non-refundable fee
+  // (Verandah: $600 total, $400 of it refundable) - used purely to show an
+  // informational breakdown on the pending card, not to gate payment at all.
+  const REFUNDABLE_AMOUNTS = { verandah: 400 };
   (async () => {
     try {
       const res  = await fetch('/api/booking/facilities');
@@ -1834,7 +1836,7 @@
       (data.facilities || []).forEach(f => {
         if (!f.deposit || !f.depositAmount) return;
         PAY_DEPOSITS[f.key] = f.depositAmount;
-        if (f.key === 'verandah' && VERANDAH_FEES[0]) VERANDAH_FEES[0].amount = f.depositAmount;
+        if (f.refundableAmount) REFUNDABLE_AMOUNTS[f.key] = f.refundableAmount;
       });
     } catch { /* keep the bootstrap fallback values above */ }
   })();
@@ -1917,8 +1919,7 @@
   }
 
 
-  // paidFeeSet: Set of "${oppId}_${feeLabel}" keys from DB payment records.
-  function _renderPayCard(item, type, isPending, paidFeeSet = new Set()) {
+  function _renderPayCard(item, type, isPending) {
     let key, amount;
     if (type === 'facility') {
       key    = _facKeyFromOppName(item.name) || 'default';
@@ -1940,35 +1941,18 @@
       ? `<div class="pay-deposit-countdown">⚠ ${esc(_depositCountdown(item.depositDueAt))}</div>` : '';
     const headerHtml = `<div class="pay-facility-title">${esc(title)}</div>${details ? `<div class="pay-facility-detail">${esc(details)}</div>` : ''}${countdownHtml}`;
 
-    // Verandah pending: two separate fee rows
-    if (isPending && isVerandah) {
-      const feeRows = VERANDAH_FEES.map(fee => {
-        const isPaid = paidFeeSet.has(`${item.id}_${fee.feeLabel}`);
-        return `<div class="pay-fee-row">
-          <span class="pay-fee-row__name">${esc(fee.label)}</span>
-          <div class="pay-fee-row__right">
-            <span class="pay-fee-row__amt">USD ${fee.amount.toFixed(2)}</span>
-            ${isPaid
-              ? '<span class="pay-tag paid">paid</span>'
-              : `<button class="pay-pay-btn"
-                   data-pay-key="verandah"
-                   data-fee-label="${esc(fee.feeLabel)}"
-                   data-fee-amount="${fee.amount}"
-                   data-opp-id="${esc(item.id)}"
-                   data-desc="${rawLabel}">Pay</button>`}
-          </div>
-        </div>`;
-      }).join('');
-      return `<div class="pay-due pay-due--verandah">
-        <div class="pay-due__body">${headerHtml}</div>
-        ${feeRows}
-      </div>`;
-    }
-
-    // All other pending deposits
+    // Pending deposits. Facilities that split the charge into a non-refundable
+    // fee + a refundable deposit (currently just the Verandah) get a plain
+    // informational breakdown line - it's not interactive/per-fee-payable,
+    // since Stripe charges the whole amount in one go; Stripe's own checkout
+    // page shows the same split as two line items at the point of payment.
     if (isPending) {
+      const refundablePart = REFUNDABLE_AMOUNTS[key];
+      const breakdownHtml = (refundablePart && refundablePart < amount)
+        ? `<div class="pay-fee-breakdown">USD ${(amount - refundablePart).toFixed(2)} booking fee (non-refundable) + USD ${refundablePart.toFixed(2)} refundable deposit</div>`
+        : '';
       return `<div class="pay-due">
-        <div class="pay-due__body">${headerHtml}</div>
+        <div class="pay-due__body">${headerHtml}${breakdownHtml}</div>
         <div class="pay-due__right">
           <div class="pay-due__amt">${esc(amtStr)}</div>
           <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-amount="${Number(amount).toFixed(2)}" data-desc="${rawLabel}"${!PAY_LINKS[key] ? ' disabled title="No payment link configured"' : ''}>Pay Deposit</button>
@@ -2011,14 +1995,14 @@
   // pending/confirmed/refunded are arrays of [item, type] tuples ('facility' | 'move').
   // Payment History shows paid (Confirmed/Completed) AND Deposit Refunded records -
   // the latter mainly move-in/out deposits returned after the move completes.
-  function _renderPayBlock(pending, confirmed, refunded, paidFeeSet = new Set()) {
+  function _renderPayBlock(pending, confirmed, refunded) {
     const historyCount = confirmed.length + refunded.length;
     if (!pending.length && !historyCount)
       return '<div class="panel-empty" style="padding:16px">No records yet.</div>';
     let html = '';
     if (pending.length) {
       html += '<div class="pay-sub-head">Pending Deposit</div>';
-      html += pending.map(([item, type]) => _renderPayCard(item, type, true, paidFeeSet)).join('');
+      html += pending.map(([item, type]) => _renderPayCard(item, type, true)).join('');
     } else {
       html += '<div class="panel-empty" style="padding:0 0 14px">No pending deposits.</div>';
     }
@@ -2029,11 +2013,11 @@
       <div class="pay-history-body">`;
       if (confirmed.length) {
         html += `<div class="pay-sub-head" style="margin-top:12px">Confirmed</div>
-          ${confirmed.map(([item, type]) => _renderPayCard(item, type, false, paidFeeSet)).join('')}`;
+          ${confirmed.map(([item, type]) => _renderPayCard(item, type, false)).join('')}`;
       }
       if (refunded.length) {
         html += `<div class="pay-sub-head" style="margin-top:12px">Deposit Resolved</div>
-          ${refunded.map(([item, type]) => _renderPayCard(item, type, false, paidFeeSet)).join('')}`;
+          ${refunded.map(([item, type]) => _renderPayCard(item, type, false)).join('')}`;
       }
       html += `</div>`;
     }
@@ -2157,20 +2141,13 @@
     if (member.contact_id) qs.set('contact_id', member.contact_id);
     if (member.email)      qs.set('email', member.email);
     try {
-      const [bRes, mRes, pRes] = await Promise.all([
+      const [bRes, mRes] = await Promise.all([
         // Facility bookings come from /api/booking/mine (appointment-based, resident-
         // scoped, with the live opp stage + oppId). This is the same source My Bookings
         // uses, so a booking that shows there/in the pipeline also shows here.
         fetch(`/api/booking/mine?${qs.toString()}`).then(r => r.json()).catch(() => ({})),
         fetch(`/api/opportunities?pipeline=move&${qs.toString()}`).then(r => r.json()).catch(() => ({})),
-        fetch(`/api/payments/mine?${qs.toString()}`).then(r => r.json()).catch(() => ({})),
       ]);
-      // Build set of "oppId_feeLabel" for fees already recorded in DB.
-      const paidFeeSet = new Set(
-        (pRes.payments || [])
-          .filter(p => p.opportunity_id && p.fee_label)
-          .map(p => `${p.opportunity_id}_${p.fee_label}`)
-      );
       // Server is the source of truth (GHL/Mongo) - no localStorage. Deposit facilities
       // with a linked opportunity, named so the card can detect the facility + show details.
       const facItems = (bRes.items || [])
@@ -2210,7 +2187,7 @@
         seenPending.add(k);
         return true;
       });
-      el.innerHTML = _renderPayBlock(pending, confirmed, refunded, paidFeeSet);
+      el.innerHTML = _renderPayBlock(pending, confirmed, refunded);
       el.querySelectorAll('[data-pay-key]').forEach(btn => {
         btn.addEventListener('click', () => {
           const payKey = btn.dataset.payKey || '';
@@ -2222,25 +2199,17 @@
             startStripeCheckout(btn, oppId);
             return;
           }
-          let url, title, payLabel = '';
-          const feeLabel = btn.dataset.feeLabel || '';
-          const amt      = btn.dataset.feeAmount || btn.dataset.amount || '';
-          if (feeLabel) {
-            const fee = VERANDAH_FEES.find(f => f.feeLabel === feeLabel);
-            if (fee) { url = fee.url; title = `Pay ${fee.label} - The Verandah`; payLabel = fee.label; }
-          } else {
-            const fees = PAY_LINKS[payKey] || [];
-            if (fees.length) { url = fees[0].url; title = 'Pay Deposit'; payLabel = fees[0].label; }
-          }
-          if (url) {
-            // Pass the real amount + label so the checkout page shows them.
-            const q = new URLSearchParams();
-            if (amt)      q.set('amount', amt);
-            if (payLabel) q.set('label', payLabel);
-            const qs = q.toString();
-            if (qs) url += (url.includes('?') ? '&' : '?') + qs;
-            openPayModal(url, title, oppId, feeLabel, payKey, btn.dataset.desc || '');
-          }
+          const amt   = btn.dataset.amount || '';
+          const fees  = PAY_LINKS[payKey] || [];
+          if (!fees.length) return;
+          let url = fees[0].url;
+          const title = 'Pay Deposit', payLabel = fees[0].label;
+          const q = new URLSearchParams();
+          if (amt)      q.set('amount', amt);
+          if (payLabel) q.set('label', payLabel);
+          const qs2 = q.toString();
+          if (qs2) url += (url.includes('?') ? '&' : '?') + qs2;
+          openPayModal(url, title, oppId, '', payKey, btn.dataset.desc || '');
         });
       });
     } catch {
