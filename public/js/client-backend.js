@@ -544,14 +544,14 @@
   }
 
   // fetch override — resident signup/login, management/guardhouse login,
-  // logout, and the resources library (both resident and management sides)
-  // are all real (Mongo-backed, via the reference backend deployed on
-  // Railway), so those paths pass through untouched (logout MUST reach the
-  // real network - it's what actually clears the httpOnly session cookie
-  // server-side; the mock can't do that). Everything else stays mocked: those
-  // other resident/management/guardhouse data views were built against a real
-  // CRM (GoHighLevel) that isn't configured here, so they'd just 503 against
-  // the real backend — the mock keeps them working.
+  // logout, the resources library, and announcements (both resident and
+  // management sides of each) are all real (Mongo-backed, via the reference
+  // backend deployed on Railway), so those paths pass through untouched
+  // (logout MUST reach the real network - it's what actually clears the
+  // httpOnly session cookie server-side; the mock can't do that). Everything
+  // else stays mocked: those other resident/management/guardhouse data views
+  // were built against a real CRM (GoHighLevel) that isn't configured here,
+  // so they'd just 503 against the real backend — the mock keeps them working.
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -562,7 +562,9 @@
         || s.indexOf('/api/auth/guardhouse/login') !== -1
         || s.indexOf('/api/auth/logout') !== -1
         || s.indexOf('/api/resources') !== -1
-        || s.indexOf('/api/management/resources') !== -1;
+        || s.indexOf('/api/management/resources') !== -1
+        || s.indexOf('/api/announcements') !== -1
+        || s.indexOf('/api/management/announcements') !== -1;
       if (s.indexOf('/api/') !== -1 && !isRealPath) {
         return Promise.resolve(handle(s, opts));
       }

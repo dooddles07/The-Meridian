@@ -2052,6 +2052,16 @@
     });
   }
 
+  // Hide the "notify residents" checkbox for management-only uploads - residents
+  // can't see those documents regardless, so notifying them would be misleading.
+  const resVisibilitySelect = $('resVisibility');
+  if (resVisibilitySelect) {
+    resVisibilitySelect.addEventListener('change', () => {
+      const row = $('resNotifyRow');
+      if (row) row.hidden = resVisibilitySelect.value === 'management';
+    });
+  }
+
   // Upload form submit
   const resUploadBtn = $('resUploadBtn');
   if (resUploadBtn) {
@@ -2082,10 +2092,27 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Upload failed.');
         toast('Document uploaded.');
+
+        // Cross-post to Announcements so residents notice a new document
+        // without having to happen to check the Resources tab. Skipped for
+        // management-only uploads, which residents can't see anyway.
+        if ($('resNotify')?.checked && visibility !== 'management') {
+          fetch('/api/management/announcements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              title: `New document published: ${title}`,
+              body: `Management has published a new document ("${title}") in the Resources tab. Visit Resources to view or download it.`,
+              category: 'General',
+            }),
+          }).catch(() => {}); // best-effort - the resource upload itself already succeeded
+        }
+
         // Reset form
         if ($('resTitle'))    $('resTitle').value = '';
         if ($('resCategory')) $('resCategory').selectedIndex = 0;
         if ($('resVisibility')) $('resVisibility').selectedIndex = 0;
+        if ($('resNotify'))   $('resNotify').checked = true;
         if (fileInput)        fileInput.value = '';
         if ($('resFileName')) $('resFileName').textContent = 'Choose a file, or drag one here…';
         loadMgmtResources();

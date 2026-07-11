@@ -1,7 +1,8 @@
-const express    = require('express');
-const router     = express.Router();
-const rateLimit  = require('express-rate-limit');
-const resources  = require('../controllers/resource.controller');
+const express      = require('express');
+const router       = express.Router();
+const rateLimit    = require('express-rate-limit');
+const resources    = require('../controllers/resource.controller');
+const announcements = require('../controllers/announcement.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
 
 router.use(requireManagement);
@@ -23,5 +24,10 @@ router.get('/resources/:id/download',  downloadLimiter, resources.downloadForMan
 router.post('/resources',              mutateLimiter, auditLog, resources.create);
 router.patch('/resources/:id',         mutateLimiter, auditLog, resources.patch);
 router.delete('/resources/:id',        mutateLimiter, auditLog, resources.remove);
+
+router.get('/announcements',           announcements.listAll);
+router.post('/announcements',          mutateLimiter, auditLog, announcements.create);
+router.patch('/announcements/:id',     mutateLimiter, auditLog, announcements.patch);
+router.delete('/announcements/:id',    mutateLimiter, auditLog, announcements.remove);
 
 module.exports = router;
