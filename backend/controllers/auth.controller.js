@@ -1,9 +1,6 @@
 const model     = require('../models/auth.model');
 const residents = require('../services/residents.service');
-const email     = require('../services/email.service');
 const { signToken, SESSION_COOKIE_NAMES, COOKIE_OPTIONS } = require('../config/secrets');
-
-const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || 'http://localhost:3000';
 
 // The token is still returned in the JSON body too (so the API stays directly
 // callable/testable without a browser), but the browser itself authenticates via
@@ -102,11 +99,7 @@ async function requestPasswordReset(req, res) {
   const GENERIC_MESSAGE = 'If an account exists for that email, a reset link has been sent.';
   if (!rawEmail) return res.status(400).json({ success: false, message: 'Email is required.' });
 
-  const result = await residents.setResetToken(rawEmail);
-  if (result) {
-    const resetUrl = `${PUBLIC_APP_URL}/portal.html?resetToken=${result.rawToken}`;
-    email.sendPasswordResetEmail({ to: result.account.email, name: result.account.name, resetUrl }).catch(() => {});
-  }
+  await residents.setResetToken(rawEmail);
   return res.json({ success: true, message: GENERIC_MESSAGE });
 }
 

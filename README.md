@@ -26,12 +26,11 @@ sign-in screen creates a genuine new account (Mongo-backed, same as the test one
 
 > **About this build.** This is a **hybrid** portfolio project. Sign-in (resident,
 > management, guardhouse), the resident directory, resources, announcements/RSVP, and
-> **facility booking (incl. automatic email notifications)** are genuinely real - backed
-> by MongoDB, JWT sessions, and the Resend email API. Everything else (guests, parcels,
-> defects, feedback, moves, messages, the payments ledger) runs on a client-side mock
-> so reviewers can click through the full product with zero setup. A **preview session
-> is seeded on first visit**, so anyone can explore without credentials. See
-> [How it works](#how-it-works).
+> **facility booking** are genuinely real - backed by MongoDB and JWT sessions.
+> Everything else (guests, parcels, defects, feedback, moves, messages, the payments
+> ledger) runs on a client-side mock so reviewers can click through the full product
+> with zero setup. A **preview session is seeded on first visit**, so anyone can
+> explore without credentials. See [How it works](#how-it-works).
 
 ---
 
@@ -94,9 +93,7 @@ shared daily log.
 - **Facility booking** *(real backend)* - pick a facility (pool, tennis, squash,
   basketball, gym, fitness, BBQ, verandah), see live slot availability, book, edit, or
   cancel. Deposit facilities route through payment before confirming, with a 24-hour
-  payment window that auto-cancels and releases the slot if missed. Every booking,
-  edit, cancellation, deposit confirmation, and expiry sends an automatic email to the
-  resident's registered address.
+  payment window that auto-cancels and releases the slot if missed.
 - **My bookings** - active + history with live status badges.
 - **Guest registration** - register a visitor, get a QR guest pass + reference code.
 - **Parcels** - notify the guardhouse of an incoming parcel and track its status.
@@ -114,8 +111,7 @@ shared daily log.
 <summary><strong>Management console</strong></summary>
 
 - **Bookings board** *(real backend)* - every facility booking with stage controls,
-  enforced legal stage transitions, deposit refund/forfeit resolution, and email
-  notifications on every stage change.
+  enforced legal stage transitions, and deposit refund/forfeit resolution.
 - **Pipelines** - guests, parcels, defects, feedback, and moves as manageable stage cards.
 - **Guest desk** - register guests on a resident's behalf (with QR).
 - **Residents** - directory of units, contacts, and types.
@@ -219,18 +215,19 @@ setup and zero credentials.
 
 **Real backend** ([`backend/`](backend/), mounted at `/api/*` by `server.js`):
 - **Auth** - resident/management/guardhouse sign-in are genuinely JWT-backed, each with
-  its own httpOnly session cookie; residents can also self-register and reset a
-  forgotten password (real email, see below).
+  its own httpOnly session cookie; residents can also self-register.
 - **Facility booking** - availability, conflicts, deposit lifecycle (pending → held →
   refunded/forfeited), legal stage transitions, and the 24-hour deposit-expiry sweep are
   all enforced server-side against MongoDB.
 - **Resources** and **Announcements/RSVP** - documents and notices are stored and served
   from MongoDB, shared live across the resident and management portals.
-- **Email** ([`backend/services/email.service.js`](backend/services/email.service.js),
-  via the [Resend](https://resend.com) API) - password resets and every facility-booking
-  event (created, edited, cancelled, deposit confirmed, deposit expired, staff-cancelled)
-  email the resident's registered address automatically. Degrades gracefully to a
-  console log when no API key is configured.
+
+Email (booking notifications and password-reset links) is built but currently
+**disabled** - the code lives in
+[`backend/services/email.service.js`](backend/services/email.service.js) via the
+[Resend](https://resend.com) API, but Resend's free sender can only deliver to the
+account owner's own inbox until a real domain is verified, so it's switched off rather
+than silently failing for every other resident.
 
 **Client-side mock** ([`public/js/client-backend.js`](public/js/client-backend.js)) -
 overrides `window.fetch` for everything not listed above (guests, parcels, defects,
@@ -260,7 +257,6 @@ deployment needs.
 | UI libraries | SweetAlert2 (dialogs), QRCode.js (guest-pass QR), jsQR (QR scanning) |
 | Mock layer | Client-side `fetch` mock + `localStorage` store, for the features not yet on the real backend |
 | Back end | Node.js, Express, Helmet, JWT, Mongoose/MongoDB - live for auth, resources, announcements, and facility booking |
-| Email | [Resend](https://resend.com) API - password resets and facility-booking notifications |
 | Hosting | Railway (`node backend/server.js` serves the API and the static `public/` folder together) |
 
 ---
@@ -277,7 +273,7 @@ Open **http://localhost:3000** and pick a portal from the landing page - no cred
 needed to look around (a preview session auto-seeds), or sign in with the
 [test credentials](#test-credentials) above.
 
-Real data (auth, bookings, resources, announcements, email) needs a `backend/.env` -
+Real data (auth, bookings, resources, announcements) needs a `backend/.env` -
 copy [`backend/.env.example`](backend/.env.example) and fill in a `MONGO_URL` and
 `JWT_SECRET` at minimum. Without it, those routes respond "Database not connected"
 and the app quietly falls back to the client-side mock for everything else.
@@ -301,10 +297,10 @@ the-lumina/
 │   │   ├── guardhouse.controller.js
 │   │   └── client-backend.js   # ← client-side mock API + seed data
 │   └── asset/                  # facility imagery, logo
-├── backend/                    # real Node/Express + MongoDB API (auth, booking, resources, announcements, email)
+├── backend/                    # real Node/Express + MongoDB API (auth, booking, resources, announcements)
 │   ├── server.js               # local dev entry: serves public/ + mounts the API at /api/*
 │   ├── controllers/  models/  routes/  services/  config/  middleware/
-│   └── .env.example            # required env vars for a real deployment (Mongo, JWT secret, Resend key, ...)
+│   └── .env.example            # required env vars for a real deployment (Mongo, JWT secret, ...)
 └── package.json
 ```
 
