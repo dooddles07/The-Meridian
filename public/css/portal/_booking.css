@@ -118,21 +118,6 @@
   background: rgba(16,14,10,0.5);
   color: rgba(255,255,255,0.85);
 }
-.fac-deposit-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-  background: var(--orange);
-  color: #fff;
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-}
 .fac-inner { padding: 10px 12px 12px; }
 .fac-name {
   font-family: var(--serif);
@@ -153,39 +138,3 @@
   border-radius: 4px;
   padding: 1px 5px;
 }
-
-/* My Bookings / History rows - deposit urgency + soonest-booking highlight.
-   Next takes visual priority over the pending accent when a row is both (the
-   Pay Deposit button already carries the deposit signal on its own either way). */
-.bk-row-pending td:first-child { box-shadow: inset 3px 0 0 var(--orange); }
-.bk-row-next td:first-child    { box-shadow: inset 3px 0 0 var(--gold); }
-.bk-row-next td                { background: var(--gold-lt); }
-.bk-next-badge {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: var(--radius-pill);
-  background: var(--gold);
-  color: #fff;
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-[data-theme="dark"] .bk-next-badge { color: #0c0b09; }
-.bk-pay-now {
-  display: inline-flex;
-  align-items: center;
-  background: var(--orange);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-pill);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  cursor: pointer;
-  margin-right: 8px;
-  transition: opacity 0.15s;
-}
-.bk-pay-now:hover { opacity: 0.85; }

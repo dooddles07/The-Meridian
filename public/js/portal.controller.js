@@ -599,7 +599,6 @@
       <div class="fac-card" data-fac="${f.key}" style="--fac-img:url('/assets/images/${f.key}.jpg')">
         <div class="fac-img-wrap">
           <div class="fac-img-overlay">Book Now</div>
-          ${f.deposit ? '<span class="fac-deposit-badge">Deposit Required</span>' : ''}
         </div>
         <div class="fac-inner">
           <div class="fac-name">${esc(f.name)}</div>
@@ -955,31 +954,21 @@
 
   function _bkTableHTML(rows, showActions) {
     if (!rows.length) return null;
-    // rows arrive sorted by date ascending; the first row of the Upcoming table
-    // (showActions=true) is therefore the soonest booking - flag it as "Next"
-    // so it doesn't get lost among same-weight rows.
-    const nextId = showActions ? rows[0].id : null;
     return '<div class="bk-table-scroll"><table class="data-table"><thead><tr>'
       + '<th>Facility</th><th>Date</th><th>Time</th><th>Pax</th><th>Status</th>'
       + (showActions ? '<th>Actions</th>' : '')
       + '</tr></thead><tbody>'
       + rows.map(b => {
-          const isNext    = b.id === nextId;
-          const isPending = b.status === 'Deposit Pending';
-          const rowClass  = isNext ? 'bk-row-next' : (isPending ? 'bk-row-pending' : '');
-          const payNow    = (showActions && isPending)
-            ? `<button class="bk-pay-now" data-pay-nav="${b.id}">Pay Deposit →</button> `
-            : '';
           const actions = showActions
-            ? `${payNow}<span class="bk-edit" data-edit="${b.id}">Edit</span> &nbsp;·&nbsp; <span class="bk-cancel" data-cancel="${b.id}">Cancel</span>`
+            ? `<span class="bk-edit" data-edit="${b.id}">Edit</span> &nbsp;·&nbsp; <span class="bk-cancel" data-cancel="${b.id}">Cancel</span>`
             : '';
           const hasNote = b.notes && b.notes.trim();
           const noteToggle = hasNote
             ? ` &nbsp;·&nbsp; <span class="bk-note-toggle" data-note="${b.id}">Notes <span class="phi">▸</span></span>`
             : '';
-          const row = `<tr class="${rowClass}"><td>${b.emoji} ${esc(b.facilityName)}${isNext ? '<span class="bk-next-badge">Next</span>' : ''}</td><td style="font-size:0.8rem">${fmtDate(b.date)}</td><td style="font-size:0.8rem">${esc(b.slot)}</td><td style="font-size:0.8rem">${b.pax || 1}</td><td><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></td>${showActions ? `<td style="white-space:nowrap">${actions}${noteToggle}</td>` : ''}</tr>`;
+          const row = `<tr><td>${b.emoji} ${esc(b.facilityName)}</td><td style="font-size:0.8rem">${fmtDate(b.date)}</td><td style="font-size:0.8rem">${esc(b.slot)}</td><td style="font-size:0.8rem">${b.pax || 1}</td><td><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></td>${showActions ? `<td style="white-space:nowrap">${actions}${noteToggle}</td>` : ''}</tr>`;
           const noteRow = hasNote
-            ? `<tr class="bk-note-row ${rowClass}" id="bknote-${b.id}" style="display:none"><td colspan="${showActions ? 6 : 5}" style="font-size:0.78rem;color:var(--text-2,#5a514a)"><span style="color:var(--gold,#312e81);font-weight:600">Note:</span> ${esc(b.notes)}</td></tr>`
+            ? `<tr class="bk-note-row" id="bknote-${b.id}" style="display:none"><td colspan="${showActions ? 6 : 5}" style="font-size:0.78rem;color:var(--text-2,#5a514a)"><span style="color:var(--gold,#312e81);font-weight:600">Note:</span> ${esc(b.notes)}</td></tr>`
             : '';
           return row + noteRow;
         }).join('')
@@ -999,7 +988,6 @@
       const b = getBookings().find(bk => bk.id === x.dataset.edit);
       if (b) openBooking(b.facilityKey, b);
     }));
-    container.querySelectorAll('[data-pay-nav]').forEach(btn => btn.addEventListener('click', () => navigate('payments')));
     container.querySelectorAll('[data-cancel]').forEach(x => x.addEventListener('click', async () => {
       if (window.Swal) {
         const { isConfirmed } = await window.Swal.fire({
