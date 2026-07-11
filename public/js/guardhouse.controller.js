@@ -41,6 +41,9 @@
       });
       const data = await res.json();
       if (!data.success) { errEl.textContent = data.message || 'Invalid credentials.'; return; }
+      // The session cookie is already set by the server on this same response -
+      // nothing to store client-side beyond the (non-secret) display info below.
+      try { localStorage.removeItem('lumina_gh_signed_out'); } catch {}
       sessionStorage.setItem(GH_SESS, JSON.stringify(data));
       session = data;
       showPortal();
@@ -63,7 +66,11 @@
   // Logout
   $('ghLogout').addEventListener('click', () => {
     stopCamera();
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
     sessionStorage.removeItem(GH_SESS);
+    // Tells client-backend.js's auto-login not to re-seed the preview session on
+    // the next load — an explicit logout should reach the real sign-in screen.
+    try { localStorage.setItem('lumina_gh_signed_out', '1'); } catch {}
     window.location.href = 'index.html';
   });
 

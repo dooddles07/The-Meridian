@@ -38,8 +38,9 @@
       if (localStorage.getItem('lumina_mgmt_signed_out') !== '1' && !localStorage.getItem('mgmtUser')) {
         localStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER)); sessionStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER));
       }
-      // Guardhouse stays fully auto-preview — no real login built for it yet.
-      sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'local-token', user: GH_USER }));
+      if (localStorage.getItem('lumina_gh_signed_out') !== '1' && !sessionStorage.getItem('gh_session')) {
+        sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'local-token', user: GH_USER }));
+      }
     } catch (e) { /* storage may be blocked; the mock still answers */ }
   }
   seedSession();
@@ -209,11 +210,9 @@
     if (opts.body) { try { body = JSON.parse(opts.body); } catch (e) { body = {}; } }
     var m; // regex capture holder
 
-    // AUTH — resident and management login are handled by the real backend (see
-    // the fetch override above, which passes /api/auth/resident/* and
-    // /api/auth/management/login straight through instead of reaching this
-    // router at all). Guardhouse stays no-op since that portal is auto-entered.
-    if (p === '/api/auth/guardhouse/login')  return ok({ token: 'local-token', user: GH_USER });
+    // AUTH — resident, management, and guardhouse login are all handled by the
+    // real backend now (see the fetch override above, which passes each
+    // /api/auth/*/login straight through instead of reaching this router).
 
     // PIPELINES
     if (p === '/api/pipelines') {
@@ -514,20 +513,20 @@
     return { id: String(e._id), cat: e.cat, key: e.key, type: e.type, label: e.label, name: e.name, meta: e.meta, time: new Date(e.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) };
   }
 
-  // fetch override — resident signup/login, management login, and logout are
-  // real (Mongo-backed, via the reference backend deployed on Railway), so
-  // those paths pass through untouched (logout MUST reach the real network -
-  // it's what actually clears the httpOnly session cookie server-side; the
-  // mock can't do that). Everything else stays mocked: the other resident
-  // features + guardhouse (and management's own data views) were built
-  // against a real CRM (GoHighLevel) that isn't configured here, so they'd
-  // just 503 against the real backend — the mock keeps them working.
+  // fetch override — resident signup/login, management/guardhouse login, and
+  // logout are all real (Mongo-backed, via the reference backend deployed on
+  // Railway), so those paths pass through untouched (logout MUST reach the
+  // real network - it's what actually clears the httpOnly session cookie
+  // server-side; the mock can't do that). Everything else stays mocked: the
+  // other resident/management/guardhouse data views were built against a real
+  // CRM (GoHighLevel) that isn't configured here, so they'd just 503 against
+  // the real backend — the mock keeps them working.
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
     try {
       var s = (typeof url === 'string') ? url : (url && url.url) || '';
-      var isRealAuth = s.indexOf('/api/auth/resident/') !== -1 || s.indexOf('/api/auth/management/login') !== -1 || s.indexOf('/api/auth/logout') !== -1;
+      var isRealAuth = s.indexOf('/api/auth/resident/') !== -1 || s.indexOf('/api/auth/management/login') !== -1 || s.indexOf('/api/auth/guardhouse/login') !== -1 || s.indexOf('/api/auth/logout') !== -1;
       if (s.indexOf('/api/') !== -1 && !isRealAuth) {
         return Promise.resolve(handle(s, opts));
       }
