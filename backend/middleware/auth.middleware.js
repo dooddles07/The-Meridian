@@ -1,11 +1,15 @@
-const { verifyToken, SESSION_COOKIE } = require('../config/secrets');
+const { verifyToken, SESSION_COOKIE_NAMES } = require('../config/secrets');
 
 // The browser session lives in an httpOnly cookie (invisible to JS, so it can't be
 // read/stolen via XSS) set on login/signup. The Authorization header is kept as a
 // fallback so the API stays directly callable/testable (curl, Postman) without a
 // browser session.
-function _extractToken(req) {
-  const fromCookie = req.cookies && req.cookies[SESSION_COOKIE];
+// Each role reads its OWN cookie name (see SESSION_COOKIE_NAMES) — a browser signed
+// into both the resident portal and the management console at once carries both
+// cookies simultaneously without either clobbering the other.
+function _extractToken(req, role) {
+  const cookieName = SESSION_COOKIE_NAMES[role];
+  const fromCookie = cookieName && req.cookies && req.cookies[cookieName];
   if (fromCookie) return fromCookie;
   const header = req.headers.authorization || '';
   return header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -13,7 +17,7 @@ function _extractToken(req) {
 
 function requireRole(role) {
   return (req, res, next) => {
-    const token = _extractToken(req);
+    const token = _extractToken(req, role);
     if (!token) {
       return res.status(401).json({ success: false, message: 'Authentication required.' });
     }
@@ -38,8 +42,8 @@ function requireRole(role) {
 // another resident's data by passing their identifier.
 // Verify the token (cookie or Bearer header). Returns the payload, or sends the 401
 // and returns null.
-function _verifyBearer(req, res) {
-  const token = _extractToken(req);
+function _verifyBearer(req, res, role) {
+  const token = _extractToken(req, role);
   if (!token) {
     res.status(401).json({ success: false, message: 'Please sign in to continue.' });
     return null;
@@ -78,7 +82,7 @@ function _injectResidentIdentity(req, payload) {
 }
 
 function requireResident(req, res, next) {
-  const payload = _verifyBearer(req, res);
+  const payload = _verifyBearer(req, res, 'resident');
   if (!payload) return;
   if (payload.role !== 'resident') {
     return res.status(403).json({ success: false, message: 'Resident access required.' });

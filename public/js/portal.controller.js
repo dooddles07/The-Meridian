@@ -42,7 +42,7 @@
   function handleAuthExpired() {
     if (_authExpiredHandled) return;     // avoid a storm of reloads from parallel calls
     _authExpiredHandled = true;
-    _rawFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
+    _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'resident' }) }).catch(() => {}); // clear the cookie server-side
     [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
     window.location.reload();
   }
@@ -2835,7 +2835,7 @@
   }
 
   bind('logoutBtn', () => {
-    _rawFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
+    _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'resident' }) }).catch(() => {}); // clear the cookie server-side
     [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
     // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.

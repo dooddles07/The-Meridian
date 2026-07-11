@@ -66,7 +66,7 @@
   // Logout
   $('ghLogout').addEventListener('click', () => {
     stopCamera();
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
+    fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'guardhouse' }) }).catch(() => {}); // clear the cookie server-side
     sessionStorage.removeItem(GH_SESS);
     // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.

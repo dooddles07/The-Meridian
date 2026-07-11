@@ -1,7 +1,7 @@
 const model     = require('../models/auth.model');
 const residents = require('../services/residents.service');
 const email     = require('../services/email.service');
-const { signToken, SESSION_COOKIE, COOKIE_OPTIONS } = require('../config/secrets');
+const { signToken, SESSION_COOKIE_NAMES, COOKIE_OPTIONS } = require('../config/secrets');
 
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -12,7 +12,7 @@ function issueToken(res, role, account) {
   const displayName = account.displayName || role;
   const username    = model.clean(account.username).toLowerCase();
   const token       = signToken({ role, username, displayName });
-  res.cookie(SESSION_COOKIE, token, COOKIE_OPTIONS);
+  res.cookie(SESSION_COOKIE_NAMES[role], token, COOKIE_OPTIONS);
   return res.json({ success: true, token, user: { username, role, displayName } });
 }
 
@@ -27,7 +27,7 @@ function issueResidentSession(res, account) {
   // so resource visibility filtering (owners-only/tenants-only docs) can trust
   // it server-side without a DB lookup on every request - see requireResident.
   const token      = signToken({ role: 'resident', contact_id: account.contact_id || '', email: cleanEmail, unit: normUnit, name, residentType });
-  res.cookie(SESSION_COOKIE, token, COOKIE_OPTIONS);
+  res.cookie(SESSION_COOKIE_NAMES.resident, token, COOKIE_OPTIONS);
 
   return res.json({
     success: true,
@@ -49,8 +49,15 @@ function issueResidentSession(res, account) {
 // past-dated expiry, so the browser would keep the cookie for its original 8h
 // lifetime instead of deleting it immediately.
 const { maxAge: _unused, ...CLEAR_COOKIE_OPTIONS } = COOKIE_OPTIONS;
+// Each portal now owns a differently-named cookie (see SESSION_COOKIE_NAMES), so
+// logout must only clear the caller's own — otherwise a browser signed into both
+// the resident portal and the management console would have one logout kill both.
+// The frontend tells us which via body.role; an unrecognised/missing role falls
+// back to clearing all three (safe no-op for any cookie that isn't set).
 function logout(req, res) {
-  res.clearCookie(SESSION_COOKIE, CLEAR_COOKIE_OPTIONS);
+  const role = req.body?.role;
+  const names = SESSION_COOKIE_NAMES[role] ? [SESSION_COOKIE_NAMES[role]] : Object.values(SESSION_COOKIE_NAMES);
+  names.forEach(name => res.clearCookie(name, CLEAR_COOKIE_OPTIONS));
   return res.json({ success: true });
 }
 

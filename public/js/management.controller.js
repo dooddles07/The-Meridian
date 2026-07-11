@@ -2232,7 +2232,7 @@
 
   // Logout
   bind('logoutBtn', () => {
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {}); // clear the cookie server-side
+    fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'management' }) }).catch(() => {}); // clear the cookie server-side
     ['mgmtToken', 'mgmtUser', 'mgmtLastView', 'mgmtDataSnapshot'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
     // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.

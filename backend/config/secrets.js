@@ -49,7 +49,16 @@ function verifyToken(token) {
 // token (removes it as an XSS target — no more storing it in localStorage).
 // secure requires HTTPS, which only local dev lacks; sameSite:'lax' is enough
 // since this is a same-origin app with no cross-site POST flows.
-const SESSION_COOKIE = 'lumina_session';
+//
+// One cookie name PER ROLE, not a single shared name — a browser that's signed
+// into both the resident portal and the management console at once used to have
+// one session silently clobber the other (both wrote the same cookie name).
+// Distinct names let both coexist.
+const SESSION_COOKIE_NAMES = {
+  resident:   'lumina_resident_session',
+  management: 'lumina_management_session',
+  guardhouse: 'lumina_guardhouse_session',
+};
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -58,4 +67,4 @@ const COOKIE_OPTIONS = {
   path: '/',
 };
 
-module.exports = { JWT_SECRET, signToken, verifyToken, TOKEN_VERSION, SESSION_COOKIE, COOKIE_OPTIONS };
+module.exports = { JWT_SECRET, signToken, verifyToken, TOKEN_VERSION, SESSION_COOKIE_NAMES, COOKIE_OPTIONS };
