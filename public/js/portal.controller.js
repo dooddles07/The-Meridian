@@ -2114,6 +2114,29 @@
     $('payDoneBtn').addEventListener('click', confirmCurrentPayment);
   }
 
+  // Real payment: create a Stripe Checkout Session for this booking's deposit
+  // and hand the browser off to Stripe's own hosted page (full redirect, not
+  // the local iframe modal) - Stripe verifies the card, then the webhook
+  // (backend/controllers/stripe.controller.js) confirms the booking itself.
+  async function startStripeCheckout(btn, bookingId) {
+    if (!bookingId) return;
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Redirecting…';
+    try {
+      const res  = await fetch(`/api/booking/${encodeURIComponent(bookingId)}/checkout-session`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success || !data.url) {
+        toast(data.message || 'Could not start checkout. Please try again.', 'err');
+        btn.disabled = false; btn.textContent = orig;
+        return;
+      }
+      window.location.href = data.url; // leaves the SPA for Stripe's hosted page
+    } catch {
+      toast('Connection error starting checkout. Please try again.', 'err');
+      btn.disabled = false; btn.textContent = orig;
+    }
+  }
+
   async function loadPayments() {
     const el = $('payContainer');
     if (!el || !member) return;
@@ -2181,15 +2204,23 @@
       el.innerHTML = _renderPayBlock(pending, confirmed, refunded, paidFeeSet);
       el.querySelectorAll('[data-pay-key]').forEach(btn => {
         btn.addEventListener('click', () => {
+          const payKey = btn.dataset.payKey || '';
+          const oppId  = btn.dataset.oppId  || '';
+          // Real facility bookings (everything except the still-mock Move-In/Out
+          // pipeline) pay through an actual Stripe Checkout Session - the webhook
+          // is what confirms the booking, not a self-reported "done" click.
+          if (payKey && payKey !== 'move') {
+            startStripeCheckout(btn, oppId);
+            return;
+          }
           let url, title, payLabel = '';
-          const oppId    = btn.dataset.oppId    || '';
           const feeLabel = btn.dataset.feeLabel || '';
           const amt      = btn.dataset.feeAmount || btn.dataset.amount || '';
           if (feeLabel) {
             const fee = VERANDAH_FEES.find(f => f.feeLabel === feeLabel);
             if (fee) { url = fee.url; title = `Pay ${fee.label} - The Verandah`; payLabel = fee.label; }
           } else {
-            const fees = PAY_LINKS[btn.dataset.payKey] || [];
+            const fees = PAY_LINKS[payKey] || [];
             if (fees.length) { url = fees[0].url; title = 'Pay Deposit'; payLabel = fees[0].label; }
           }
           if (url) {
@@ -2199,7 +2230,7 @@
             if (payLabel) q.set('label', payLabel);
             const qs = q.toString();
             if (qs) url += (url.includes('?') ? '&' : '?') + qs;
-            openPayModal(url, title, oppId, feeLabel, btn.dataset.payKey || '', btn.dataset.desc || '');
+            openPayModal(url, title, oppId, feeLabel, payKey, btn.dataset.desc || '');
           }
         });
       });
@@ -3053,5 +3084,19 @@
   // handleAuthExpired() bounces back to login.
   try { member = JSON.parse(sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || 'null'); } catch {}
   if (member) bootPortal();
+
+  // Returning from Stripe Checkout (see startStripeCheckout) - clean the URL so
+  // refreshing/re-sharing the link can't be mistaken for a fresh payment, then
+  // land on Payments so the resident sees their booking update. The webhook
+  // usually beats this redirect back, but loadPayments()'s own poll will pick
+  // up the confirmed status within seconds either way if it hasn't yet.
+  const _paidParam = new URLSearchParams(location.search).get('paid');
+  if (_paidParam !== null) {
+    history.replaceState({}, '', location.pathname);
+    if (member) {
+      navigate('payments');
+      toast(_paidParam === '1' ? 'Payment received - confirming your booking…' : 'Checkout cancelled - your deposit is still pending.', _paidParam === '1' ? 'ok' : 'err');
+    }
+  }
 
 })();

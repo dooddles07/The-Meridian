@@ -1,6 +1,7 @@
 const mongoose  = require('mongoose');
 const Booking   = require('../models/booking.model');
 const facilities = require('../config/facilities');
+const stripeService = require('../services/stripe.service');
 
 const dbReady = () => mongoose.connection.readyState === 1;
 
@@ -264,6 +265,28 @@ async function confirmDeposit(req, res) {
   return res.json({ success: true });
 }
 
+// POST /api/booking/:id/checkout-session - creates a real Stripe Checkout
+// Session for a Deposit Pending booking's deposit. The webhook (stripe.controller.js),
+// not this endpoint, is what actually confirms the booking - this just hands
+// back a URL for the browser to redirect to.
+async function createCheckoutSession(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const existing = await Booking.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
+  if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (existing.status !== 'Deposit Pending') {
+    return res.status(400).json({ success: false, message: 'This booking is not awaiting a deposit.' });
+  }
+  const facility = facilities.facByKey(existing.facilityKey);
+  const amount = facility ? facility.depositAmount : 0;
+  if (!amount) return res.status(400).json({ success: false, message: 'No deposit amount configured for this facility.' });
+
+  const session = await stripeService.createDepositCheckoutSession({
+    bookingId: String(existing._id), facilityName: existing.facilityName,
+    amount, residentEmail: existing.resident_email,
+  });
+  return res.json({ success: true, url: session.url });
+}
+
 // GET /api/management/bookings
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
@@ -326,4 +349,4 @@ async function manageDeposit(req, res) {
   return res.json({ success: true, depositStatus: existing.depositStatus });
 }
 
-module.exports = { availability, listMine, create, update, cancel, confirmDeposit, listForManagement, updateStage, manageDeposit, listFacilities };
+module.exports = { availability, listMine, create, update, cancel, confirmDeposit, createCheckoutSession, listForManagement, updateStage, manageDeposit, listFacilities };

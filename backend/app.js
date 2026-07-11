@@ -34,6 +34,12 @@ app.set('trust proxy', 1);
 app.use('/api', helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 app.use('/api', cors({ origin: false })); // same-origin only — frontend and API share one domain
 app.use('/api', cookieParser()); // reads the httpOnly session cookie into req.cookies
+
+// Stripe signs the webhook against the exact raw request bytes, so this route
+// must see the unparsed body - mounted here, before the global JSON parser
+// below, with its own express.raw() instead of express.json().
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), require('./controllers/stripe.controller').handleWebhook);
+
 // Resource uploads (base64-encoded files) blow past Express's 100kb default —
 // 15mb covers the 10MB client-side file cap plus base64's ~33% size overhead.
 app.use(express.json({ limit: '15mb' }));
