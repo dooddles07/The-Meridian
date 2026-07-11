@@ -23,6 +23,19 @@
   var MGMT_USER   = { username: 'management', role: 'management', displayName: 'Management' };
   var GH_USER     = { username: 'guardhouse', role: 'guardhouse', displayName: 'Guardhouse' };
 
+  // Fixed accounts behind the zero-click preview — not real secrets, just public
+  // preview credentials with no sensitive data behind them (see residents.service.js's
+  // seedPreviewAccount and the LUMINA_MANAGEMENT env account).
+  var PREVIEW_RESIDENT   = { email: 'alex.tan@preview.thelumina.app', password: 'LuminaPreview2026!' };
+  var PREVIEW_MANAGEMENT = { username: 'admin', password: 'hBJSjqnm7OrqAa1!' };
+
+  // Resident and management logins share one session cookie name, so establishing
+  // both in the background on the same page load would let one silently overwrite
+  // the other. Scope each real login to the one portal page that actually needs it.
+  var PATH = location.pathname;
+  var onResidentPortal   = PATH.indexOf('portal.html') !== -1;
+  var onManagementPortal = PATH.indexOf('management.html') !== -1;
+
   function seedSession() {
     try {
       // Resident and management are gated independently — each has its own real
@@ -34,9 +47,26 @@
         var mem = JSON.stringify(MEMBER);
         localStorage.setItem('lumina_member', mem);   sessionStorage.setItem('lumina_member', mem);
         localStorage.setItem('lumina_token', 'local-token'); sessionStorage.setItem('lumina_token', 'local-token');
+        // Also establish a REAL httpOnly cookie session in the background so
+        // genuinely Mongo-backed features (e.g. Resources) work for the preview
+        // too — fire-and-forget, so it adds zero latency to the instant boot
+        // above. Uses the native fetch (the mock override below hasn't been
+        // installed yet at this point in the script).
+        if (onResidentPortal) {
+          fetch('/api/auth/resident/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(PREVIEW_RESIDENT),
+          }).catch(function () {});
+        }
       }
       if (localStorage.getItem('lumina_mgmt_signed_out') !== '1' && !localStorage.getItem('mgmtUser')) {
         localStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER)); sessionStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER));
+        if (onManagementPortal) {
+          fetch('/api/auth/management/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(PREVIEW_MANAGEMENT),
+          }).catch(function () {});
+        }
       }
       if (localStorage.getItem('lumina_gh_signed_out') !== '1' && !sessionStorage.getItem('gh_session')) {
         sessionStorage.setItem('gh_session', JSON.stringify({ success: true, token: 'local-token', user: GH_USER }));

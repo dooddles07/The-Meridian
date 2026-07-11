@@ -25,7 +25,13 @@
   function fetch(url, opts = {}) {
     return _rawFetch(url, opts).then(res => {
       // A 401 on a non-login API call means the session is gone/expired - bounce to login.
-      if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
+      // Skip this for the zero-click preview session (lumina_token is only ever set by
+      // client-backend.js's mock identity): its real cookie is established in the
+      // background and may not have landed yet on the very first call, but that's not
+      // a real "your session expired" event - the panel's own error state handles it,
+      // and the 7s live-panel poll retries on its own once the cookie lands.
+      const isPreview = (localStorage.getItem('lumina_token') || sessionStorage.getItem('lumina_token')) === 'local-token';
+      if (res.status === 401 && !isPreview && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
         handleAuthExpired();
       }
       return res;
@@ -2598,54 +2604,88 @@
     'Strata Title Plan': 'map',
     'Other':           'description',
   };
+  // Category display order — regulatory documents first, general reference last.
+  const CATEGORY_ORDER = ['By-Laws', 'Fire Safety', 'Meeting Minutes', 'Strata Title Plan', 'Other'];
+
+  const EXT_FROM_MIME = {
+    'application/pdf': 'PDF',
+    'application/msword': 'DOC',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+    'application/vnd.ms-excel': 'XLS',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+    'image/jpeg': 'JPG', 'image/png': 'PNG', 'text/plain': 'TXT',
+  };
+  function _fileExt(fileName, fileType) {
+    const fromName = String(fileName || '').split('.').pop();
+    if (fromName && fromName.length <= 5 && fromName !== fileName) return fromName.toUpperCase();
+    return EXT_FROM_MIME[fileType] || 'FILE';
+  }
+
+  function _resDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' });
+  }
+
+  function _resEmptyState(icon, title, sub) {
+    return `<div class="notices-empty">
+      <span class="material-symbols-outlined notices-empty__icon">${esc(icon)}</span>
+      <div class="notices-empty__title">${esc(title)}</div>
+      <div class="notices-empty__sub">${esc(sub)}</div>
+    </div>`;
+  }
 
   async function loadResources(silent) {
     const container = $('resourcesContainer');
     if (!container) return;
-    if (!silent) container.innerHTML = '<div class="panel-empty">Loading…</div>';
+    if (!silent) container.innerHTML = _resEmptyState('hourglass_top', 'Loading documents…', 'Fetching the latest building documents.');
     try {
       const res  = await fetch('/api/resources');
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Failed to load resources.');
       const docs = data.resources || [];
       if (!docs.length) {
-        container.innerHTML = '<div class="panel-empty">No documents have been uploaded yet.</div>';
+        container.innerHTML = _resEmptyState('folder_open', 'No documents yet', 'Management will publish by-laws, fire safety guidelines, meeting minutes, and other building documents here.');
         return;
       }
-      // Group by category
+      // Group by category, in a fixed regulatory-first order
       const groups = {};
       docs.forEach(d => {
         const cat = d.category || 'Other';
         if (!groups[cat]) groups[cat] = [];
         groups[cat].push(d);
       });
-      container.innerHTML = Object.entries(groups).map(([cat, items]) => `
+      const orderedCats = [...CATEGORY_ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !CATEGORY_ORDER.includes(c))];
+      container.innerHTML = orderedCats.map(cat => {
+        const items = groups[cat];
+        return `
         <div class="res-group">
           <div class="res-group-header">
             <span class="material-symbols-outlined res-group-icon">${esc(CATEGORY_ICONS[cat] || 'description')}</span>
             <span class="res-group-name">${esc(cat)}</span>
+            <span class="res-group-count">${items.length}</span>
           </div>
           <div class="res-group-items">
             ${items.map(d => `
               <div class="res-item">
+                <span class="res-item-ext">${esc(_fileExt(d.file_name, d.file_type))}</span>
                 <div class="res-item-info">
                   <span class="res-item-title">${esc(d.title)}</span>
-                  <span class="res-item-meta">${esc(d.file_name)}${d.file_size ? ' · ' + _fmtSize(d.file_size) : ''}</span>
+                  <span class="res-item-meta">${d.file_size ? _fmtSize(d.file_size) + ' · ' : ''}Updated ${esc(_resDate(d.createdAt))}</span>
                 </div>
-                <button class="res-download-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}">
+                <button class="res-download-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="Download ${esc(d.title)}">
                   <span class="material-symbols-outlined">download</span> Download
                 </button>
               </div>
             `).join('')}
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
       // Attach download handlers
       container.querySelectorAll('.res-download-btn').forEach(btn => {
         btn.addEventListener('click', () => _downloadResource(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
       });
     } catch (err) {
-      container.innerHTML = `<div class="panel-empty">${esc(err.message)}</div>`;
+      container.innerHTML = _resEmptyState('error_outline', 'Couldn’t load documents', err.message || 'Something went wrong. Please try again.');
     }
   }
 
@@ -2660,7 +2700,7 @@
       if (!data.success || !data.file_data) throw new Error(data.message || 'Download failed.');
       _triggerDownload(data.file_data, data.file_name || fileName, data.file_type || fileType);
     } catch (err) {
-      alert('Download failed: ' + err.message);
+      toast('Download failed: ' + err.message, 'err');
     } finally {
       btn.disabled = false;
       btn.innerHTML = orig;

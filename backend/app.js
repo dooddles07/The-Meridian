@@ -38,7 +38,13 @@ let connecting = null;
 app.use('/api', (req, res, next) => {
   if (mongoose.connection.readyState === 1) return next();
   if (!connecting) {
-    connecting = mongoose.connect(process.env.MONGO_URL).catch((err) => {
+    connecting = mongoose.connect(process.env.MONGO_URL).then((conn) => {
+      require('./services/resources.service').seedExamples()
+        .catch((e) => console.warn('[resources] seed failed:', e.message));
+      require('./services/residents.service').seedPreviewAccount()
+        .catch((e) => console.warn('[residents] seedPreviewAccount failed:', e.message));
+      return conn;
+    }).catch((err) => {
       connecting = null;
       throw err;
     });

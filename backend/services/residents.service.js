@@ -72,6 +72,29 @@ async function createResident({ name, email, unit, password }) {
   }
 }
 
+// Fixed account behind the zero-click portfolio preview (see client-backend.js's
+// seedSession). Its email is namespaced so it can never collide with a real
+// visitor's signup, and the password is not a secret worth protecting — it's a
+// public preview persona with no sensitive data behind it. Idempotent: only
+// creates the account once, so it survives redeploys without duplicating.
+const PREVIEW_EMAIL    = 'alex.tan@preview.thelumina.app';
+const PREVIEW_PASSWORD = 'LuminaPreview2026!';
+async function seedPreviewAccount() {
+  if (!dbReady()) return;
+  try {
+    const existing = await Resident.findOne({ email: PREVIEW_EMAIL });
+    if (existing) return;
+    const hash = await bcrypt.hash(PREVIEW_PASSWORD, 12);
+    await Resident.create({
+      email: PREVIEW_EMAIL, password: hash, unit: '12-09', name: 'Alex Tan',
+      residentType: 'Owner', active: true,
+    });
+    console.log('[residents] seeded the zero-click preview account');
+  } catch (e) {
+    console.warn('[residents] seedPreviewAccount failed:', e.message);
+  }
+}
+
 // List all resident accounts (DB if available, else the configured seed list).
 async function listResidents() {
   if (dbReady()) {
@@ -120,6 +143,6 @@ async function resetPasswordByToken(residentDoc, newPassword) {
 }
 
 module.exports = {
-  seed, findByEmail, createResident, listResidents, dbReady,
+  seed, seedPreviewAccount, findByEmail, createResident, listResidents, dbReady,
   setResetToken, verifyResetToken, resetPasswordByToken,
 };
