@@ -44,8 +44,25 @@
     _authExpiredHandled = true;
     _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'resident' }) }).catch(() => {}); // clear the cookie server-side
     [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    _broadcastLogout();
     window.location.reload();
   }
+
+  // Cross-tab logout sync. Without this, logging out in one tab only clears the
+  // server-side cookie - a second tab open to the same account keeps showing the
+  // portal until its own next API call happens to 401, which can take up to a
+  // minute since background tabs throttle timers. The `storage` event fires in
+  // every OTHER same-origin tab the instant one tab writes to localStorage (and
+  // never in the tab that wrote it), so it's an immediate, no-polling signal.
+  function _broadcastLogout() {
+    try { localStorage.setItem('lumina_logout_broadcast', String(Date.now())); } catch {}
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'lumina_logout_broadcast' || !e.newValue) return;
+    if (!sessionStorage.getItem(SESS) && !localStorage.getItem(SESS)) return; // this tab isn't logged in anyway
+    [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    window.location.reload();
+  });
 
   // Theme toggle
   (function initTheme() {
@@ -2840,6 +2857,7 @@
     // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.
     try { localStorage.setItem('lumina_signed_out', '1'); } catch {}
+    _broadcastLogout();
     window.location.href = 'index.html';
   });
 
