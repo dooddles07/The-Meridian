@@ -1762,6 +1762,19 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  const RES_NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // "NEW" badge for docs published in the last 7 days
+  let _mgmtAllDocs = [];
+  const _resSelected = new Set();
+
+  function _updateBulkBar() {
+    const bar = $('resBulkBar');
+    if (!bar) return;
+    if (_resSelected.size === 0) { bar.hidden = true; return; }
+    bar.hidden = false;
+    const countEl = $('resBulkCount');
+    if (countEl) countEl.textContent = `${_resSelected.size} selected`;
+  }
+
   function _renderResList(containerId, docs) {
     const el = $(containerId);
     if (!el) return;
@@ -1769,23 +1782,40 @@
       el.innerHTML = '<div class="res-empty">No documents yet.</div>';
       return;
     }
-    el.innerHTML = docs.map(d => `
+    el.innerHTML = docs.map(d => {
+      const isNew = d.createdAt && (Date.now() - new Date(d.createdAt).getTime()) < RES_NEW_WINDOW_MS;
+      return `
       <div class="res-item" data-res-id="${_resEsc(d.id)}">
+        <input type="checkbox" class="res-select-cb" data-res-id="${_resEsc(d.id)}" ${_resSelected.has(d.id) ? 'checked' : ''} aria-label="Select ${_resEsc(d.title)}" />
         <span class="material-symbols-outlined res-item-icon">${_resEsc(RES_CAT_ICONS[d.category] || 'description')}</span>
         <div class="res-item-info">
-          <span class="res-item-title">${_resEsc(d.title)}</span>
+          <span class="res-item-title">${_resEsc(d.title)}${isNew ? '<span class="res-new-badge">New</span>' : ''}</span>
           <span class="res-item-meta">${_resEsc(d.category)} · ${_resEsc(d.file_name)}${d.file_size ? ' · ' + _resFmtSize(d.file_size) : ''}${d.createdAt ? ' · Uploaded ' + _resFmtDate(d.createdAt) : ''}</span>
         </div>
         <div class="res-item-actions">
-          <button class="res-dl-btn" data-res-id="${_resEsc(d.id)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}">
+          <button class="res-view-btn" data-res-id="${_resEsc(d.id)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="View">
+            <span class="material-symbols-outlined">visibility</span>
+          </button>
+          <button class="res-dl-btn" data-res-id="${_resEsc(d.id)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="Download">
             <span class="material-symbols-outlined">download</span>
           </button>
-          <button class="res-del-btn" data-res-id="${_resEsc(d.id)}" data-title="${_resEsc(d.title)}">
+          <button class="res-del-btn" data-res-id="${_resEsc(d.id)}" data-title="${_resEsc(d.title)}" title="Delete">
             <span class="material-symbols-outlined">delete</span>
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+    el.querySelectorAll('.res-select-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) _resSelected.add(cb.dataset.resId);
+        else _resSelected.delete(cb.dataset.resId);
+        _updateBulkBar();
+      });
+    });
+    el.querySelectorAll('.res-view-btn').forEach(btn => {
+      btn.addEventListener('click', () => _resMgmtView(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
+    });
     el.querySelectorAll('.res-dl-btn').forEach(btn => {
       btn.addEventListener('click', () => _resMgmtDownload(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
     });
@@ -1794,20 +1824,44 @@
     });
   }
 
-  async function loadMgmtResources() {
-    [$('resMgmtResidentList'), $('resMgmtPrivateList')].forEach(el => {
-      if (el) el.innerHTML = '<div class="loading">Loading…</div>';
-    });
+  function _renderMgmtResources(searchTerm) {
+    const q = (searchTerm || '').trim().toLowerCase();
+    const docs = q
+      ? _mgmtAllDocs.filter(d => d.title.toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q))
+      : _mgmtAllDocs;
+    const shared   = docs.filter(d => d.visibility === 'residents');
+    const private_ = docs.filter(d => d.visibility === 'management');
+    _renderResList('resMgmtResidentList', shared);
+    _renderResList('resMgmtPrivateList', private_);
+  }
+
+  (() => {
+    const input = $('resSearchInput');
+    if (input) input.addEventListener('input', () => _renderMgmtResources(input.value));
+  })();
+
+  async function loadMgmtResources(_isRetry) {
+    if (!_isRetry) {
+      [$('resMgmtResidentList'), $('resMgmtPrivateList')].forEach(el => {
+        if (el) el.innerHTML = '<div class="loading">Loading…</div>';
+      });
+    }
     try {
       const res  = await fetch('/api/management/resources', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Failed to load resources.');
-      const all     = data.resources || [];
-      const shared  = all.filter(d => d.visibility === 'residents');
-      const private_ = all.filter(d => d.visibility === 'management');
-      _renderResList('resMgmtResidentList', shared);
-      _renderResList('resMgmtPrivateList', private_);
+      _mgmtAllDocs = data.resources || [];
+      _resSelected.clear();
+      _updateBulkBar();
+      _renderMgmtResources($('resSearchInput')?.value || '');
     } catch (err) {
+      // The very first load can race the zero-click preview's background
+      // login (see client-backend.js) — silently retry once before showing
+      // an error, so the preview self-heals instead of looking broken.
+      if (!_isRetry) {
+        setTimeout(() => loadMgmtResources(true), 1500);
+        return;
+      }
       toast(err.message, true);
       [$('resMgmtResidentList'), $('resMgmtPrivateList')].forEach(el => {
         if (el) el.innerHTML = `<div class="res-empty">${_resEsc(err.message)}</div>`;
@@ -1830,6 +1884,41 @@
       btn.disabled = false;
       btn.innerHTML = orig;
     }
+  }
+
+  // Opens in a new tab via the browser's native viewer instead of forcing a
+  // download. Tab is opened synchronously (before the async fetch) so popup
+  // blockers see it as a direct response to the click.
+  async function _resMgmtView(id, fileName, fileType, btn) {
+    const placeholder = window.open('', '_blank');
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
+    try {
+      const res  = await fetch(`/api/management/resources/${encodeURIComponent(id)}/download`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!data.success || !data.file_data) throw new Error(data.message || 'Could not open document.');
+      const blobUrl = _resDataUrlToBlobUrl(data.file_data, data.file_type || fileType);
+      if (placeholder) placeholder.location.href = blobUrl;
+      else window.open(blobUrl, '_blank');
+    } catch (err) {
+      if (placeholder) placeholder.close();
+      toast('Could not open document: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  function _resDataUrlToBlobUrl(dataUrl, fallbackMime) {
+    const comma = dataUrl.indexOf(',');
+    const isDataUrl = dataUrl.startsWith('data:');
+    const mime = isDataUrl ? dataUrl.slice(5, comma).split(';')[0] : (fallbackMime || 'application/octet-stream');
+    const base64 = isDataUrl ? dataUrl.slice(comma + 1) : dataUrl;
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: mime }));
   }
 
   function _resTriggerDownload(base64DataUrl, fileName, mimeType) {
@@ -1859,13 +1948,67 @@
     }
   }
 
-  // File input preview
+  // Bulk delete — reuses the existing single-delete endpoint for each selected
+  // document (no dedicated bulk endpoint exists).
+  const resBulkDeleteBtn = $('resBulkDeleteBtn');
+  if (resBulkDeleteBtn) {
+    resBulkDeleteBtn.addEventListener('click', async () => {
+      const ids = [..._resSelected];
+      if (!ids.length) return;
+      if (!confirm(`Delete ${ids.length} document${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) return;
+      resBulkDeleteBtn.disabled = true;
+      try {
+        const results = await Promise.allSettled(ids.map(id => fetch(`/api/management/resources/${encodeURIComponent(id)}`, {
+          method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        })));
+        const failed = results.filter(r => r.status === 'rejected').length;
+        toast(failed ? `Deleted ${ids.length - failed} of ${ids.length}; ${failed} failed.` : `${ids.length} document${ids.length > 1 ? 's' : ''} deleted.`, !!failed);
+        _resSelected.clear();
+        loadMgmtResources();
+      } catch (err) {
+        toast(err.message, true);
+      } finally {
+        resBulkDeleteBtn.disabled = false;
+      }
+    });
+  }
+  const resBulkCancelBtn = $('resBulkCancelBtn');
+  if (resBulkCancelBtn) {
+    resBulkCancelBtn.addEventListener('click', () => {
+      _resSelected.clear();
+      _updateBulkBar();
+      _renderMgmtResources($('resSearchInput')?.value || '');
+    });
+  }
+
+  // File input preview + drag-and-drop
   const resFileInput = $('resFile');
+  const resDropzone  = $('resDropzone');
+  function _resUpdateFileLabel(file) {
+    const label = $('resFileName');
+    if (label) label.textContent = file ? file.name : 'Choose a file, or drag one here…';
+  }
   if (resFileInput) {
-    resFileInput.addEventListener('change', () => {
-      const f = resFileInput.files[0];
-      const label = $('resFileName');
-      if (label) label.textContent = f ? f.name : 'Choose a file…';
+    resFileInput.addEventListener('change', () => _resUpdateFileLabel(resFileInput.files[0]));
+  }
+  if (resDropzone && resFileInput) {
+    ['dragenter', 'dragover'].forEach(evt => {
+      resDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        resDropzone.classList.add('res-dropzone--active');
+      });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      resDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        resDropzone.classList.remove('res-dropzone--active');
+      });
+    });
+    resDropzone.addEventListener('drop', (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      resFileInput.files = e.dataTransfer.files;
+      _resUpdateFileLabel(file);
     });
   }
 
@@ -1904,7 +2047,7 @@
         if ($('resCategory')) $('resCategory').selectedIndex = 0;
         if ($('resVisibility')) $('resVisibility').selectedIndex = 0;
         if (fileInput)        fileInput.value = '';
-        if ($('resFileName')) $('resFileName').textContent = 'Choose a file…';
+        if ($('resFileName')) $('resFileName').textContent = 'Choose a file, or drag one here…';
         loadMgmtResources();
       } catch (err) {
         toast(err.message, true);

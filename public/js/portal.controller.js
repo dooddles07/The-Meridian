@@ -2634,6 +2634,9 @@
     </div>`;
   }
 
+  const RES_NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // "NEW" badge for docs published in the last 7 days
+  let _resourceDocs = [];
+
   async function loadResources(silent) {
     const container = $('resourcesContainer');
     if (!container) return;
@@ -2642,52 +2645,83 @@
       const res  = await fetch('/api/resources');
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Failed to load resources.');
-      const docs = data.resources || [];
-      if (!docs.length) {
-        container.innerHTML = _resEmptyState('folder_open', 'No documents yet', 'Management will publish by-laws, fire safety guidelines, meeting minutes, and other building documents here.');
-        return;
-      }
-      // Group by category, in a fixed regulatory-first order
-      const groups = {};
-      docs.forEach(d => {
-        const cat = d.category || 'Other';
-        if (!groups[cat]) groups[cat] = [];
-        groups[cat].push(d);
-      });
-      const orderedCats = [...CATEGORY_ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !CATEGORY_ORDER.includes(c))];
-      container.innerHTML = orderedCats.map(cat => {
-        const items = groups[cat];
-        return `
-        <div class="res-group">
-          <div class="res-group-header">
-            <span class="material-symbols-outlined res-group-icon">${esc(CATEGORY_ICONS[cat] || 'description')}</span>
-            <span class="res-group-name">${esc(cat)}</span>
-            <span class="res-group-count">${items.length}</span>
-          </div>
-          <div class="res-group-items">
-            ${items.map(d => `
-              <div class="res-item">
-                <span class="res-item-ext">${esc(_fileExt(d.file_name, d.file_type))}</span>
-                <div class="res-item-info">
-                  <span class="res-item-title">${esc(d.title)}</span>
-                  <span class="res-item-meta">${d.file_size ? _fmtSize(d.file_size) + ' · ' : ''}Updated ${esc(_resDate(d.createdAt))}</span>
-                </div>
-                <button class="res-download-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="Download ${esc(d.title)}">
-                  <span class="material-symbols-outlined">download</span> Download
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        </div>`;
-      }).join('');
-      // Attach download handlers
-      container.querySelectorAll('.res-download-btn').forEach(btn => {
-        btn.addEventListener('click', () => _downloadResource(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
-      });
+      _resourceDocs = data.resources || [];
+      _renderResources($('resSearchInput')?.value || '');
     } catch (err) {
       container.innerHTML = _resEmptyState('error_outline', 'Couldn’t load documents', err.message || 'Something went wrong. Please try again.');
     }
   }
+
+  function _renderResources(searchTerm) {
+    const container = $('resourcesContainer');
+    if (!container) return;
+    const q = (searchTerm || '').trim().toLowerCase();
+    const docs = q
+      ? _resourceDocs.filter(d => d.title.toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q))
+      : _resourceDocs;
+
+    if (!_resourceDocs.length) {
+      container.innerHTML = _resEmptyState('folder_open', 'No documents yet', 'Management will publish by-laws, fire safety guidelines, meeting minutes, and other building documents here.');
+      return;
+    }
+    if (!docs.length) {
+      container.innerHTML = _resEmptyState('search_off', 'No matching documents', `Nothing matches "${searchTerm}". Try a different search.`);
+      return;
+    }
+    // Group by category, in a fixed regulatory-first order
+    const groups = {};
+    docs.forEach(d => {
+      const cat = d.category || 'Other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(d);
+    });
+    const orderedCats = [...CATEGORY_ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !CATEGORY_ORDER.includes(c))];
+    container.innerHTML = orderedCats.map(cat => {
+      const items = groups[cat];
+      return `
+      <div class="res-group">
+        <div class="res-group-header">
+          <span class="material-symbols-outlined res-group-icon">${esc(CATEGORY_ICONS[cat] || 'description')}</span>
+          <span class="res-group-name">${esc(cat)}</span>
+          <span class="res-group-count">${items.length}</span>
+        </div>
+        <div class="res-group-items">
+          ${items.map(d => {
+            const isNew = d.createdAt && (Date.now() - new Date(d.createdAt).getTime()) < RES_NEW_WINDOW_MS;
+            return `
+            <div class="res-item">
+              <span class="res-item-ext">${esc(_fileExt(d.file_name, d.file_type))}</span>
+              <div class="res-item-info">
+                <span class="res-item-title">${esc(d.title)}${isNew ? '<span class="res-new-badge">New</span>' : ''}</span>
+                <span class="res-item-meta">${d.file_size ? _fmtSize(d.file_size) + ' · ' : ''}Updated ${esc(_resDate(d.createdAt))}</span>
+              </div>
+              <div class="res-item-actions">
+                <button class="res-view-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="View ${esc(d.title)}" title="View">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+                <button class="res-download-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="Download ${esc(d.title)}">
+                  <span class="material-symbols-outlined">download</span> Download
+                </button>
+              </div>
+            </div>
+          `;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+    // Attach handlers
+    container.querySelectorAll('.res-download-btn').forEach(btn => {
+      btn.addEventListener('click', () => _downloadResource(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
+    });
+    container.querySelectorAll('.res-view-btn').forEach(btn => {
+      btn.addEventListener('click', () => _viewResource(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
+    });
+  }
+
+  (() => {
+    const input = $('resSearchInput');
+    if (input) input.addEventListener('input', () => _renderResources(input.value));
+  })();
 
   async function _downloadResource(id, fileName, fileType, btn) {
     if (!btn) return;
@@ -2705,6 +2739,42 @@
       btn.disabled = false;
       btn.innerHTML = orig;
     }
+  }
+
+  // Opens the document in a new tab using the browser's native PDF/image viewer
+  // instead of forcing a download. The tab is opened synchronously (before the
+  // async fetch) so popup blockers see it as a direct response to the click.
+  async function _viewResource(id, fileName, fileType, btn) {
+    if (!btn) return;
+    const placeholder = window.open('', '_blank');
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
+    try {
+      const res  = await fetch(`/api/resources/${encodeURIComponent(id)}/download`);
+      const data = await res.json();
+      if (!data.success || !data.file_data) throw new Error(data.message || 'Could not open document.');
+      const blobUrl = _dataUrlToBlobUrl(data.file_data, data.file_type || fileType);
+      if (placeholder) placeholder.location.href = blobUrl;
+      else window.open(blobUrl, '_blank');
+    } catch (err) {
+      if (placeholder) placeholder.close();
+      toast('Could not open document: ' + err.message, 'err');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  function _dataUrlToBlobUrl(dataUrl, fallbackMime) {
+    const comma = dataUrl.indexOf(',');
+    const isDataUrl = dataUrl.startsWith('data:');
+    const mime = isDataUrl ? dataUrl.slice(5, comma).split(';')[0] : (fallbackMime || 'application/octet-stream');
+    const base64 = isDataUrl ? dataUrl.slice(comma + 1) : dataUrl;
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: mime }));
   }
 
   function _triggerDownload(base64DataUrl, fileName, mimeType) {

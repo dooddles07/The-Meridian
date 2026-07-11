@@ -494,14 +494,27 @@
             </div>
             <div class="res-form-row">
               <label class="res-label">File <span class="res-hint">(PDF, Word, or image - max 10 MB)</span></label>
-              <label class="res-file-btn" for="resFile">
+              <label class="res-file-btn res-dropzone" for="resFile" id="resDropzone">
                 <span class="material-symbols-outlined">attach_file</span>
-                <span id="resFileName">Choose a file…</span>
+                <span id="resFileName">Choose a file, or drag one here…</span>
               </label>
               <input type="file" id="resFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" />
             </div>
             <button class="res-upload-btn" id="resUploadBtn">Upload Document</button>
           </div>
+        </div>
+
+        <div class="res-search">
+          <span class="material-symbols-outlined res-search-icon">search</span>
+          <input type="text" id="resSearchInput" placeholder="Search documents…" autocomplete="off" />
+        </div>
+
+        <div class="res-bulk-bar" id="resBulkBar" hidden>
+          <span id="resBulkCount">0 selected</span>
+          <button class="res-bulk-delete-btn" id="resBulkDeleteBtn">
+            <span class="material-symbols-outlined">delete</span> Delete Selected
+          </button>
+          <button class="res-bulk-cancel-btn" id="resBulkCancelBtn">Cancel</button>
         </div>
 
         <div class="res-section" id="resSecResident">
