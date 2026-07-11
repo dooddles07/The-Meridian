@@ -19,6 +19,34 @@
       document.documentElement.dataset.theme = t;
     })();
   </script>
+  <script>
+    // Skip this landing page for anyone still signed in - each portal clears
+    // its own flag on logout, so this only ever runs while genuinely logged
+    // out. Without it, the back button (or a bfcache restore) would surface
+    // this page even mid-session, since it's just a static file with no auth
+    // check of its own. replace() (not href=) so index.html never sits in
+    // history as something the back button lands on. Checked in a fixed
+    // order — resident first — for the rare case someone is signed into more
+    // than one role in the same browser.
+    (function () {
+      function loggedIn(key, stores) {
+        for (var i = 0; i < stores.length; i++) {
+          try { if (stores[i].getItem(key)) return true; } catch (e) {}
+        }
+        return false;
+      }
+      function redirectIfSignedIn() {
+        if (loggedIn('lumina_member', [sessionStorage, localStorage])) { location.replace('portal.html'); return true; }
+        if (loggedIn('mgmtUser',      [sessionStorage, localStorage])) { location.replace('management.html'); return true; }
+        if (loggedIn('gh_session',    [sessionStorage]))               { location.replace('guardhouse-portal.html'); return true; }
+        return false;
+      }
+      redirectIfSignedIn();
+      // Chrome/Safari can restore this exact page from the back/forward cache
+      // without re-running the script above - pageshow fires on that restore too.
+      window.addEventListener('pageshow', function (e) { if (e.persisted) redirectIfSignedIn(); });
+    })();
+  </script>
 </head>
 <body>
   <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark">
