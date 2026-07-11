@@ -7,6 +7,19 @@ const dbReady = () => mongoose.connection.readyState === 1;
 const EDITABLE_STATUSES = ['Deposit Pending', 'Confirmed'];
 const ALL_STAGES        = ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'];
 
+// Legal next stages per current stage - Completed/No-Show/Cancelled are
+// terminal (no outgoing transitions). Kept in sync by hand with the identical
+// map in management.controller.js (no shared module between browser/server
+// here), which uses it only to grey out illegal options in the UI - this is
+// the copy that actually gets enforced.
+const LEGAL_TRANSITIONS = {
+  'Deposit Pending': ['Confirmed', 'Cancelled'],
+  'Confirmed':       ['Completed', 'No-Show', 'Cancelled'],
+  'Completed':       [],
+  'No-Show':         [],
+  'Cancelled':       [],
+};
+
 const DEPOSIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function overlaps(aStart, aEnd, bStart, bEnd) { return aStart < bEnd && aEnd > bStart; }
@@ -176,6 +189,9 @@ async function cancel(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
   const existing = await Booking.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
   if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (!(LEGAL_TRANSITIONS[existing.status] || []).includes('Cancelled')) {
+    return res.status(400).json({ success: false, message: 'This booking has already ended and cannot be cancelled.' });
+  }
   existing.status = 'Cancelled';
   await existing.save();
   return res.json({ success: true });
@@ -229,6 +245,9 @@ async function updateStage(req, res) {
   if (!ALL_STAGES.includes(stage)) return res.status(400).json({ success: false, message: 'Invalid stage.' });
   const existing = await Booking.findById(req.params.id);
   if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (stage !== existing.status && !(LEGAL_TRANSITIONS[existing.status] || []).includes(stage)) {
+    return res.status(400).json({ success: false, message: `Cannot move a ${existing.status} booking to ${stage}.` });
+  }
   // Covers management confirming a deposit manually (e.g. "Mark as Paid") rather
   // than the resident's own confirm-deposit call - either path collects the
   // money, so either path must start the deposit's held/refund/forfeit lifecycle.

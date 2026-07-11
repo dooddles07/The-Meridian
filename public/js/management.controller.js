@@ -267,13 +267,26 @@
     return `<span style="color:var(--muted)">—</span>`;
   }
 
+  // Mirrors the backend's LEGAL_TRANSITIONS (booking.controller.js) - that copy
+  // is the one actually enforced; this one just keeps the dropdown from
+  // offering an option the server would reject anyway.
+  const LEGAL_TRANSITIONS = {
+    'Deposit Pending': ['Confirmed', 'Cancelled'],
+    'Confirmed':       ['Completed', 'No-Show', 'Cancelled'],
+    'Completed':       [],
+    'No-Show':         [],
+    'Cancelled':       [],
+  };
   // Disabled (with a hint) when the booking has no linked pipeline opportunity yet.
   function bkStageSelect(b, stages) {
     if (!b.oppId) {
       return `<span class="bk-stage-none bk-syncing" title="Pipeline opportunity not yet created - auto-refreshing in a few seconds.">Syncing…</span>`;
     }
-    const opts = stages.map(s => `<option value="${esc(s)}" ${s === b.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
-    return `<select class="bk-stage-select" data-opp="${esc(b.oppId)}">${opts}</select>`;
+    const legalNext = LEGAL_TRANSITIONS[b.stage] || [];
+    const legal = new Set([b.stage, ...legalNext]);
+    const opts = stages.filter(s => legal.has(s)).map(s => `<option value="${esc(s)}" ${s === b.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
+    const terminal = legalNext.length === 0;
+    return `<select class="bk-stage-select" data-opp="${esc(b.oppId)}" ${terminal ? 'disabled title="This booking is in a final state and cannot be moved."' : ''}>${opts}</select>`;
   }
   // Set on first load to the bookings filter/search function, so every live refresh
   // can re-apply the manager's current filter instead of resetting it to "show all".
