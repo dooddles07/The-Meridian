@@ -19,7 +19,8 @@
     "jsonwebtoken": "^9.0.0",
     "mongodb": "^7.1.1",
     "mongoose": "^9.3.3",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "pdfkit": "^0.19.1"
   },
   "devDependencies": {
     "exceljs": "^4.4.0"

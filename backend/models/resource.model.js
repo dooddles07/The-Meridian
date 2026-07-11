@@ -10,6 +10,11 @@ const schema = new mongoose.Schema({
   file_size:   { type: Number, default: 0 },
   uploaded_by: { type: String, default: '' },
   createdAt:   { type: Date, default: Date.now },
+  // Set only on auto-seeded starter documents (see resources.service.js's
+  // seedExamples) - lets a content/format update replace stale seeded copies
+  // on the next boot without ever touching a real management upload, which
+  // will always have this empty.
+  seedKey:     { type: String, default: '' },
 });
 
 module.exports = mongoose.models.Resource || mongoose.model('Resource', schema);

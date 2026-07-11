@@ -1,18 +1,20 @@
 const mongoose = require('mongoose');
 const Resource = require('../models/resource.model');
+const { buildBrandedPdf } = require('./pdf-branding');
 
 // Realistic starter documents so a fresh deploy doesn't show an empty library.
-// Idempotent — only inserts when the collection is empty, so it never runs
-// again once management has uploaded (or deleted down to zero) real documents.
+// Rendered as branded PDFs (logo, brand fonts/colors) via pdf-branding.js, not
+// plain text. Each has a stable seedKey so a future content/format update can
+// safely replace these on the next boot without ever touching a real
+// management upload, which will always have an empty seedKey.
 const EXAMPLES = [
   {
-    title: 'House Rules & By-Laws (2026 Edition)',
+    seedKey: 'house-rules-2026',
+    title: 'House Rules & By-Laws',
     category: 'By-Laws',
-    file_name: 'the-lumina-house-rules-2026.txt',
-    content: `THE LUMINA — HOUSE RULES & BY-LAWS
-2026 Edition — effective 1 January 2026
-
-1. GENERAL CONDUCT
+    updated: '2026 Edition · Effective 1 January 2026',
+    file_name: 'the-lumina-house-rules-2026.pdf',
+    body: `1. GENERAL CONDUCT
 Residents and their guests must not act in a way that interferes with other
 residents' quiet enjoyment of their units or the common property. Management
 may issue a written notice for any breach of these by-laws; repeated breaches
@@ -59,13 +61,12 @@ Building Maintenance and Strata Management Act.
 — Building Management, The Lumina`,
   },
   {
+    seedKey: 'fire-safety-guide',
     title: 'Fire Safety & Emergency Evacuation Guide',
     category: 'Fire Safety',
-    file_name: 'the-lumina-fire-safety-guide.txt',
-    content: `THE LUMINA — FIRE SAFETY & EMERGENCY EVACUATION GUIDE
-Reviewed Q1 2026 by Building Management, in accordance with SCDF requirements.
-
-ASSEMBLY POINTS
+    updated: 'Reviewed Q1 2026 · SCDF-aligned guidelines',
+    file_name: 'the-lumina-fire-safety-guide.pdf',
+    body: `ASSEMBLY POINTS
 On hearing the fire alarm or an instruction to evacuate, proceed calmly via
 the nearest fire escape stairwell (do not use lifts) to the designated
 assembly point at the open car park forecourt, Level 1. Wait for a headcount
@@ -90,29 +91,26 @@ Announcements tab. Participation is strongly encouraged — this is the best
 way to know your evacuation route before a real emergency.
 
 IN YOUR UNIT
-- Do not store items in corridors or stairwells; they are fire escape routes
-  and obstruction is both a safety hazard and a by-law breach.
-- Test your unit's smoke detector monthly; report a faulty unit to
-  Management for replacement.
-- Know the location of your unit's isolation valve (gas) and the nearest
-  hose reel before you need them.
+Do not store items in corridors or stairwells; they are fire escape routes
+and obstruction is both a safety hazard and a by-law breach. Test your
+unit's smoke detector monthly; report a faulty unit to Management for
+replacement. Know the location of your unit's isolation valve (gas) and the
+nearest hose reel before you need them.
 
 EMERGENCY CONTACTS
-Singapore Civil Defence Force (fire/ambulance): 995
-Guardhouse (24 hours): available via the intercom at every lobby
-Building Management (office hours): available via the Messages tab
+Singapore Civil Defence Force (fire/ambulance): 995. Guardhouse (24 hours):
+available via the intercom at every lobby. Building Management (office
+hours): available via the Messages tab.
 
 — Building Management, The Lumina`,
   },
   {
+    seedKey: 'agm-minutes-2026',
     title: 'Annual General Meeting — Minutes',
     category: 'Meeting Minutes',
-    file_name: 'the-lumina-agm-minutes-2026-03-15.txt',
-    content: `THE LUMINA — MANAGEMENT CORPORATION STRATA TITLE (MCST)
-MINUTES OF THE ANNUAL GENERAL MEETING
-Held Sunday, 15 March 2026, 10:00am, Function Room, Level 2
-
-ATTENDANCE
+    updated: 'Held Sunday, 15 March 2026 · Function Room, Level 2',
+    file_name: 'the-lumina-agm-minutes-2026-03-15.pdf',
+    body: `ATTENDANCE
 Council members present: Chairperson, Secretary, Treasurer, and 2 council
 members. 38 unit owners attended in person or by proxy, constituting a valid
 quorum under the MCST by-laws.
@@ -157,13 +155,12 @@ Meeting closed at 11:42am.
 — Secretary, MCST Council, The Lumina`,
   },
   {
-    title: 'Strata Title Plan — Lot Particulars & Common Property',
+    seedKey: 'strata-title-summary',
+    title: 'Strata Title Plan Summary',
     category: 'Strata Title Plan',
-    file_name: 'the-lumina-strata-title-summary.txt',
-    content: `THE LUMINA — STRATA TITLE PLAN SUMMARY
-Common Property & Lot Particulars Extract
-
-DEVELOPMENT
+    updated: 'Common Property & Lot Particulars Extract',
+    file_name: 'the-lumina-strata-title-summary.pdf',
+    body: `DEVELOPMENT
 Strata development comprising 2 residential towers over a shared podium,
 with basement car parking and Level 1–2 shared facilities.
 
@@ -197,25 +194,46 @@ plan on file for reference.
   },
 ];
 
+// One-time cleanup: the very first version of this seed inserted plain .txt
+// files with no seedKey at all (before the PDF rewrite). Remove them by their
+// exact fixed names so upgrading never leaves stale duplicates alongside the
+// new PDFs. Scoped to seedKey:'' too, so a real re-upload sharing a name is
+// never touched.
+const LEGACY_FILE_NAMES = [
+  'the-lumina-house-rules-2026.txt',
+  'the-lumina-fire-safety-guide.txt',
+  'the-lumina-agm-minutes-2026-03-15.txt',
+  'the-lumina-strata-title-summary.txt',
+];
+
 async function seedExamples() {
   if (mongoose.connection.readyState !== 1) return;
-  const count = await Resource.countDocuments().catch(() => -1);
-  if (count !== 0) return; // already has documents (real or previously seeded) — never overwrite
-  const docs = EXAMPLES.map(e => {
-    const buf = Buffer.from(e.content, 'utf8');
-    return {
-      title: e.title,
-      category: e.category,
-      visibility: 'residents',
-      file_data: `data:text/plain;base64,${buf.toString('base64')}`,
-      file_name: e.file_name,
-      file_type: 'text/plain',
-      file_size: buf.length,
-      uploaded_by: 'management',
-    };
-  });
-  await Resource.insertMany(docs);
-  console.log(`[resources] seeded ${docs.length} example document(s)`);
+  try {
+    await Resource.deleteMany({ file_name: { $in: LEGACY_FILE_NAMES }, $or: [{ seedKey: '' }, { seedKey: { $exists: false } }] });
+    const existing = await Resource.find({ seedKey: { $in: EXAMPLES.map((e) => e.seedKey) } }).select('seedKey').lean();
+    if (existing.length === EXAMPLES.length) return; // all current seed docs already present
+    await Resource.deleteMany({ seedKey: { $in: EXAMPLES.map((e) => e.seedKey) } });
+
+    const docs = [];
+    for (const e of EXAMPLES) {
+      const pdfBuffer = await buildBrandedPdf({ title: e.title, category: e.category, updated: e.updated, body: e.body });
+      docs.push({
+        title: e.title,
+        category: e.category,
+        visibility: 'residents',
+        file_data: `data:application/pdf;base64,${pdfBuffer.toString('base64')}`,
+        file_name: e.file_name,
+        file_type: 'application/pdf',
+        file_size: pdfBuffer.length,
+        uploaded_by: 'management',
+        seedKey: e.seedKey,
+      });
+    }
+    await Resource.insertMany(docs);
+    console.log(`[resources] seeded ${docs.length} example document(s)`);
+  } catch (e) {
+    console.warn('[resources] seedExamples failed:', e.message);
+  }
 }
 
 module.exports = { seedExamples };
