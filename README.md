@@ -305,7 +305,6 @@ the-lumina/
 │   ├── server.js               # local dev entry: serves public/ + mounts the API at /api/*
 │   ├── controllers/  models/  routes/  services/  config/  middleware/
 │   └── .env.example            # required env vars for a real deployment (Mongo, JWT secret, Resend key, ...)
-├── vercel.json                 # legacy static-only deploy config (superseded by Railway)
 └── package.json
 ```
 
