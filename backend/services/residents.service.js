@@ -44,7 +44,7 @@ async function findByEmail(email) {
 
 // Self-service signup. Requires the DB — throws a plain Error the controller
 // turns into a 503 rather than pretending to succeed with nowhere to persist to.
-async function createResident({ name, email, unit, password }) {
+async function createResident({ name, email, unit, password, residentType }) {
   if (!dbReady()) {
     const e = new Error('Database unavailable — cannot create an account right now.');
     e.status = 503;
@@ -58,7 +58,7 @@ async function createResident({ name, email, unit, password }) {
       password: hash,
       unit: normalizeUnit(unit),
       name: clean(name),
-      residentType: 'Resident',
+      residentType: residentType === 'Tenant' ? 'Tenant' : 'Owner',
       active: true,
     });
     return doc.toObject();

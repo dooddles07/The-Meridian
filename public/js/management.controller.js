@@ -1793,6 +1793,8 @@
     resSelectToggleBtn.addEventListener('click', () => _setSelectMode(!_selectMode));
   }
 
+  const RES_VIS_LABELS = { residents: 'All Residents', owners: 'Owners Only', tenants: 'Tenants Only' };
+
   function _renderResList(containerId, docs) {
     const el = $(containerId);
     if (!el) return;
@@ -1802,13 +1804,14 @@
     }
     el.innerHTML = docs.map(d => {
       const isNew = d.createdAt && (Date.now() - new Date(d.createdAt).getTime()) < RES_NEW_WINDOW_MS;
+      const visLabel = RES_VIS_LABELS[d.visibility];
       return `
       <div class="res-item" data-res-id="${_resEsc(d.id)}">
         ${_selectMode ? `<input type="checkbox" class="res-select-cb" data-res-id="${_resEsc(d.id)}" ${_resSelected.has(d.id) ? 'checked' : ''} aria-label="Select ${_resEsc(d.title)}" />` : ''}
         <span class="material-symbols-outlined res-item-icon">${_resEsc(RES_CAT_ICONS[d.category] || 'description')}</span>
         <div class="res-item-info">
           <span class="res-item-title">${_resEsc(d.title)}${isNew ? '<span class="res-new-badge">New</span>' : ''}</span>
-          <span class="res-item-meta">${_resEsc(d.category)} · ${_resEsc(d.file_name)}${d.file_size ? ' · ' + _resFmtSize(d.file_size) : ''}${d.createdAt ? ' · Uploaded ' + _resFmtDate(d.createdAt) : ''}</span>
+          <span class="res-item-meta">${_resEsc(d.category)}${visLabel ? ' · ' + _resEsc(visLabel) : ''} · ${_resEsc(d.file_name)}${d.file_size ? ' · ' + _resFmtSize(d.file_size) : ''}${d.createdAt ? ' · Uploaded ' + _resFmtDate(d.createdAt) : ''}</span>
         </div>
         <div class="res-item-actions">
           <button class="res-view-btn" data-res-id="${_resEsc(d.id)}" data-title="${_resEsc(d.title)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="View">
@@ -1847,7 +1850,7 @@
     const docs = q
       ? _mgmtAllDocs.filter(d => d.title.toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q))
       : _mgmtAllDocs;
-    const shared   = docs.filter(d => d.visibility === 'residents');
+    const shared   = docs.filter(d => d.visibility !== 'management');
     const private_ = docs.filter(d => d.visibility === 'management');
     _renderResList('resMgmtResidentList', shared);
     _renderResList('resMgmtPrivateList', private_);

@@ -29,3 +29,6 @@ desktop.ini
 
 # ── Claude Code local settings ────────────────────────────────────────────────
 .claude/settings.local.json
+
+# ── Playwright MCP test artifacts (snapshots/console logs) ───────────────────
+.playwright-mcp/

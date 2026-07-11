@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const schema = new mongoose.Schema({
   title:       { type: String, required: true, trim: true },
   category:    { type: String, default: 'General' },
-  visibility:  { type: String, enum: ['residents', 'management'], default: 'residents' },
+  // 'residents' = every resident regardless of type; 'owners'/'tenants' =
+  // scoped to that residentType only; 'management' = staff, no residents.
+  visibility:  { type: String, enum: ['residents', 'owners', 'tenants', 'management'], default: 'residents' },
   // Legacy: base64 data URL, from before file storage moved to disk (see
   // config/storage.js). Only ever read now, never written by new uploads -
   // kept so pre-migration documents still download correctly.

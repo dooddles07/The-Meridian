@@ -70,6 +70,32 @@
    step, not a third co-equal tab choice. */
 .login-card--reset-mode .login-tabs { display: none; }
 
+/* Owner/Tenant choice on the Register panel - a filled segmented pair, not the
+   underline .login-tabs treatment, so it doesn't read as a third top-level tab. */
+.login-segmented {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.login-segmented__opt {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 3px);
+  background: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.login-segmented__opt:hover { color: var(--text); }
+.login-segmented__opt--active { background: var(--gold); color: #fff; }
+[data-theme="dark"] .login-segmented__opt--active { color: #0c0b09; }
+
 .login-panel { animation: loginPanelIn 0.18s ease-out; }
 @keyframes loginPanelIn {
   from { opacity: 0; transform: translateY(4px); }

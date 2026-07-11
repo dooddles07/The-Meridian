@@ -171,6 +171,13 @@
         <input type="text" id="regUnit" placeholder="e.g. #05-12" autocomplete="off" />
       </div>
       <div class="login-field">
+        <label id="regTypeLabel">I am a(n)</label>
+        <div class="login-segmented" role="radiogroup" aria-labelledby="regTypeLabel">
+          <button type="button" class="login-segmented__opt login-segmented__opt--active" data-reg-type="Owner" role="radio" aria-checked="true">Owner</button>
+          <button type="button" class="login-segmented__opt" data-reg-type="Tenant" role="radio" aria-checked="false">Tenant</button>
+        </div>
+      </div>
+      <div class="login-field">
         <label for="regEmail">Email Address</label>
         <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email" />
       </div>

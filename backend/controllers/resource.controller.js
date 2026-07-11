@@ -61,6 +61,21 @@ function validateUpload(fileType, buf) {
   return null;
 }
 
+// Which visibility values a resident of a given type may see. 'residents' is
+// always visible to everyone; 'owners'/'tenants' additionally scope to that
+// specific residentType. Unknown/legacy residentType values (or a token from
+// before residentType was signed in) only ever see 'residents'.
+function residentVisibilitySet(residentType) {
+  if (residentType === 'Owner')  return ['residents', 'owners'];
+  if (residentType === 'Tenant') return ['residents', 'tenants'];
+  return ['residents'];
+}
+
+const VALID_VISIBILITY = new Set(['residents', 'owners', 'tenants', 'management']);
+function normalizeVisibility(v) {
+  return VALID_VISIBILITY.has(v) ? v : 'residents';
+}
+
 const fmt = (r) => ({
   id:          String(r._id),
   title:       r.title,
@@ -77,7 +92,7 @@ const fmt = (r) => ({
 async function listForResidents(req, res) {
   if (!dbReady()) return res.json({ success: true, resources: [] });
   try {
-    const rows = await Resource.find({ visibility: 'residents', archived: { $ne: true } })
+    const rows = await Resource.find({ visibility: { $in: residentVisibilitySet(req.user?.residentType) }, archived: { $ne: true } })
       .sort({ category: 1, createdAt: -1 })
       .select('-file_data')
       .lean();
@@ -94,7 +109,7 @@ async function downloadForResident(req, res) {
   try {
     const doc = await Resource.findById(req.params.id).lean();
     if (!doc || doc.archived) return res.status(404).json({ success: false, message: 'Resource not found.' });
-    if (doc.visibility !== 'residents') {
+    if (!residentVisibilitySet(req.user?.residentType).includes(doc.visibility)) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
     return res.json({ success: true, file_data: buildFileData(doc), file_name: doc.file_name, file_type: doc.file_type });
@@ -150,7 +165,7 @@ async function create(req, res) {
   if (!dbReady()) {
     return res.status(503).json({ success: false, message: 'Database not connected — cannot upload.' });
   }
-  const vis = visibility === 'management' ? 'management' : 'residents';
+  const vis = normalizeVisibility(visibility);
   try {
     const storedName = storage.saveFile(buf);
     const r = await Resource.create({
@@ -182,7 +197,7 @@ async function patch(req, res) {
     update.title = String(title).trim();
   }
   if (category !== undefined) update.category = category || 'General';
-  if (visibility !== undefined) update.visibility = visibility === 'management' ? 'management' : 'residents';
+  if (visibility !== undefined) update.visibility = normalizeVisibility(visibility);
   let newStoredName = null;
   if (file_data !== undefined) {
     let buf;

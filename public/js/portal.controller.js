@@ -351,6 +351,18 @@
     $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
   });
 
+  let regResidentType = 'Owner';
+  document.querySelectorAll('.login-segmented__opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      regResidentType = btn.dataset.regType;
+      document.querySelectorAll('.login-segmented__opt').forEach(b => {
+        const active = b === btn;
+        b.classList.toggle('login-segmented__opt--active', active);
+        b.setAttribute('aria-checked', String(active));
+      });
+    });
+  });
+
   async function doSignup() {
     const name     = $('regName').value.trim();
     const unit     = $('regUnit').value.trim();
@@ -368,7 +380,7 @@
       const res  = await fetch('/api/auth/resident/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, unit, email, password }),
+        body: JSON.stringify({ name, unit, email, password, residentType: regResidentType }),
       });
       const data = await res.json();
       if (!data.success) {

@@ -22,7 +22,11 @@ function issueResidentSession(res, account) {
   const initials   = name.split(/\s+/).map(p => p[0] || '').join('').slice(0, 2).toUpperCase() || 'R';
   const cleanEmail = model.clean(account.email).toLowerCase();
   const normUnit   = model.normalizeUnit(account.unit);
-  const token      = signToken({ role: 'resident', contact_id: account.contact_id || '', email: cleanEmail, unit: normUnit, name });
+  const residentType = account.residentType || 'Resident';
+  // residentType is signed into the token (not just returned in the JSON body)
+  // so resource visibility filtering (owners-only/tenants-only docs) can trust
+  // it server-side without a DB lookup on every request - see requireResident.
+  const token      = signToken({ role: 'resident', contact_id: account.contact_id || '', email: cleanEmail, unit: normUnit, name, residentType });
   res.cookie(SESSION_COOKIE, token, COOKIE_OPTIONS);
 
   return res.json({
@@ -32,7 +36,7 @@ function issueResidentSession(res, account) {
       name, initials,
       email: cleanEmail,
       unit:  normUnit,
-      type:  account.residentType || 'Resident',
+      type:  residentType,
       contact_id: account.contact_id || '',
     },
   });
@@ -51,7 +55,7 @@ function logout(req, res) {
 }
 
 async function residentSignup(req, res) {
-  const { name, email, unit, password } = req.body || {};
+  const { name, email, unit, password, residentType } = req.body || {};
   if (!name || !email || !unit || !password) {
     return res.status(400).json({ success: false, message: 'Name, unit number, email and password are required.' });
   }
@@ -61,7 +65,7 @@ async function residentSignup(req, res) {
 
   let account;
   try {
-    account = await residents.createResident({ name, email, unit, password });
+    account = await residents.createResident({ name, email, unit, password, residentType });
   } catch (err) {
     return res.status(err.status || 500).json({ success: false, message: err.message || 'Unable to create account.' });
   }
