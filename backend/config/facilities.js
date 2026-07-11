@@ -9,13 +9,16 @@
 // portal.controller.js, DEPOSIT_AMOUNTS in management.controller.js), a real
 // drift risk. Both now fetch GET /api/booking/facilities once at boot and
 // overwrite their local copies with these values instead.
+// variableDuration: true facilities let residents pick how many hours to book
+// (exact multiples of `slot`, bounded by `close`) - see validateBookingInput
+// in booking.controller.js. BBQ/Verandah stay a single fixed-length block.
 const FACILITIES = [
-  { key: 'pool',       name: 'Swimming Pool',    emoji: '🏊', deposit: true, depositAmount: 200, open: 7,  close: 23, slot: 1, maxPax: 5 },
-  { key: 'tennis',     name: 'Tennis Court',     emoji: '🎾', open: 7,  close: 23, slot: 1, maxPax: 4 },
-  { key: 'squash',     name: 'Squash Court',     emoji: '🥎', open: 7,  close: 23, slot: 1, maxPax: 4 },
-  { key: 'basketball', name: 'Basketball Court', emoji: '🏀', open: 8,  close: 23, slot: 1, maxPax: 12 },
-  { key: 'gym',        name: 'Gymnasium',        emoji: '🏋️', open: 6,  close: 23, slot: 1, maxPax: 1 },
-  { key: 'fitness',    name: 'Fitness Room',     emoji: '🤸', open: 6,  close: 23, slot: 1, maxPax: 1 },
+  { key: 'pool',       name: 'Swimming Pool',    emoji: '🏊', deposit: true, depositAmount: 200, variableDuration: true, open: 7,  close: 23, slot: 1, maxPax: 5 },
+  { key: 'tennis',     name: 'Tennis Court',     emoji: '🎾', variableDuration: true, open: 7,  close: 23, slot: 1, maxPax: 4 },
+  { key: 'squash',     name: 'Squash Court',     emoji: '🥎', variableDuration: true, open: 7,  close: 23, slot: 1, maxPax: 4 },
+  { key: 'basketball', name: 'Basketball Court', emoji: '🏀', variableDuration: true, open: 8,  close: 23, slot: 1, maxPax: 12 },
+  { key: 'gym',        name: 'Gymnasium',        emoji: '🏋️', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1 },
+  { key: 'fitness',    name: 'Fitness Room',     emoji: '🤸', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1 },
   { key: 'bbq',        name: 'BBQ Pit',          emoji: '🔥', deposit: true, depositAmount: 200, open: 10, close: 23, slot: 3, maxPax: 15 },
   { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, depositAmount: 600, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, maxAdvanceDays: 31, maxBlocksPerDay: 2 },
 ];

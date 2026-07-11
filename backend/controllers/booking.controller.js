@@ -82,10 +82,40 @@ function validateBookingInput(req, res, { excludeId } = {}) {
     if (date > maxDate) { res.status(400).json({ success: false, message: `${facility.name} can only be booked up to ${facility.maxAdvanceDays} days in advance.` }); return null; }
   }
 
-  const legalSlots = facilities.timeSlots(facility);
-  if (!legalSlots.includes(slot)) { res.status(400).json({ success: false, message: 'Invalid time slot.' }); return null; }
-  const slotStartMin = facilities.parseSlotStart(slot);
-  const slotEndMin    = facilities.parseSlotEnd(slot);
+  let slotStartMin, slotEndMin;
+  try {
+    slotStartMin = facilities.parseSlotStart(slot);
+    slotEndMin   = facilities.parseSlotEnd(slot);
+  } catch { res.status(400).json({ success: false, message: 'Invalid time slot.' }); return null; }
+  if (!(Number.isFinite(slotStartMin) && Number.isFinite(slotEndMin) && slotEndMin > slotStartMin)) {
+    res.status(400).json({ success: false, message: 'Invalid time slot.' }); return null;
+  }
+
+  if (facility.variableDuration) {
+    // Duration is resident-chosen here, so validate it arithmetically instead
+    // of checking membership in a precomputed fixed-duration list: the start
+    // must land on a legal step from opening, and the length must be an exact
+    // whole multiple of the facility's base hour (never a partial hour).
+    const openMin  = facility.open * 60;
+    const closeMin = facility.close * 60;
+    const stepMin  = facility.slotStep || 15;
+    const unitMin  = facility.slot * 60;
+    if (slotStartMin < openMin || slotStartMin >= closeMin || (slotStartMin - openMin) % stepMin !== 0) {
+      res.status(400).json({ success: false, message: 'Invalid start time.' }); return null;
+    }
+    if ((slotEndMin - slotStartMin) % unitMin !== 0) {
+      res.status(400).json({ success: false, message: `Duration must be in exact ${facility.slot}-hour increments.` }); return null;
+    }
+    if (slotEndMin > closeMin) {
+      res.status(400).json({ success: false, message: 'That duration extends past closing time. Please choose fewer hours or an earlier start.' }); return null;
+    }
+  } else {
+    // Fixed-duration facility (BBQ/Verandah) - slot must be exactly one of the
+    // facility's own precomputed start/end pairs, same as before this feature.
+    const legalSlots = facilities.timeSlots(facility);
+    if (!legalSlots.includes(slot)) { res.status(400).json({ success: false, message: 'Invalid time slot.' }); return null; }
+  }
+
   if (date === today && slotStartMin <= facilities.nowSGTMins()) {
     res.status(400).json({ success: false, message: 'That time slot has already passed.' }); return null;
   }

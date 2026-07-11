@@ -91,13 +91,18 @@
   })();
 
   // Facility catalogue
+  // variableDuration: true facilities let residents pick how many hours to book
+  // (in exact 1-hour multiples, bounded by closing time) - Pool/Tennis/Squash/
+  // Basketball/Gym/Fitness. BBQ and Verandah stay a single fixed-length block
+  // (3h / 4h) since their deposit pricing and Verandah's "2 blocks/day" cap are
+  // already built around one fixed session per booking.
   const FACILITIES = [
-    { key: 'pool',       name: 'Swimming Pool',    emoji: '🏊', deposit: true, open: 7,  close: 23, slot: 1, maxPax: 5,  capacity: 'Max 4 guests / unit',  note: 'Children under 12 must be accompanied by an adult resident.',  notePlaceholder: 'e.g. Bringing 2 young children, all are supervised adults present' },
-    { key: 'tennis',     name: 'Tennis Court',     emoji: '🎾', open: 7,  close: 23, slot: 1, maxPax: 4,  capacity: 'Max 3 guests',          note: 'Proper non-marking footwear required on court.',               notePlaceholder: 'e.g. Singles match, bringing own rackets and balls' },
-    { key: 'squash',     name: 'Squash Court',     emoji: '🥎', open: 7,  close: 23, slot: 1, maxPax: 4,  capacity: 'Max 3 guests',          note: 'Non-marking shoes only. Eyewear recommended.',                 notePlaceholder: 'e.g. Friendly doubles game, please check front wall marker condition' },
-    { key: 'basketball', name: 'Basketball Court', emoji: '🏀', open: 8,  close: 23, slot: 1, maxPax: 12, capacity: 'Max 12 occupants',       note: 'Half-court sharing may apply at peak hours.',                  notePlaceholder: 'e.g. 5-on-5 full court game, need ball pump available at guardhouse' },
-    { key: 'gym',        name: 'Gymnasium',        emoji: '🏋️', open: 6,  close: 23, slot: 1, maxPax: 1,  capacity: 'Residents only',        note: 'No guests. Minimum age 16. Wipe down equipment after use.',    notePlaceholder: 'e.g. Need squat rack and bench press available, please check cable machine condition' },
-    { key: 'fitness',    name: 'Fitness Room',     emoji: '🤸', open: 6,  close: 23, slot: 1, maxPax: 1,  capacity: 'Residents only',        note: 'Studio / yoga space. No guests permitted.',                    notePlaceholder: 'e.g. Yoga session, please have mats and blocks set out in advance' },
+    { key: 'pool',       name: 'Swimming Pool',    emoji: '🏊', deposit: true, variableDuration: true, open: 7,  close: 23, slot: 1, maxPax: 5,  capacity: 'Max 4 guests / unit',  note: 'Children under 12 must be accompanied by an adult resident.',  notePlaceholder: 'e.g. Bringing 2 young children, all are supervised adults present' },
+    { key: 'tennis',     name: 'Tennis Court',     emoji: '🎾', variableDuration: true, open: 7,  close: 23, slot: 1, maxPax: 4,  capacity: 'Max 3 guests',          note: 'Proper non-marking footwear required on court.',               notePlaceholder: 'e.g. Singles match, bringing own rackets and balls' },
+    { key: 'squash',     name: 'Squash Court',     emoji: '🥎', variableDuration: true, open: 7,  close: 23, slot: 1, maxPax: 4,  capacity: 'Max 3 guests',          note: 'Non-marking shoes only. Eyewear recommended.',                 notePlaceholder: 'e.g. Friendly doubles game, please check front wall marker condition' },
+    { key: 'basketball', name: 'Basketball Court', emoji: '🏀', variableDuration: true, open: 8,  close: 23, slot: 1, maxPax: 12, capacity: 'Max 12 occupants',       note: 'Half-court sharing may apply at peak hours.',                  notePlaceholder: 'e.g. 5-on-5 full court game, need ball pump available at guardhouse' },
+    { key: 'gym',        name: 'Gymnasium',        emoji: '🏋️', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1,  capacity: 'Residents only',        note: 'No guests. Minimum age 16. Wipe down equipment after use.',    notePlaceholder: 'e.g. Need squat rack and bench press available, please check cable machine condition' },
+    { key: 'fitness',    name: 'Fitness Room',     emoji: '🤸', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1,  capacity: 'Residents only',        note: 'Studio / yoga space. No guests permitted.',                    notePlaceholder: 'e.g. Yoga session, please have mats and blocks set out in advance' },
     { key: 'bbq',        name: 'BBQ Pit',          emoji: '🔥', deposit: true, open: 10, close: 23, slot: 3, maxPax: 15, capacity: 'Up to 15 pax',           note: 'Clean-up required after use. Charcoal provided.',              notePlaceholder: 'e.g. Birthday gathering for 12 pax, need extra charcoal and starter fluid' },
     { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, capacity: 'Event space · 40 pax', maxAdvanceDays: 31, maxBlocksPerDay: 2, note: 'Bookings are in 4-hour blocks. Max 2 blocks per day, up to 1 month in advance. Private functions only.', notePlaceholder: 'e.g. Private dinner for 20 pax, tables arranged in U-shape, need PA system' },
   ];
@@ -161,13 +166,20 @@
     } catch { return []; }
   }
 
+  // Dispatches to the fixed-duration picker (BBQ/Verandah - one pill IS the
+  // whole booking) or the variable-duration picker (the other 6 - start time
+  // + a separate hours picker) depending on the facility.
+  async function refreshSlots(f) {
+    return f.variableDuration ? _refreshVariableSlots(f) : _refreshFixedSlots(f);
+  }
+
   // Rebuild the start-time pill grid for the selected date - disables past
   // times (today) AND any start time overlapping an already-confirmed booking
   // (from the server). Duration is fixed per facility (f.slot hours), so
   // picking a start time is all residents ever choose - the end time (and the
   // wire-format "H:MM AM - H:MM AM" slot string the backend already expects)
   // is derived automatically, same contract as before, just a nicer picker.
-  async function refreshSlots(f) {
+  async function _refreshFixedSlots(f) {
     const dateVal = $('bkDate') && $('bkDate').value;
     const grid    = $('bkSlotGrid');
     const hidden  = $('bkSlot');
@@ -247,6 +259,124 @@
     const el = $('bkSlotEnd');
     if (!el) return;
     el.textContent = slotStr ? `Ends at ${slotStr.split(' - ')[1]}` : '';
+  }
+
+  // Variable-duration picker (Pool/Tennis/Squash/Basketball/Gym/Fitness):
+  // residents pick a START time, then a DURATION in exact multiples of the
+  // facility's 1-hour unit - there is no free-choice end time, so a mismatched
+  // "10:00 AM start, 8:30 AM end" combination is structurally impossible; the
+  // wire-format slot string is only ever built from start + N whole hours.
+  async function _refreshVariableSlots(f) {
+    const dateVal   = $('bkDate') && $('bkDate').value;
+    const startGrid = $('bkStartGrid');
+    const durField  = $('bkDurationField');
+    const durGrid   = $('bkDurationGrid');
+    const hidden    = $('bkSlot');
+    const hint      = $('bkSlotHint');
+    if (!startGrid || !hidden) return;
+
+    if (durField) durField.hidden = true;
+    if (durGrid)  durGrid.innerHTML = '';
+    hidden.value = '';
+    _updateSlotEnd('');
+
+    if (!dateVal) {
+      startGrid.innerHTML = `<div class="bk-slot-empty">Select a date first</div>`;
+      if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = ''; }
+      return;
+    }
+
+    const isToday  = dateVal === todaySGT();
+    const nowMins  = isToday ? nowSGTMins() : -1;
+    const openMin  = f.open * 60;
+    const closeMin = f.close * 60;
+    const stepMin  = f.slotStep || 15;
+    const unitMin  = f.slot * 60; // 60 for every variable-duration facility today
+
+    startGrid.innerHTML = `<div class="bk-slot-empty">Checking availability…</div>`;
+    if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = 'Checking availability…'; }
+
+    const busy = await fetchBusyRanges(f.key, dateVal, _editing ? _editing.id : '');
+    if (($('bkDate') && $('bkDate').value) !== dateVal) return; // stale - date changed mid-fetch
+
+    // Legal starts: every stepMin minutes from open, as long as at least one
+    // 1-hour unit fits before closing (longer durations are checked once a
+    // start is actually picked, in _renderDurationOptions).
+    const starts = [];
+    for (let m = openMin; m + unitMin <= closeMin; m += stepMin) starts.push(m);
+
+    let pastCount = 0, bookedCount = 0;
+    const pills = starts.map(startMin => {
+      const past      = isToday && startMin <= nowMins;
+      const minBooked = !past && busy.some(b => startMin < b.end && (startMin + unitMin) > b.start);
+      if (past)      pastCount++;
+      if (minBooked) bookedCount++;
+      const disabled = past || minBooked;
+      return `<button type="button" class="bk-slot-pill" data-start="${startMin}" ${disabled ? 'disabled' : ''} title="${minBooked ? 'Already booked' : ''}">${esc(fmtMins(startMin))}</button>`;
+    }).join('');
+    startGrid.innerHTML = pills || '<div class="bk-slot-empty">No start times configured for this facility.</div>';
+    // Stashed so the (synchronous) click handler can build duration options
+    // without a second network round trip.
+    startGrid._ctx = { busy, closeMin, unitMin };
+
+    if (hint) {
+      const avail = starts.length - pastCount - bookedCount;
+      if (avail === 0) {
+        hint.className = 'bk-slot-hint err';
+        hint.innerHTML = isToday
+          ? '⚠ No start times available today - please select a future date.'
+          : '⚠ Fully booked - please select another date.';
+      } else {
+        hint.className = 'bk-slot-hint';
+        const parts = [`<span class="bk-hint-ok">✓ ${avail} start times available</span>`];
+        if (bookedCount) parts.push(`<span class="bk-hint-past">${bookedCount} booked</span>`);
+        if (pastCount)   parts.push(`<span class="bk-hint-past">${pastCount} past</span>`);
+        hint.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+      }
+    }
+
+    // Edit mode: try to restore the exact start + duration being edited by
+    // simulating the same clicks a resident would make - reuses the normal
+    // path instead of duplicating the selection logic.
+    if (_editing) {
+      const startMin = parseSlotStart(_editing.slot);
+      const btn = startGrid.querySelector(`[data-start="${startMin}"]`);
+      if (btn && !btn.disabled) {
+        btn.click();
+        const units = Math.round((parseSlotEnd(_editing.slot) - startMin) / unitMin);
+        const durBtn = durGrid && durGrid.querySelector(`[data-units="${units}"]`);
+        if (durBtn && !durBtn.disabled) {
+          durBtn.click();
+        } else if (hint) {
+          hint.className = 'bk-slot-hint bk-slot-hint--warn';
+          hint.textContent = 'Your original slot is no longer available - please choose another.';
+        }
+      } else if (hint) {
+        hint.className = 'bk-slot-hint bk-slot-hint--warn';
+        hint.textContent = 'Your original slot is no longer available - please choose another.';
+      }
+    }
+  }
+
+  // Builds the "N hour(s)" duration pills for the currently-selected start
+  // time - each option's legality (fits before closing, doesn't overlap an
+  // existing booking) is exact arithmetic on whole unitMin multiples, so a
+  // partial-hour or past-closing duration can never even appear as a choice.
+  function _renderDurationOptions(startMin) {
+    const startGrid = $('bkStartGrid');
+    const durField  = $('bkDurationField');
+    const durGrid   = $('bkDurationGrid');
+    if (!startGrid || !durGrid || !startGrid._ctx) return;
+    const { busy, closeMin, unitMin } = startGrid._ctx;
+    const maxUnits = Math.floor((closeMin - startMin) / unitMin);
+    const pills = [];
+    for (let n = 1; n <= maxUnits; n++) {
+      const endMin   = startMin + n * unitMin;
+      const conflict = busy.some(b => startMin < b.end && endMin > b.start);
+      pills.push(`<button type="button" class="bk-slot-pill" data-units="${n}" ${conflict ? 'disabled' : ''} title="${conflict ? 'Overlaps an existing booking' : ''}">${n} hour${n === 1 ? '' : 's'}</button>`);
+    }
+    durGrid.innerHTML = pills.join('') || '<div class="bk-slot-empty">No durations fit before closing.</div>';
+    if (durField) durField.hidden = false;
   }
   function todaySGT() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); }
   function fmtDate(iso) {
@@ -648,6 +778,20 @@
 
     const maxDate = f.maxAdvanceDays ? addDays(todaySGT(), f.maxAdvanceDays) : '';
 
+    const slotFieldHtml = f.variableDuration
+      ? `<div class="bk-field">
+           <label>Start Time</label>
+           <div class="bk-slot-grid" id="bkStartGrid"><div class="bk-slot-empty">Select a date first</div></div>
+         </div>
+         <div class="bk-field" id="bkDurationField" hidden>
+           <label>Duration <span class="bk-field-note">(exact ${f.slot}-hour blocks)</span></label>
+           <div class="bk-slot-grid" id="bkDurationGrid"></div>
+         </div>`
+      : `<div class="bk-field">
+           <label>Time Slot <span class="bk-field-note">(${f.slot} hour${f.slot === 1 ? '' : 's'} - pick a start time)</span></label>
+           <div class="bk-slot-grid" id="bkSlotGrid"><div class="bk-slot-empty">Select a date first</div></div>
+         </div>`;
+
     host.innerHTML = `
       <div class="bk">
         <div class="bk-banner" style="--fac-img:url('/assets/images/${f.key}.jpg')">
@@ -668,13 +812,10 @@
                 ${f.maxPax === 1 ? 'readonly class="bk-locked"' : ''} />
             </div>
           </div>
-          <div class="bk-field">
-            <label>Time Slot <span class="bk-field-note">(${f.slot} hour${f.slot === 1 ? '' : 's'} - pick a start time)</span></label>
-            <div class="bk-slot-grid" id="bkSlotGrid"><div class="bk-slot-empty">Select a date first</div></div>
-            <div class="bk-slot-end" id="bkSlotEnd"></div>
-            <input type="hidden" id="bkSlot" />
-            <div class="bk-slot-hint" id="bkSlotHint"></div>
-          </div>
+          ${slotFieldHtml}
+          <div class="bk-slot-end" id="bkSlotEnd"></div>
+          <input type="hidden" id="bkSlot" />
+          <div class="bk-slot-hint" id="bkSlotHint"></div>
           <div class="bk-rule">${esc(f.note)}</div>
           <div class="bk-field">
             <label>Notes (optional)</label>
@@ -687,23 +828,55 @@
 
     $('bkDate').addEventListener('change', () => refreshSlots(f));
     $('bkConfirm').addEventListener('click', () => confirmBooking());
-    $('bkSlotGrid').addEventListener('click', (e) => {
-      const btn = e.target.closest('.bk-slot-pill');
-      if (!btn || btn.disabled) return;
-      $('bkSlotGrid').querySelectorAll('.bk-slot-pill--active').forEach(b => b.classList.remove('bk-slot-pill--active'));
-      btn.classList.add('bk-slot-pill--active');
-      $('bkSlot').value = btn.dataset.slot;
-      _updateSlotEnd(btn.dataset.slot);
-      const hint = $('bkSlotHint');
-      if (hint && hint.classList.contains('bk-slot-hint--warn')) { hint.className = 'bk-slot-hint'; hint.textContent = ''; }
-    });
+
+    if (f.variableDuration) {
+      $('bkStartGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('.bk-slot-pill');
+        if (!btn || btn.disabled) return;
+        $('bkStartGrid').querySelectorAll('.bk-slot-pill--active').forEach(b => b.classList.remove('bk-slot-pill--active'));
+        btn.classList.add('bk-slot-pill--active');
+        $('bkSlot').value = '';
+        _updateSlotEnd('');
+        _renderDurationOptions(Number(btn.dataset.start));
+        const hint = $('bkSlotHint');
+        if (hint && hint.classList.contains('bk-slot-hint--warn')) { hint.className = 'bk-slot-hint'; hint.textContent = ''; }
+      });
+      $('bkDurationGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('.bk-slot-pill');
+        if (!btn || btn.disabled) return;
+        $('bkDurationGrid').querySelectorAll('.bk-slot-pill--active').forEach(b => b.classList.remove('bk-slot-pill--active'));
+        btn.classList.add('bk-slot-pill--active');
+        const startBtn = $('bkStartGrid').querySelector('.bk-slot-pill--active');
+        if (!startBtn) return;
+        const startMin = Number(startBtn.dataset.start);
+        const units    = Number(btn.dataset.units);
+        const endMin   = startMin + units * (f.slot * 60);
+        const slotStr  = `${fmtMins(startMin)} - ${fmtMins(endMin)}`;
+        $('bkSlot').value = slotStr;
+        _updateSlotEnd(slotStr);
+      });
+    } else {
+      $('bkSlotGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('.bk-slot-pill');
+        if (!btn || btn.disabled) return;
+        $('bkSlotGrid').querySelectorAll('.bk-slot-pill--active').forEach(b => b.classList.remove('bk-slot-pill--active'));
+        btn.classList.add('bk-slot-pill--active');
+        $('bkSlot').value = btn.dataset.slot;
+        _updateSlotEnd(btn.dataset.slot);
+        const hint = $('bkSlotHint');
+        if (hint && hint.classList.contains('bk-slot-hint--warn')) { hint.className = 'bk-slot-hint'; hint.textContent = ''; }
+      });
+    }
     modal.classList.add('open');
 
     if (_editing) {
       $('bkPax').value   = _editing.pax || 1;
       $('bkNotes').value = _editing.notes || '';
       $('bkDate').value  = _editing.date;
-      $('bkSlot').value  = _editing.slot; // seed so refreshSlots can try to keep it selected
+      // Fixed-duration path restores selection via a seeded hidden value;
+      // the variable-duration path reads _editing directly and re-simulates
+      // the start+duration clicks itself (see _refreshVariableSlots).
+      if (!f.variableDuration) $('bkSlot').value = _editing.slot;
       refreshSlots(f);
     }
   }
