@@ -6,10 +6,10 @@ feedback, move-in/out scheduling, deposits & payments, announcements with RSVP,
 two-way messaging, and a shared document library.
 
 **🔗 Live:** https://the-lumina-production.up.railway.app/
-*(Every portal opens straight into a furnished account - or sign in with the demo
+*(Every portal opens straight into a furnished account - or sign in with the test
 credentials below to see the real, persisted sign-in flow.)*
 
-### Demo credentials
+### Test credentials
 
 Each portal has its own real, Mongo-backed login. Feel free to
 sign out and sign back in with these, or register your own resident account from the
@@ -21,8 +21,8 @@ sign-up screen and use that instead:
 | 🗂️ Management (`/management.html`) | `admin` | `hBJSjqnm7OrqAa1!` |
 | 🛡️ Guardhouse (`/guardhouse-portal.html`) | `guard` | `jK5U8AubeaQCc3!` |
 
-Residents aren't limited to the demo account - the **Register** tab on the resident
-sign-in screen creates a genuine new account (Mongo-backed, same as the demo one).
+Residents aren't limited to the test account - the **Register** tab on the resident
+sign-in screen creates a genuine new account (Mongo-backed, same as the test one).
 
 > **About this build.** This is a **hybrid** portfolio project. Sign-in (resident,
 > management, guardhouse), the resident directory, resources, announcements/RSVP, and
@@ -36,7 +36,7 @@ sign-in screen creates a genuine new account (Mongo-backed, same as the demo one
 ---
 
 ## Table of contents
-- [Demo credentials](#demo-credentials)
+- [Test credentials](#test-credentials)
 - [What it is](#what-it-is)
 - [The three roles](#the-three-roles)
 - [Feature tour](#feature-tour)
@@ -275,7 +275,7 @@ npm start
 
 Open **http://localhost:3000** and pick a portal from the landing page - no credentials
 needed to look around (a preview session auto-seeds), or sign in with the
-[demo credentials](#demo-credentials) above.
+[test credentials](#test-credentials) above.
 
 Real data (auth, bookings, resources, announcements, email) needs a `backend/.env` -
 copy [`backend/.env.example`](backend/.env.example) and fill in a `MONGO_URL` and
@@ -318,7 +318,7 @@ the-lumina/
   messages, payments ledger) run on the client-side mock and reset when your browser
   storage is cleared.
 - All real credentials, tenant data, and identifying details have been scrubbed from
-  this copy - the demo accounts above are seeded specifically for this portfolio build.
+  this copy - the test accounts above are seeded specifically for this portfolio build.
 
 ---
 
