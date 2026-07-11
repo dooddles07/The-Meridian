@@ -5,18 +5,38 @@ facility bookings, guest passes with QR check-in, parcel tracking, defect report
 feedback, move-in/out scheduling, deposits & payments, announcements with RSVP,
 two-way messaging, and a shared document library.
 
-**🔗 Live:** https://the-lumina.vercel.app
-*(Every portal opens straight into a furnished account.)*
+**🔗 Live:** https://the-lumina-production.up.railway.app/
+*(Every portal opens straight into a furnished account - or sign in with the demo
+credentials below to see the real, persisted sign-in flow.)*
 
-> **About this build.** This is a fully working **portfolio project** - a production-grade
-> system that runs **entirely in the browser**: no login required, no database, no
-> third-party services, and no network calls leave the page. Every screen is populated
-> with realistic data and every action works against an in-browser store, so reviewers
-> can click through the full product safely. See [How it works](#how-it-works).
+### Demo credentials
+
+Each portal has its own real, Mongo-backed login. Feel free to
+sign out and sign back in with these, or register your own resident account from the
+sign-up screen and use that instead:
+
+| Portal | Login | Password |
+| --- | --- | --- |
+| 🏠 Resident (`/portal.html`) | `resident@thelumina.test` (Test Resident, Unit #01-01) | `dS4xlvFX2ytBb2!` |
+| 🗂️ Management (`/management.html`) | `admin` | `hBJSjqnm7OrqAa1!` |
+| 🛡️ Guardhouse (`/guardhouse-portal.html`) | `guard` | `jK5U8AubeaQCc3!` |
+
+Residents aren't limited to the demo account - the **Register** tab on the resident
+sign-in screen creates a genuine new account (Mongo-backed, same as the demo one).
+
+> **About this build.** This is a **hybrid** portfolio project. Sign-in (resident,
+> management, guardhouse), the resident directory, resources, announcements/RSVP, and
+> **facility booking (incl. automatic email notifications)** are genuinely real - backed
+> by MongoDB, JWT sessions, and the Resend email API. Everything else (guests, parcels,
+> defects, feedback, moves, messages, the payments ledger) runs on a client-side mock
+> so reviewers can click through the full product with zero setup. A **preview session
+> is seeded on first visit**, so anyone can explore without credentials. See
+> [How it works](#how-it-works).
 
 ---
 
 ## Table of contents
+- [Demo credentials](#demo-credentials)
 - [What it is](#what-it-is)
 - [The three roles](#the-three-roles)
 - [Feature tour](#feature-tour)
@@ -71,9 +91,12 @@ shared daily log.
 <summary><strong>Resident portal</strong></summary>
 
 - **Dashboard** - upcoming bookings, latest notices, parcel-waiting banner.
-- **Facility booking** - pick a facility (pool, tennis, squash, basketball, gym, fitness,
-  BBQ, verandah), see live slot availability, book, edit, or cancel. Deposit facilities
-  route through payment before confirming.
+- **Facility booking** *(real backend)* - pick a facility (pool, tennis, squash,
+  basketball, gym, fitness, BBQ, verandah), see live slot availability, book, edit, or
+  cancel. Deposit facilities route through payment before confirming, with a 24-hour
+  payment window that auto-cancels and releases the slot if missed. Every booking,
+  edit, cancellation, deposit confirmation, and expiry sends an automatic email to the
+  resident's registered address.
 - **My bookings** - active + history with live status badges.
 - **Guest registration** - register a visitor, get a QR guest pass + reference code.
 - **Parcels** - notify the guardhouse of an incoming parcel and track its status.
@@ -81,23 +104,27 @@ shared daily log.
 - **Feedback** - complaints, feedback, and suggestions with categories.
 - **Move in / out** - schedule a move (service lift) with deposit handling.
 - **Payments** - pay booking/move deposits (simulated checkout) and view payment history.
-- **Announcements & RSVP** - read management notices; RSVP to events with a head count.
+- **Announcements & RSVP** *(real backend)* - read management notices; RSVP to events
+  with a head count.
 - **Messages** - two-way thread with management.
-- **Resources** - download house rules, guides, and safety documents.
+- **Resources** *(real backend)* - download house rules, guides, and safety documents.
 </details>
 
 <details>
 <summary><strong>Management console</strong></summary>
 
-- **Bookings board** - every facility booking with stage controls.
+- **Bookings board** *(real backend)* - every facility booking with stage controls,
+  enforced legal stage transitions, deposit refund/forfeit resolution, and email
+  notifications on every stage change.
 - **Pipelines** - guests, parcels, defects, feedback, and moves as manageable stage cards.
 - **Guest desk** - register guests on a resident's behalf (with QR).
 - **Residents** - directory of units, contacts, and types.
-- **Announcements** - publish general notices, events (with RSVP), or maintenance windows
-  that can block a facility for a time range; track RSVP responses and head counts.
+- **Announcements** *(real backend)* - publish general notices, events (with RSVP), or
+  maintenance windows that can block a facility for a time range; track RSVP responses
+  and head counts.
 - **Payments** - full payment ledger.
 - **Inbox** - resident conversations; reply, resolve, or start a new thread.
-- **Resources** - upload/manage documents shown to residents.
+- **Resources** *(real backend)* - upload/manage documents shown to residents.
 </details>
 
 <details>
@@ -186,32 +213,42 @@ management; **messages** thread live between resident and management in both dir
 
 ## How it works
 
-The production front-end talks to a REST API. For this build, that API is replaced
-by a **client-side mock**, so the app has zero backend dependencies and can be hosted as a
-static site:
+This build is a genuine hybrid: some features hit a real Node/Express + MongoDB API,
+the rest run on a client-side mock so the whole product is still explorable with zero
+setup and zero credentials.
 
-- **[`public/js/client-backend.js`](public/js/client-backend.js)** overrides `window.fetch`,
-  intercepts every `"/api/…"` request, and serves it from an in-browser store
-  (`localStorage`) that's seeded with realistic sample data on first load.
-- **All three portals share the same store**, so a resident's action shows up in
-  management and at the guardhouse - the cross-portal hand-offs are genuine, just kept
-  inside the browser.
-- **A preview session is seeded on first visit** so anyone can explore without
-  credentials; logging out drops into a real sign-in/registration screen backed by the
-  same store.
-- **Payments** open a **simulated** checkout page ([`public/checkout.html`](public/checkout.html));
-  nothing is ever charged and no request leaves the browser.
+**Real backend** ([`backend/`](backend/), mounted at `/api/*` by `server.js`):
+- **Auth** - resident/management/guardhouse sign-in are genuinely JWT-backed, each with
+  its own httpOnly session cookie; residents can also self-register and reset a
+  forgotten password (real email, see below).
+- **Facility booking** - availability, conflicts, deposit lifecycle (pending → held →
+  refunded/forfeited), legal stage transitions, and the 24-hour deposit-expiry sweep are
+  all enforced server-side against MongoDB.
+- **Resources** and **Announcements/RSVP** - documents and notices are stored and served
+  from MongoDB, shared live across the resident and management portals.
+- **Email** ([`backend/services/email.service.js`](backend/services/email.service.js),
+  via the [Resend](https://resend.com) API) - password resets and every facility-booking
+  event (created, edited, cancelled, deposit confirmed, deposit expired, staff-cancelled)
+  email the resident's registered address automatically. Degrades gracefully to a
+  console log when no API key is configured.
 
-Reset all local data anytime from the browser console:
+**Client-side mock** ([`public/js/client-backend.js`](public/js/client-backend.js)) -
+overrides `window.fetch` for everything not listed above (guests, parcels, defects,
+feedback, moves, messages, the payments ledger) and serves it from an in-browser store
+(`localStorage`) seeded with realistic sample data, so the full product is still
+click-through-able without a database. All three portals share this store, so a mocked
+action still shows up across portals. Payments open a **simulated** checkout page
+([`public/checkout.html`](public/checkout.html)); nothing is ever charged.
+
+Reset all local (mocked) data anytime from the browser console:
 
 ```js
 window.__luminaReset()
 ```
 
-The original Node/Express back end is kept under **[`backend/`](backend/)** as a **reference**
-implementation (JWT auth, security headers, input hardening, data models, service layer,
-pipeline integration). It is **not used** by this build - `server.js` only serves the static
-front-end - and all real credentials, domains, and tenant identifiers have been removed.
+All real credentials, domains, and tenant identifiers have been removed from this copy -
+see [`backend/.env.example`](backend/.env.example) for the environment variables a real
+deployment needs.
 
 ---
 
@@ -221,9 +258,10 @@ front-end - and all real credentials, domains, and tenant identifiers have been 
 | --- | --- |
 | Front-end | Vanilla JavaScript (no framework), component-style modular CSS design system, responsive layouts, light/dark theme |
 | UI libraries | SweetAlert2 (dialogs), QRCode.js (guest-pass QR), jsQR (QR scanning) |
-| Mock layer | Client-side `fetch` mock + `localStorage` store (no backend needed) |
-| Reference back end | Node.js, Express, Helmet, JWT, Mongoose (kept for reference only) |
-| Hosting | Static deploy on Vercel |
+| Mock layer | Client-side `fetch` mock + `localStorage` store, for the features not yet on the real backend |
+| Back end | Node.js, Express, Helmet, JWT, Mongoose/MongoDB - live for auth, resources, announcements, and facility booking |
+| Email | [Resend](https://resend.com) API - password resets and facility-booking notifications |
+| Hosting | Railway (`node backend/server.js` serves the API and the static `public/` folder together) |
 
 ---
 
@@ -235,10 +273,14 @@ npm install
 npm start
 ```
 
-Open **http://localhost:3000** and pick a portal from the landing page. No credentials needed.
+Open **http://localhost:3000** and pick a portal from the landing page - no credentials
+needed to look around (a preview session auto-seeds), or sign in with the
+[demo credentials](#demo-credentials) above.
 
-You can also serve the `public/` folder with any static file server, or deploy it to any
-static host - the app needs no server-side runtime.
+Real data (auth, bookings, resources, announcements, email) needs a `backend/.env` -
+copy [`backend/.env.example`](backend/.env.example) and fill in a `MONGO_URL` and
+`JWT_SECRET` at minimum. Without it, those routes respond "Database not connected"
+and the app quietly falls back to the client-side mock for everything else.
 
 ---
 
@@ -259,11 +301,11 @@ the-lumina/
 │   │   ├── guardhouse.controller.js
 │   │   └── client-backend.js   # ← client-side mock API + seed data
 │   └── asset/                  # facility imagery, logo
-├── backend/                    # reference Node/Express implementation (not used by this build)
-│   ├── server.js               # serves the static front-end only
+├── backend/                    # real Node/Express + MongoDB API (auth, booking, resources, announcements, email)
+│   ├── server.js               # local dev entry: serves public/ + mounts the API at /api/*
 │   ├── controllers/  models/  routes/  services/  config/  middleware/
-│   └── .env.example
-├── vercel.json                 # static deploy config (serve public/, no build)
+│   └── .env.example            # required env vars for a real deployment (Mongo, JWT secret, Resend key, ...)
+├── vercel.json                 # legacy static-only deploy config (superseded by Railway)
 └── package.json
 ```
 
@@ -271,9 +313,13 @@ the-lumina/
 
 ## Notes
 
-- This repository is an **independent portfolio copy**. It is not connected to, and never
-  communicates with, any production deployment or third-party service.
-- Data lives only in your browser and resets when storage is cleared.
+- This is a **live, deployed portfolio project** on Railway with a real MongoDB
+  database behind it - not a static mockup. The features marked *(real backend)*
+  above genuinely persist; the rest (guests, parcels, defects, feedback, moves,
+  messages, payments ledger) run on the client-side mock and reset when your browser
+  storage is cleared.
+- All real credentials, tenant data, and identifying details have been scrubbed from
+  this copy - the demo accounts above are seeded specifically for this portfolio build.
 
 ---
 
