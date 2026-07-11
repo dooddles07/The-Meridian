@@ -14,6 +14,7 @@ function listFacilities(req, res) {
     success: true,
     facilities: facilities.FACILITIES.map(f => ({
       key: f.key, name: f.name, deposit: !!f.deposit, depositAmount: f.depositAmount || 0,
+      refundableAmount: f.refundableAmount || f.depositAmount || 0,
     })),
   });
 }
@@ -279,10 +280,15 @@ async function createCheckoutSession(req, res) {
   const facility = facilities.facByKey(existing.facilityKey);
   const amount = facility ? facility.depositAmount : 0;
   if (!amount) return res.status(400).json({ success: false, message: 'No deposit amount configured for this facility.' });
+  // Facilities like the Verandah split the charge into a non-refundable
+  // booking fee + a refundable deposit - shown as two Stripe line items
+  // (still one card charge) so the resident sees exactly what's refundable.
+  const refundableAmount = facility.refundableAmount || amount;
+  const bookingFee = amount - refundableAmount;
 
   const session = await stripeService.createDepositCheckoutSession({
     bookingId: String(existing._id), facilityName: existing.facilityName,
-    amount, residentEmail: existing.resident_email,
+    amount, bookingFee, refundableAmount, residentEmail: existing.resident_email,
   });
   return res.json({ success: true, url: session.url });
 }

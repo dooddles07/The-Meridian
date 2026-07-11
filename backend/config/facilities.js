@@ -9,6 +9,11 @@
 // portal.controller.js, DEPOSIT_AMOUNTS in management.controller.js), a real
 // drift risk. Both now fetch GET /api/booking/facilities once at boot and
 // overwrite their local copies with these values instead.
+// refundableAmount: for facilities where part of depositAmount is a
+// non-refundable fee (e.g. Verandah's $200 booking fee), this is the portion
+// that can actually be refunded/forfeited later - refund/forfeit never
+// touches the rest. Omitted (or equal to depositAmount) means the whole
+// thing is refundable, same as before this field existed.
 // variableDuration: true facilities let residents pick how many hours to book
 // (exact multiples of `slot`, bounded by `close`) - see validateBookingInput
 // in booking.controller.js. BBQ/Verandah stay a single fixed-length block.
@@ -20,7 +25,7 @@ const FACILITIES = [
   { key: 'gym',        name: 'Gymnasium',        emoji: '🏋️', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1 },
   { key: 'fitness',    name: 'Fitness Room',     emoji: '🤸', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1 },
   { key: 'bbq',        name: 'BBQ Pit',          emoji: '🔥', deposit: true, depositAmount: 200, open: 10, close: 23, slot: 3, maxPax: 15 },
-  { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, depositAmount: 400, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, maxAdvanceDays: 31, maxBlocksPerDay: 2 },
+  { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, depositAmount: 600, refundableAmount: 400, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, maxAdvanceDays: 31, maxBlocksPerDay: 2 },
 ];
 
 const facByKey = key => FACILITIES.find(f => f.key === key);
