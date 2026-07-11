@@ -1,8 +1,8 @@
 const PDFDocument = require('pdfkit');
 const path = require('path');
 
-const FONT_DIR = path.join(__dirname, '..', 'assets', 'fonts');
-const LOGO_PATH = path.join(__dirname, '..', '..', 'public', 'asset', 'logomark.png');
+const FONT_DIR = path.join(__dirname, '..', '..', 'public', 'assets', 'fonts');
+const LOGO_PATH = path.join(__dirname, '..', '..', 'public', 'assets', 'images', 'logomark.png');
 
 // Mirrors the site's own CSS tokens (public/css/lumina.css light theme) so a
 // downloaded document reads as the same brand as the portal, not a generic export.

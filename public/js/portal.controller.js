@@ -567,7 +567,7 @@
     const grid = $('facilityGrid');
     if (!grid) return;
     grid.innerHTML = FACILITIES.map(f => `
-      <div class="fac-card" data-fac="${f.key}" style="--fac-img:url('/asset/${f.key}.jpg')">
+      <div class="fac-card" data-fac="${f.key}" style="--fac-img:url('/assets/images/${f.key}.jpg')">
         <div class="fac-img-wrap">
           <div class="fac-img-overlay">Book Now</div>
         </div>
@@ -599,7 +599,7 @@
 
     host.innerHTML = `
       <div class="bk">
-        <div class="bk-banner" style="--fac-img:url('/asset/${f.key}.jpg')">
+        <div class="bk-banner" style="--fac-img:url('/assets/images/${f.key}.jpg')">
           <div class="bk-banner-info">
             <div class="bk-banner-name">${esc(f.name)}</div>
             <div class="bk-banner-meta">Open ${hoursLabel(f)} &nbsp;·&nbsp; ${esc(f.capacity)}</div>
