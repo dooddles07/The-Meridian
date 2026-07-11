@@ -88,6 +88,29 @@ function requireResident(req, res, next) {
   next();
 }
 
+// Audit trail for privileged actions. Records every state-changing request
+// (POST/PUT/DELETE/PATCH) after it completes — actor from the token, route, target id
+// and resulting status — to an append-only collection. Reads (GET) are skipped.
+// Non-fatal: a logging failure never affects the action.
+function auditLog(req, res, next) {
+  if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) return next();
+  res.on('finish', () => {
+    try {
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) return;
+      require('../models/audit.model').create({
+        actor:  (req.user && (req.user.username || req.user.email)) || 'unknown',
+        role:   (req.user && req.user.role) || 'unknown',
+        method: req.method,
+        path:   (req.originalUrl || '').split('?')[0],
+        target: (req.params && req.params.id) || '',
+        status: res.statusCode,
+      }).catch(() => {});
+    } catch { /* never block on audit logging */ }
+  });
+  next();
+}
+
 function errorHandler(err, req, res, _next) {
   // Log the full stack server-side. The 5xx response body is genericised (and given
   // a reference id) by the response sanitizer; intentional 4xx messages are preserved
@@ -103,4 +126,4 @@ function errorHandler(err, req, res, _next) {
 const requireManagement = requireRole('management');
 const requireGuardhouse = requireRole('guardhouse');
 
-module.exports = { requireRole, requireManagement, requireGuardhouse, requireResident, errorHandler };
+module.exports = { requireRole, requireManagement, requireGuardhouse, requireResident, auditLog, errorHandler };

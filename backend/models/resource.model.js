@@ -15,6 +15,9 @@ const schema = new mongoose.Schema({
   // on the next boot without ever touching a real management upload, which
   // will always have this empty.
   seedKey:     { type: String, default: '' },
+  // Soft-delete flag - a "deleted" document is hidden from every list/download
+  // endpoint but never actually removed, so it stays recoverable.
+  archived:    { type: Boolean, default: false },
 });
 
 module.exports = mongoose.models.Resource || mongoose.model('Resource', schema);
