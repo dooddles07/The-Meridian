@@ -33,5 +33,6 @@ router.delete('/announcements/:id',    mutateLimiter, auditLog, announcements.re
 
 router.get('/bookings',                bookings.listForManagement);
 router.put('/bookings/:id/stage',      mutateLimiter, auditLog, bookings.updateStage);
+router.put('/bookings/:id/deposit',    mutateLimiter, auditLog, bookings.manageDeposit);
 
 module.exports = router;

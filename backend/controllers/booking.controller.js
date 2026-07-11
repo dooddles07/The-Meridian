@@ -11,14 +11,35 @@ const DEPOSIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function overlaps(aStart, aEnd, bStart, bEnd) { return aStart < bEnd && aEnd > bStart; }
 
-// No cron/worker in this app, so expiry is swept lazily: called at the top of
-// every read/write path that decides slot availability or lists bookings, so a
-// stale hold never outlives the request that would have exposed it.
+// No cron/worker in this app, so both sweeps below are lazy: called at the top
+// of every read/write path that decides slot availability or lists bookings,
+// so neither a stale hold nor a stuck-Confirmed booking outlives the request
+// that would have exposed it.
 async function expireStaleDeposits() {
   await Booking.updateMany(
     { status: 'Deposit Pending', depositDueAt: { $lt: new Date() } },
     { $set: { status: 'Cancelled', cancelReason: 'deposit_expired' } },
   );
+}
+
+// A Confirmed booking whose slot has actually ended becomes Completed on its
+// own - otherwise every single booking ever made would need a management
+// click, and a deposit could never reach the refund/forfeit step at all.
+async function completePastBookings() {
+  const today = facilities.todaySGT();
+  const nowMins = facilities.nowSGTMins();
+  await Booking.updateMany(
+    { status: 'Confirmed', $or: [
+      { date: { $lt: today } },
+      { date: today, slotEndMin: { $lte: nowMins } },
+    ] },
+    { $set: { status: 'Completed' } },
+  );
+}
+
+async function runSweeps() {
+  await expireStaleDeposits();
+  await completePastBookings();
 }
 
 // Shared validation for create/update - returns { facility } on success or
@@ -65,7 +86,7 @@ async function hasConflict(facilityKey, date, slotStartMin, slotEndMin, excludeI
 // GET /api/booking/availability?facilityKey=&date=&exclude=
 async function availability(req, res) {
   if (!dbReady()) return res.json({ success: true, busy: [] }); // fail open, matches the frontend's own comment
-  await expireStaleDeposits();
+  await runSweeps();
   const { facilityKey, date, exclude } = req.query || {};
   const facility = facilities.facByKey(facilityKey);
   if (!facility || !date) return res.json({ success: true, busy: [] });
@@ -78,7 +99,7 @@ async function availability(req, res) {
 // GET /api/booking/mine
 async function listMine(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await expireStaleDeposits();
+  await runSweeps();
   const contactId = req.resident.contact_id;
   const items = await Booking.find({ contact_id: contactId }).sort({ date: 1 }).lean();
   return res.json({
@@ -89,6 +110,7 @@ async function listMine(req, res) {
       date: b.date, slot: b.slot, pax: b.pax, notes: b.notes,
       status: b.status, stage: b.status,
       depositDueAt: b.depositDueAt || null, cancelReason: b.cancelReason || '',
+      depositStatus: b.depositStatus || 'none', depositResolvedAt: b.depositResolvedAt || null, depositNote: b.depositNote || '',
     })),
   });
 }
@@ -96,7 +118,7 @@ async function listMine(req, res) {
 // POST /api/booking
 async function create(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await expireStaleDeposits();
+  await runSweeps();
   const valid = validateBookingInput(req, res);
   if (!valid) return;
   const { facility, date, slot, slotStartMin, slotEndMin, pax } = valid;
@@ -128,7 +150,7 @@ async function create(req, res) {
 // PUT /api/booking/:id
 async function update(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await expireStaleDeposits();
+  await runSweeps();
   const existing = await Booking.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
   if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
   if (!EDITABLE_STATUSES.includes(existing.status)) {
@@ -164,7 +186,7 @@ async function cancel(req, res) {
 // there's no real payment gateway callback to verify against.
 async function confirmDeposit(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await expireStaleDeposits();
+  await runSweeps();
   const existing = await Booking.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
   if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
   // Idempotent: a facility with multiple fee line items (e.g. Verandah's booking
@@ -173,6 +195,7 @@ async function confirmDeposit(req, res) {
   // success no-op, not an error.
   if (existing.status === 'Deposit Pending') {
     existing.status = 'Confirmed';
+    existing.depositStatus = 'held'; // money is now actually collected
     await existing.save();
   } else if (existing.cancelReason === 'deposit_expired') {
     return res.status(400).json({ success: false, message: 'The 24-hour deposit window for this booking has passed and it was automatically cancelled. Please make a new booking.' });
@@ -185,7 +208,7 @@ async function confirmDeposit(req, res) {
 // GET /api/management/bookings
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await expireStaleDeposits();
+  await runSweeps();
   const items = await Booking.find({}).sort({ date: 1 }).lean();
   return res.json({
     success: true,
@@ -193,6 +216,7 @@ async function listForManagement(req, res) {
       oppId: String(b._id), facility: b.facilityName, facilityKey: b.facilityKey,
       resident: b.resident_name, unit: b.resident_unit, date: b.date, slot: b.slot, pax: b.pax, stage: b.status,
       depositDueAt: b.depositDueAt || null, cancelReason: b.cancelReason || '',
+      depositStatus: b.depositStatus || 'none', depositResolvedAt: b.depositResolvedAt || null, depositNote: b.depositNote || '',
     })),
     stages: ALL_STAGES,
   });
@@ -205,9 +229,39 @@ async function updateStage(req, res) {
   if (!ALL_STAGES.includes(stage)) return res.status(400).json({ success: false, message: 'Invalid stage.' });
   const existing = await Booking.findById(req.params.id);
   if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  // Covers management confirming a deposit manually (e.g. "Mark as Paid") rather
+  // than the resident's own confirm-deposit call - either path collects the
+  // money, so either path must start the deposit's held/refund/forfeit lifecycle.
+  if (stage === 'Confirmed' && existing.depositStatus === 'none') {
+    const facility = facilities.facByKey(existing.facilityKey);
+    if (facility && facility.deposit) existing.depositStatus = 'held';
+  }
   existing.status = stage;
   await existing.save();
   return res.json({ success: true, message: `Booking moved to ${stage}.`, stage });
 }
 
-module.exports = { availability, listMine, create, update, cancel, confirmDeposit, listForManagement, updateStage };
+// PUT /api/management/bookings/:id/deposit - resolve a held deposit after the
+// event: refund it back, or forfeit it (e.g. facility damage), with a reason.
+async function manageDeposit(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const { action, note } = req.body || {};
+  if (!['refund', 'forfeit'].includes(action)) {
+    return res.status(400).json({ success: false, message: 'Invalid action.' });
+  }
+  if (action === 'forfeit' && !String(note || '').trim()) {
+    return res.status(400).json({ success: false, message: 'A reason is required to forfeit a deposit.' });
+  }
+  const existing = await Booking.findById(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (existing.depositStatus !== 'held') {
+    return res.status(400).json({ success: false, message: 'This booking has no held deposit to resolve.' });
+  }
+  existing.depositStatus = action === 'refund' ? 'refunded' : 'forfeited';
+  existing.depositResolvedAt = new Date();
+  existing.depositNote = String(note || '').trim();
+  await existing.save();
+  return res.json({ success: true, depositStatus: existing.depositStatus });
+}
+
+module.exports = { availability, listMine, create, update, cancel, confirmDeposit, listForManagement, updateStage, manageDeposit };

@@ -252,6 +252,21 @@
     const cls = map[status] || 'badge-default';
     return `<span class="badge ${cls}">${esc(status || 'Confirmed')}</span>`;
   }
+  // Deposit is tracked separately from the booking's own stage - a Completed
+  // booking's deposit can sit "held" for days while the facility is inspected
+  // before management decides to refund or forfeit it.
+  function bkDepositCell(b) {
+    if (b.depositStatus === 'held') {
+      return `<div class="bk-deposit-actions">
+        <button class="bk-deposit-btn bk-deposit-btn--refund" data-deposit-action="refund" data-id="${esc(b.oppId)}">Refund</button>
+        <button class="bk-deposit-btn bk-deposit-btn--forfeit" data-deposit-action="forfeit" data-id="${esc(b.oppId)}">Forfeit</button>
+      </div>`;
+    }
+    if (b.depositStatus === 'refunded')  return `<span class="badge badge-closed">Refunded</span>`;
+    if (b.depositStatus === 'forfeited') return `<span class="badge badge-uncollected" title="${esc(b.depositNote || '')}">Forfeited</span>`;
+    return `<span style="color:var(--muted)">—</span>`;
+  }
+
   // Disabled (with a hint) when the booking has no linked pipeline opportunity yet.
   function bkStageSelect(b, stages) {
     if (!b.oppId) {
@@ -271,7 +286,7 @@
     if (!data.success) {
       if (ts) ts.textContent = 'Could not load bookings.';
       const body = $('bookingsBody');
-      if (body) body.innerHTML = `<tr class="empty-row"><td colspan="8">${esc(data.message || 'Could not load bookings.')}</td></tr>`;
+      if (body) body.innerHTML = `<tr class="empty-row"><td colspan="9">${esc(data.message || 'Could not load bookings.')}</td></tr>`;
       throw new Error(data.message || 'Failed to load bookings.');
     }
     const items  = data.items  || [];
@@ -288,9 +303,10 @@
             <td style="white-space:nowrap">${esc(b.slot)}</td>
             <td>${b.pax || 1}</td>
             <td>${bkBadge(b.stage)}</td>
+            <td>${bkDepositCell(b)}</td>
             <td>${bkStageSelect(b, stages)}</td>
           </tr>`).join('')
-        : `<tr class="empty-row"><td colspan="8">No facility bookings.</td></tr>`;
+        : `<tr class="empty-row"><td colspan="9">No facility bookings.</td></tr>`;
       // Wire each stage dropdown to update the linked opportunity in GHL.
       body.querySelectorAll('.bk-stage-select').forEach(sel => {
         sel.dataset.prev = sel.value;
@@ -314,6 +330,36 @@
             toast(e.message || 'Could not update stage.', true);
           } finally {
             sel.disabled = false;
+          }
+        });
+      });
+      // Wire the Refund/Forfeit buttons for held deposits.
+      body.querySelectorAll('[data-deposit-action]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const action = btn.dataset.depositAction;
+          const id     = btn.dataset.id;
+          let note = '';
+          if (action === 'forfeit') {
+            note = window.prompt('Reason for forfeiting this deposit (required, e.g. facility damage):', '') || '';
+            if (!note.trim()) return; // cancelled, or left blank - don't submit
+          } else if (!confirm('Refund this deposit back to the resident?')) {
+            return;
+          }
+          const row = btn.closest('.bk-deposit-actions');
+          if (row) row.querySelectorAll('button').forEach(b => b.disabled = true);
+          try {
+            const r = await fetch(`/api/management/bookings/${encodeURIComponent(id)}/deposit`, {
+              method:  'PUT',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body:    JSON.stringify({ action, note }),
+            });
+            const d = await r.json();
+            if (!d.success) throw new Error(d.message || 'Could not update deposit.');
+            toast(action === 'refund' ? 'Deposit marked as refunded.' : 'Deposit marked as forfeited.');
+          } catch (e) {
+            toast(e.message || 'Could not update deposit.', true);
+          } finally {
+            loadBookings();
           }
         });
       });

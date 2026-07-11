@@ -23,6 +23,14 @@ const schema = new mongoose.Schema({
   // frontend can show "deposit not paid in time" instead of a plain Cancelled,
   // which would otherwise look like a bug ("I never cancelled this!").
   cancelReason:   { type: String, default: '' },
+  // Tracks the MONEY separately from the booking's own lifecycle (status) - a
+  // Completed booking's deposit can still be sitting "held" for days while
+  // management inspects the facility before deciding to refund or forfeit it.
+  // 'held' is set the moment a deposit-required booking becomes Confirmed;
+  // stays 'none' for facilities with no deposit at all.
+  depositStatus:    { type: String, enum: ['none', 'held', 'refunded', 'forfeited'], default: 'none' },
+  depositResolvedAt:{ type: Date, default: null },
+  depositNote:      { type: String, default: '' }, // required reason when forfeited
   contact_id:     { type: String, required: true, index: true },
   resident_name:  { type: String, default: '' },
   resident_email: { type: String, default: '' },

@@ -1169,6 +1169,8 @@
         oppId:        it.oppId || '',
         depositDueAt: it.depositDueAt || '',
         cancelReason: it.cancelReason || '',
+        depositStatus: it.depositStatus || 'none',
+        depositNote:   it.depositNote || '',
       }));
     } catch { return; }
     renderMyBookings(); renderDashboardBookings(); populateBookingSelector();
@@ -1866,19 +1868,26 @@
       </div>`;
     }
 
-    // History: Confirmed (paid) or Deposit Refunded
-    const isRefunded = item.stage === 'Deposit Refunded';
+    // History: Confirmed (paid), Deposit Refunded (move-in/out), or a facility
+    // deposit management has since resolved (see depositStatus - refunded back
+    // to the resident, or forfeited with a reason, e.g. facility damage).
+    const isRefunded  = item.stage === 'Deposit Refunded' || item.depositStatus === 'refunded';
+    const isForfeited = item.depositStatus === 'forfeited';
     const baseMeta   = isVerandah ? 'Booking Fee + Refundable Deposit'
                      : key === 'move' ? 'Admin Fee + Refundable Deposit'
                      : 'Deposit';
     // Only the refundable deposit is returned on a move refund (admin fee is non-refundable).
-    const histMeta   = isRefunded
+    const histMeta   = isForfeited
+                     ? `${baseMeta} · Forfeited${item.depositNote ? ` — ${esc(item.depositNote)}` : ''}`
+                     : isRefunded
                      ? (key === 'move' ? 'Refundable Deposit · Refunded' : `${baseMeta} · Refunded`)
                      : `${baseMeta} · Confirmed`;
     const histAmtStr = (isRefunded && key === 'move')
                      ? `SGD ${Number(MOVE_REFUNDABLE_DEPOSIT).toFixed(2)}`
                      : amtStr;
-    const tagHtml    = isRefunded ? '<span class="pay-tag refunded">refunded</span>' : '<span class="pay-tag paid">paid</span>';
+    const tagHtml    = isForfeited ? '<span class="pay-tag forfeited">forfeited</span>'
+                     : isRefunded  ? '<span class="pay-tag refunded">refunded</span>'
+                     : '<span class="pay-tag paid">paid</span>';
     return `<div class="pay-card">
       <div class="pay-card__body">
         ${headerHtml}
@@ -1915,7 +1924,7 @@
           ${confirmed.map(([item, type]) => _renderPayCard(item, type, false, paidFeeSet)).join('')}`;
       }
       if (refunded.length) {
-        html += `<div class="pay-sub-head" style="margin-top:12px">Deposit Refunded</div>
+        html += `<div class="pay-sub-head" style="margin-top:12px">Deposit Resolved</div>
           ${refunded.map(([item, type]) => _renderPayCard(item, type, false, paidFeeSet)).join('')}`;
       }
       html += `</div>`;
@@ -2026,7 +2035,7 @@
       // with a linked opportunity, named so the card can detect the facility + show details.
       const facItems = (bRes.items || [])
         .filter(b => b.oppId)
-        .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
+        .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', depositStatus: b.depositStatus || 'none', depositNote: b.depositNote || '', name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
         .filter(o => _facKeyFromOppName(o.name));
       const moveItems = mRes.items || [];
 
@@ -2034,13 +2043,17 @@
         ...facItems.filter(o => DEPOSIT_STAGES.has(o.stage)).map(o => [o, 'facility']),
         ...moveItems.filter(o => DEPOSIT_STAGES.has(o.stage)).map(o => [o, 'move']),
       ];
+      // A facility deposit that's since been refunded/forfeited moves out of the
+      // plain "Confirmed" bucket into "resolved" below, even though the booking's
+      // own stage is still Confirmed/Completed - the two are tracked separately.
       const confirmed = [
-        ...facItems.filter(o => o.stage === 'Confirmed' || o.stage === 'Completed').map(o => [o, 'facility']),
+        ...facItems.filter(o => (o.stage === 'Confirmed' || o.stage === 'Completed') && o.depositStatus !== 'refunded' && o.depositStatus !== 'forfeited').map(o => [o, 'facility']),
         ...moveItems.filter(o => o.stage === 'Confirmed' || o.stage === 'Completed').map(o => [o, 'move']),
       ];
-      // Deposit Refunded (move-in/out deposits returned after the move) belongs in
-      // Payment History too - only the move pipeline has this stage.
+      // Resolved deposits: move-in/out refunds (their own pipeline stage) plus
+      // facility deposits management has refunded or forfeited after the event.
       const refunded = [
+        ...facItems.filter(o => o.depositStatus === 'refunded' || o.depositStatus === 'forfeited').map(o => [o, 'facility']),
         ...moveItems.filter(o => o.stage === 'Deposit Refunded').map(o => [o, 'move']),
       ];
       // GHL's appointment workflow can spawn a DUPLICATE opportunity for the same
