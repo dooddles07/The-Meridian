@@ -1,7 +1,17 @@
 const mongoose = require('mongoose');
 const Resource = require('../models/resource.model');
+const storage  = require('../config/storage');
 
 const dbReady = () => mongoose.connection.readyState === 1;
+
+// Files live on disk (config/storage.js), not as base64 inside the Mongo
+// document — reconstructs the same data: URL shape the frontend already
+// expects either way. Falls back to the legacy file_data field for documents
+// created before the migration to disk storage.
+function buildFileData(doc) {
+  if (doc.file_path) return `data:${doc.file_type};base64,${storage.readFile(doc.file_path).toString('base64')}`;
+  return doc.file_data;
+}
 
 // Matches the client's 10MB file-size cap. Enforced server-side too since the
 // client check is only a UX nicety — a direct API call could send anything.
@@ -87,7 +97,7 @@ async function downloadForResident(req, res) {
     if (doc.visibility !== 'residents') {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
-    return res.json({ success: true, file_data: doc.file_data, file_name: doc.file_name, file_type: doc.file_type });
+    return res.json({ success: true, file_data: buildFileData(doc), file_name: doc.file_name, file_type: doc.file_type });
   } catch (err) {
     console.error('[resources] download failed:', err.message);
     return res.status(502).json({ success: false, message: err.message });
@@ -115,7 +125,7 @@ async function downloadForManagement(req, res) {
   try {
     const doc = await Resource.findById(req.params.id).lean();
     if (!doc || doc.archived) return res.status(404).json({ success: false, message: 'Resource not found.' });
-    return res.json({ success: true, file_data: doc.file_data, file_name: doc.file_name, file_type: doc.file_type });
+    return res.json({ success: true, file_data: buildFileData(doc), file_name: doc.file_name, file_type: doc.file_type });
   } catch (err) {
     console.error('[resources] mgmt download failed:', err.message);
     return res.status(502).json({ success: false, message: err.message });
@@ -142,11 +152,12 @@ async function create(req, res) {
   }
   const vis = visibility === 'management' ? 'management' : 'residents';
   try {
+    const storedName = storage.saveFile(buf);
     const r = await Resource.create({
       title:       String(title).trim(),
       category:    category || 'General',
       visibility:  vis,
-      file_data,
+      file_path:   storedName,
       file_name:   file_name || 'document',
       file_type,
       file_size:   buf.length,
@@ -172,6 +183,7 @@ async function patch(req, res) {
   }
   if (category !== undefined) update.category = category || 'General';
   if (visibility !== undefined) update.visibility = visibility === 'management' ? 'management' : 'residents';
+  let newStoredName = null;
   if (file_data !== undefined) {
     let buf;
     try { buf = decodeDataUrl(String(file_data)); } catch { return res.status(400).json({ success: false, message: 'Invalid file data.' }); }
@@ -179,7 +191,9 @@ async function patch(req, res) {
     if (validationError) {
       return res.status(validationError.startsWith('File is too large') ? 413 : 400).json({ success: false, message: validationError });
     }
-    update.file_data = file_data;
+    newStoredName = storage.saveFile(buf);
+    update.file_path = newStoredName;
+    update.file_data = ''; // clear any legacy base64 this document may have had
     update.file_name = file_name || 'document';
     update.file_type = file_type;
     update.file_size = buf.length;
@@ -188,15 +202,21 @@ async function patch(req, res) {
     return res.status(400).json({ success: false, message: 'No changes provided.' });
   }
   try {
+    const before = newStoredName ? await Resource.findOne({ _id: req.params.id, archived: { $ne: true } }).lean() : null;
     const r = await Resource.findOneAndUpdate(
       { _id: req.params.id, archived: { $ne: true } },
       update,
       { new: true },
     );
-    if (!r) return res.status(404).json({ success: false, message: 'Resource not found.' });
+    if (!r) {
+      if (newStoredName) storage.deleteFile(newStoredName); // update didn't happen — don't leak the file we just wrote
+      return res.status(404).json({ success: false, message: 'Resource not found.' });
+    }
+    if (before?.file_path) storage.deleteFile(before.file_path); // replaced — drop the old file
     console.log(`[resources] updated "${r.title}" by ${req.user?.username || req.user?.email || ''}`);
     return res.json({ success: true, resource: fmt(r) });
   } catch (err) {
+    if (newStoredName) storage.deleteFile(newStoredName);
     console.error('[resources] patch failed:', err.message);
     return res.status(502).json({ success: false, message: err.message });
   }

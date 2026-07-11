@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Resource = require('../models/resource.model');
 const { buildBrandedPdf } = require('./pdf-branding');
+const storage  = require('../config/storage');
 
 // Realistic starter documents so a fresh deploy doesn't show an empty library.
 // Rendered as branded PDFs (logo, brand fonts/colors) via pdf-branding.js, not
@@ -210,8 +211,9 @@ async function seedExamples() {
   if (mongoose.connection.readyState !== 1) return;
   try {
     await Resource.deleteMany({ file_name: { $in: LEGACY_FILE_NAMES }, $or: [{ seedKey: '' }, { seedKey: { $exists: false } }] });
-    const existing = await Resource.find({ seedKey: { $in: EXAMPLES.map((e) => e.seedKey) } }).select('seedKey').lean();
+    const existing = await Resource.find({ seedKey: { $in: EXAMPLES.map((e) => e.seedKey) } }).select('seedKey file_path').lean();
     if (existing.length === EXAMPLES.length) return; // all current seed docs already present
+    existing.forEach((d) => storage.deleteFile(d.file_path)); // don't leak the old files being replaced
     await Resource.deleteMany({ seedKey: { $in: EXAMPLES.map((e) => e.seedKey) } });
 
     const docs = [];
@@ -221,7 +223,7 @@ async function seedExamples() {
         title: e.title,
         category: e.category,
         visibility: 'residents',
-        file_data: `data:application/pdf;base64,${pdfBuffer.toString('base64')}`,
+        file_path: storage.saveFile(pdfBuffer),
         file_name: e.file_name,
         file_type: 'application/pdf',
         file_size: pdfBuffer.length,
