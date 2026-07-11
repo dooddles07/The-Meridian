@@ -129,6 +129,7 @@
   text-transform: uppercase;
   font-weight: 600;
 }
+.bk-field-note { text-transform: none; letter-spacing: 0; font-weight: 400; }
 .bk-field input,
 .bk-field textarea {
   display: block;
@@ -149,30 +150,49 @@
 }
 .bk-field textarea { resize: none; }
 .bk-field input.bk-locked { opacity: 0.4; cursor: not-allowed; }
-.bk-select-wrap { position: relative; }
-.bk-select-wrap select {
-  width: 100%;
-  appearance: none;
-  background: var(--bg);
+/* Start-time pill grid - duration is fixed per facility, so residents only
+   ever pick a start time; the end time is derived (see .bk-slot-end). */
+.bk-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.bk-slot-pill {
+  padding: 7px 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  background: var(--bg);
   color: var(--text);
-  font-size: 0.9375rem;
-  padding: 8px 28px 8px 10px;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.bk-select-wrap select:focus { border-color: var(--gold); }
-.bk-select-chevron {
-  position: absolute;
-  right: 9px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--gold);
   font-size: 0.75rem;
-  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
+.bk-slot-pill:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.bk-slot-pill--active {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: #fff;
+  font-weight: 600;
+}
+[data-theme="dark"] .bk-slot-pill--active { color: #0c0b09; }
+.bk-slot-pill:disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.bk-slot-empty {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  padding: 10px 2px;
+  text-align: center;
+}
+.bk-slot-end { font-size: 0.75rem; color: var(--gold); font-weight: 600; margin-top: 6px; min-height: 16px; }
 .bk-slot-hint { font-size: 0.6875rem; color: var(--muted); margin-top: 3px; min-height: 16px; }
 .bk-slot-hint.err  { color: var(--red);  font-weight: 600; }
 .bk-slot-hint--warn { color: var(--gold); font-weight: 600; }

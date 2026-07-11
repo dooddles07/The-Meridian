@@ -161,54 +161,68 @@
     } catch { return []; }
   }
 
-  // Rebuild the slot dropdown for the selected date - disables past slots (today)
-  // AND any slot overlapping an already-confirmed booking (from the server/GHL).
+  // Rebuild the start-time pill grid for the selected date - disables past
+  // times (today) AND any start time overlapping an already-confirmed booking
+  // (from the server). Duration is fixed per facility (f.slot hours), so
+  // picking a start time is all residents ever choose - the end time (and the
+  // wire-format "H:MM AM - H:MM AM" slot string the backend already expects)
+  // is derived automatically, same contract as before, just a nicer picker.
   async function refreshSlots(f) {
     const dateVal = $('bkDate') && $('bkDate').value;
-    const select  = $('bkSlot');
+    const grid    = $('bkSlotGrid');
+    const hidden  = $('bkSlot');
     const hint    = $('bkSlotHint');
-    if (!select) return;
+    if (!grid || !hidden) return;
 
     if (!dateVal) {
-      select.innerHTML = `<option value="">select a date first</option>`;
+      grid.innerHTML = `<div class="bk-slot-empty">Select a date first</div>`;
+      hidden.value = '';
+      _updateSlotEnd('');
       if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = ''; }
       return;
     }
 
     const slots   = timeSlots(f);
-    const isToday  = dateVal === todaySGT();
-    const nowMins  = isToday ? nowSGTMins() : -1;
-    const prevVal  = select.value;
+    const isToday = dateVal === todaySGT();
+    const nowMins = isToday ? nowSGTMins() : -1;
+    const prevVal = hidden.value;
 
-    select.disabled  = true;
-    select.innerHTML = `<option value="">checking availability…</option>`;
+    grid.innerHTML = `<div class="bk-slot-empty">Checking availability…</div>`;
     if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = 'Checking availability…'; }
 
     const busy = await fetchBusyRanges(f.key, dateVal, _editing ? _editing.id : '');
     // Bail if the user changed the date while we were fetching (stale response).
     if (($('bkDate') && $('bkDate').value) !== dateVal) return;
-    select.disabled = false;
 
     const overlaps = (start, end) => busy.some(b => start < b.end && end > b.start);
 
     let pastCount = 0, bookedCount = 0;
-    const options = slots.map(s => {
+    let keepVal = '';
+    if (prevVal) {
+      const start = parseSlotStart(prevVal), end = parseSlotEnd(prevVal);
+      const stillBad = (isToday && start <= nowMins) || overlaps(start, end);
+      keepVal = stillBad ? '' : prevVal;
+    }
+
+    const pills = slots.map(s => {
       const start = parseSlotStart(s), end = parseSlotEnd(s);
       const past   = isToday && start <= nowMins;
       const booked = !past && overlaps(start, end);
       if (past)   pastCount++;
       if (booked) bookedCount++;
-      const disabled = past || booked;
-      const label    = booked ? `${s} - booked` : s;
-      return `<option value="${esc(s)}" ${disabled ? 'disabled' : ''}>${esc(label)}</option>`;
+      const disabled  = past || booked;
+      const startLabel = s.split(' - ')[0];
+      const active     = s === keepVal;
+      return `<button type="button" class="bk-slot-pill${active ? ' bk-slot-pill--active' : ''}" data-slot="${esc(s)}" ${disabled ? 'disabled' : ''} title="${booked ? 'Already booked' : ''}">${esc(startLabel)}</button>`;
     }).join('');
 
-    select.innerHTML = `<option value="">choose a time slot</option>` + options;
-
-    if (prevVal) {
-      const start = parseSlotStart(prevVal), end = parseSlotEnd(prevVal);
-      const stillBad = (isToday && start <= nowMins) || overlaps(start, end);
-      select.value = stillBad ? '' : prevVal;
+    grid.innerHTML = pills || '<div class="bk-slot-empty">No slots configured for this facility.</div>';
+    hidden.value = keepVal;
+    _updateSlotEnd(keepVal);
+    if (_editing && !keepVal && prevVal === _editing.slot && hint) {
+      hint.className = 'bk-slot-hint bk-slot-hint--warn';
+      hint.textContent = 'Your original slot is no longer available - please choose another.';
+      return;
     }
 
     if (!hint) return;
@@ -225,6 +239,14 @@
       if (pastCount)   parts.push(`<span class="bk-hint-past">${pastCount} past</span>`);
       hint.innerHTML = parts.join(' &nbsp;·&nbsp; ');
     }
+  }
+  // Small derived "Ends at HH:MM" line shown once a start time is picked -
+  // the whole point of a fixed-duration-per-facility picker is that residents
+  // never have to compute the end time themselves.
+  function _updateSlotEnd(slotStr) {
+    const el = $('bkSlotEnd');
+    if (!el) return;
+    el.textContent = slotStr ? `Ends at ${slotStr.split(' - ')[1]}` : '';
   }
   function todaySGT() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); }
   function fmtDate(iso) {
@@ -647,11 +669,10 @@
             </div>
           </div>
           <div class="bk-field">
-            <label>Time Slot</label>
-            <div class="bk-select-wrap">
-              <select id="bkSlot"><option value="">select a date first</option></select>
-              <span class="bk-select-chevron">▾</span>
-            </div>
+            <label>Time Slot <span class="bk-field-note">(${f.slot} hour${f.slot === 1 ? '' : 's'} - pick a start time)</span></label>
+            <div class="bk-slot-grid" id="bkSlotGrid"><div class="bk-slot-empty">Select a date first</div></div>
+            <div class="bk-slot-end" id="bkSlotEnd"></div>
+            <input type="hidden" id="bkSlot" />
             <div class="bk-slot-hint" id="bkSlotHint"></div>
           </div>
           <div class="bk-rule">${esc(f.note)}</div>
@@ -666,21 +687,24 @@
 
     $('bkDate').addEventListener('change', () => refreshSlots(f));
     $('bkConfirm').addEventListener('click', () => confirmBooking());
+    $('bkSlotGrid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.bk-slot-pill');
+      if (!btn || btn.disabled) return;
+      $('bkSlotGrid').querySelectorAll('.bk-slot-pill--active').forEach(b => b.classList.remove('bk-slot-pill--active'));
+      btn.classList.add('bk-slot-pill--active');
+      $('bkSlot').value = btn.dataset.slot;
+      _updateSlotEnd(btn.dataset.slot);
+      const hint = $('bkSlotHint');
+      if (hint && hint.classList.contains('bk-slot-hint--warn')) { hint.className = 'bk-slot-hint'; hint.textContent = ''; }
+    });
     modal.classList.add('open');
 
     if (_editing) {
       $('bkPax').value   = _editing.pax || 1;
       $('bkNotes').value = _editing.notes || '';
       $('bkDate').value  = _editing.date;
-      refreshSlots(f).then(() => {
-        const sel = $('bkSlot');
-        if (!sel) return;
-        sel.value = _editing.slot;
-        if (!sel.value) {
-          const hint = $('bkSlotHint');
-          if (hint) { hint.className = 'bk-slot-hint bk-slot-hint--warn'; hint.textContent = 'Your original slot is no longer available - please choose another.'; }
-        }
-      });
+      $('bkSlot').value  = _editing.slot; // seed so refreshSlots can try to keep it selected
+      refreshSlots(f);
     }
   }
 
