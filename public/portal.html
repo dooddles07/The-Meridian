@@ -154,6 +154,7 @@
             <span class="material-symbols-outlined">visibility</span>
           </button>
         </div>
+        <button type="button" class="login-link-inline" id="forgotPasswordLink">Forgot password?</button>
       </div>
       <p class="login-err" id="loginErr" role="alert"></p>
       <button class="btn-login" id="loginBtn">Access Resident Portal</button>
@@ -193,6 +194,51 @@
       </div>
       <p class="login-err" id="signupErr" role="alert"></p>
       <button class="btn-login" id="signupBtn">Register My Unit</button>
+    </div>
+
+    <!-- Reached from "Forgot password?" - a sub-flow, not a tab, so it has no
+         role="tabpanel"/aria-selected pairing with the Sign In / Register tabs. -->
+    <div id="panelForgot" class="login-panel" hidden>
+      <p class="login-desc">Enter your email and we'll send you a link to reset your password.</p>
+      <div class="login-field" id="forgotEmailField">
+        <label for="forgotEmail">Email Address</label>
+        <input type="email" id="forgotEmail" placeholder="your@email.com" autocomplete="email" />
+      </div>
+      <p class="login-err" id="forgotErr" role="alert"></p>
+      <div class="login-confirm" id="forgotConfirm" hidden>
+        <span class="material-symbols-outlined login-confirm__icon">mark_email_read</span>
+        <p>If an account exists for that email, we've sent a link to reset your password. Check your inbox (and spam folder).</p>
+      </div>
+      <button class="btn-login" id="forgotSubmitBtn">Send Reset Link</button>
+      <button type="button" class="login-link-inline login-link-inline--center" id="backToSignInLink">← Back to Sign In</button>
+    </div>
+
+    <!-- Reached only via the emailed reset link (?resetToken=...) - shown standalone,
+         bypassing Sign In / Register entirely, so it reads as its own deliberate step. -->
+    <div id="panelReset" class="login-panel" hidden>
+      <p class="login-desc">Choose a new password for your account.</p>
+      <div class="login-field">
+        <label for="resetPassword">New Password</label>
+        <div class="pw-field">
+          <input type="password" id="resetPassword" placeholder="••••••••" autocomplete="new-password" />
+          <button type="button" class="pw-toggle" data-pw-toggle="resetPassword" aria-label="Show password" aria-pressed="false">
+            <span class="material-symbols-outlined">visibility</span>
+          </button>
+        </div>
+        <p class="pw-hint">At least 8 characters</p>
+      </div>
+      <div class="login-field">
+        <label for="resetConfirm">Confirm New Password</label>
+        <div class="pw-field">
+          <input type="password" id="resetConfirm" placeholder="••••••••" autocomplete="new-password" />
+          <button type="button" class="pw-toggle" data-pw-toggle="resetConfirm" aria-label="Show password" aria-pressed="false">
+            <span class="material-symbols-outlined">visibility</span>
+          </button>
+        </div>
+      </div>
+      <p class="login-err" id="resetErr" role="alert"></p>
+      <button class="btn-login" id="resetSubmitBtn">Set New Password</button>
+      <button type="button" class="login-link-inline login-link-inline--center" id="resetBackToSignInLink" hidden>← Back to Sign In</button>
     </div>
 
     <div class="login-footer">

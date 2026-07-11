@@ -1,6 +1,9 @@
 const model     = require('../models/auth.model');
 const residents = require('../services/residents.service');
+const email     = require('../services/email.service');
 const { signToken, SESSION_COOKIE, COOKIE_OPTIONS } = require('../config/secrets');
+
+const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || 'http://localhost:3000';
 
 // The token is still returned in the JSON body too (so the API stays directly
 // callable/testable without a browser), but the browser itself authenticates via
@@ -83,6 +86,39 @@ async function residentLogin(req, res) {
   return issueResidentSession(res, account);
 }
 
+// POST /api/auth/resident/request-reset — always responds identically whether
+// or not the email matches an account, so this endpoint can't be used to test
+// which emails are registered (same anti-enumeration principle as login).
+async function requestPasswordReset(req, res) {
+  const { email: rawEmail } = req.body || {};
+  const GENERIC_MESSAGE = 'If an account exists for that email, a reset link has been sent.';
+  if (!rawEmail) return res.status(400).json({ success: false, message: 'Email is required.' });
+
+  const result = await residents.setResetToken(rawEmail);
+  if (result) {
+    const resetUrl = `${PUBLIC_APP_URL}/portal.html?resetToken=${result.rawToken}`;
+    email.sendPasswordResetEmail({ to: result.account.email, name: result.account.name, resetUrl }).catch(() => {});
+  }
+  return res.json({ success: true, message: GENERIC_MESSAGE });
+}
+
+// POST /api/auth/resident/reset-password — the token itself is the secret here
+// (only ever known to whoever clicked the emailed link), so confirming it's
+// invalid/expired doesn't leak account existence the way a login error would.
+async function resetPassword(req, res) {
+  const { token, password } = req.body || {};
+  if (!token || !password) return res.status(400).json({ success: false, message: 'Token and new password are required.' });
+  if (password.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+
+  const residentDoc = await residents.verifyResetToken(token);
+  if (!residentDoc) {
+    return res.status(400).json({ success: false, message: 'This reset link is invalid or has expired. Please request a new one.' });
+  }
+  const account = await residents.resetPasswordByToken(residentDoc, password);
+  account.contact_id = await residents.ensureContact(account);
+  return issueResidentSession(res, account);
+}
+
 function managementLogin(req, res) {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ success: false, message: 'Username and password are required.' });
@@ -99,4 +135,4 @@ function guardhouseLogin(req, res) {
   return issueToken(res, 'guardhouse', account);
 }
 
-module.exports = { residentSignup, residentLogin, managementLogin, guardhouseLogin, logout };
+module.exports = { residentSignup, residentLogin, requestPasswordReset, resetPassword, managementLogin, guardhouseLogin, logout };

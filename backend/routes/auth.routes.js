@@ -27,6 +27,13 @@ const staffRules = [
   body('username').optional({ checkFalsy: true }).isString().isLength({ max: 64 }),
   body('password').optional({ checkFalsy: true }).isString().isLength({ max: 200 }),
 ];
+const requestResetRules = [
+  body('email').optional({ checkFalsy: true }).isString().isLength({ max: 254 }),
+];
+const resetPasswordRules = [
+  body('token').optional({ checkFalsy: true }).isString().isLength({ min: 32, max: 200 }),
+  body('password').optional({ checkFalsy: true }).isString().isLength({ min: 8, max: 200 }),
+];
 
 // Counts per client IP (trust proxy is set in server.js so the real IP is used
 // behind Railway). Resident login is now real password auth (not a lookup), so
@@ -41,9 +48,14 @@ const limiterOpts = {
 const staffLoginLimiter    = rateLimit({ ...limiterOpts, limit: 10 });
 const residentLoginLimiter = rateLimit({ ...limiterOpts, limit: 10 });
 const residentSignupLimiter = rateLimit({ ...limiterOpts, windowMs: 60 * 60 * 1000, limit: 5 });
+// Tighter than login — this endpoint sends an email (abuse = spam/cost, not
+// just credential guessing) and is a natural target for enumeration attempts.
+const requestResetLimiter = rateLimit({ ...limiterOpts, limit: 3 });
 
 router.post('/resident/signup', residentSignupLimiter, residentSignupRules, validate, controller.residentSignup);
 router.post('/resident/login',   residentLoginLimiter, residentLoginRules, validate, controller.residentLogin);
+router.post('/resident/request-reset', requestResetLimiter, requestResetRules, validate, controller.requestPasswordReset);
+router.post('/resident/reset-password', residentLoginLimiter, resetPasswordRules, validate, controller.resetPassword);
 router.post('/management/login', staffLoginLimiter,    staffRules,    validate, controller.managementLogin);
 router.post('/guardhouse/login', staffLoginLimiter,    staffRules,    validate, controller.guardhouseLogin);
 router.post('/logout', controller.logout);

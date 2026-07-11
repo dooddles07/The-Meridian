@@ -11,6 +11,12 @@ const residentSchema = new mongoose.Schema({
   phone:          { type: String, default: '' },
   ghl_contact_id: { type: String, default: '' },
   active:         { type: Boolean, default: true },
+  // Password reset: only the SHA-256 hash of the raw token is stored (fast hash
+  // is correct here — unlike passwords, this is high-entropy random data, not
+  // human-guessable, so bcrypt's deliberate slowness isn't needed). Cleared on
+  // successful reset so each link is single-use.
+  resetTokenHash:    { type: String, default: '' },
+  resetTokenExpires: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.models.Resident || mongoose.model('Resident', residentSchema);

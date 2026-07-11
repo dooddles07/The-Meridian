@@ -238,33 +238,57 @@
   // "Cannot access 'FB_CATEGORIES' before initialization" error for returning
   // sessions. Everything must be initialized first.
 
-  // Sign In / Register tab switch (WAI-ARIA tabs pattern: Left/Right moves focus + selection)
+  // Sign In / Register tab switch (WAI-ARIA tabs pattern: Left/Right moves focus +
+  // selection), extended with two more panels reached from Sign In rather than
+  // the tab bar: "forgot password" (request-reset) and "reset password" (only
+  // ever entered via an emailed link, never a tab click).
   const tabSignIn     = $('tabSignIn');
   const tabRegister   = $('tabRegister');
   const panelSignIn   = $('panelSignIn');
   const panelRegister = $('panelRegister');
-  function selectTab(name) {
-    const toSignIn = name === 'signin';
-    tabSignIn.classList.toggle('login-tab--active', toSignIn);
-    tabRegister.classList.toggle('login-tab--active', !toSignIn);
-    tabSignIn.setAttribute('aria-selected', String(toSignIn));
-    tabRegister.setAttribute('aria-selected', String(!toSignIn));
-    tabSignIn.tabIndex = toSignIn ? 0 : -1;
-    tabRegister.tabIndex = toSignIn ? -1 : 0;
-    panelSignIn.hidden = !toSignIn;
-    panelRegister.hidden = toSignIn;
-    (toSignIn ? $('loginEmail') : $('regName')).focus();
+  const panelForgot   = $('panelForgot');
+  const panelReset    = $('panelReset');
+  const loginCardEl   = document.querySelector('.login-card');
+  const loginSubEl    = document.querySelector('.login-sub');
+  const DEFAULT_LOGIN_SUB = loginSubEl.textContent;
+  const PANEL_FOCUS = { signin: 'loginEmail', register: 'regName', forgot: 'forgotEmail', reset: 'resetPassword' };
+
+  function showPanel(name) {
+    panelSignIn.hidden   = name !== 'signin';
+    panelRegister.hidden = name !== 'register';
+    panelForgot.hidden   = name !== 'forgot';
+    panelReset.hidden    = name !== 'reset';
+
+    // The tab bar only represents Sign In vs Register - forgot/reset are
+    // sub-flows, so the tabs (and their aria-selected state) hide entirely
+    // rather than showing a misleading "neither tab is active" state.
+    const isTabChoice = name === 'signin' || name === 'register';
+    loginCardEl.classList.toggle('login-card--reset-mode', !isTabChoice);
+    if (isTabChoice) {
+      tabSignIn.classList.toggle('login-tab--active', name === 'signin');
+      tabRegister.classList.toggle('login-tab--active', name === 'register');
+      tabSignIn.setAttribute('aria-selected', String(name === 'signin'));
+      tabRegister.setAttribute('aria-selected', String(name === 'register'));
+      tabSignIn.tabIndex = name === 'signin' ? 0 : -1;
+      tabRegister.tabIndex = name === 'register' ? 0 : -1;
+    }
+    loginSubEl.textContent = name === 'reset' ? 'Choose a new password' : DEFAULT_LOGIN_SUB;
+    $(PANEL_FOCUS[name]).focus();
   }
-  tabSignIn.addEventListener('click', () => selectTab('signin'));
-  tabRegister.addEventListener('click', () => selectTab('register'));
+  const selectTab = showPanel; // kept as an alias - existing call sites below say "selectTab"
+  tabSignIn.addEventListener('click', () => showPanel('signin'));
+  tabRegister.addEventListener('click', () => showPanel('register'));
   [tabSignIn, tabRegister].forEach(tab => {
     tab.addEventListener('keydown', e => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
-      selectTab(tab === tabSignIn ? 'register' : 'signin');
+      showPanel(tab === tabSignIn ? 'register' : 'signin');
       (tab === tabSignIn ? tabRegister : tabSignIn).focus();
     });
   });
+  $('forgotPasswordLink').addEventListener('click', () => showPanel('forgot'));
+  $('backToSignInLink').addEventListener('click', () => showPanel('signin'));
+  $('resetBackToSignInLink').addEventListener('click', () => showPanel('signin'));
 
   // Password show/hide — shared by every [data-pw-toggle] button
   document.querySelectorAll('[data-pw-toggle]').forEach(btn => {
@@ -359,6 +383,84 @@
       errEl.textContent = 'Connection error. Please try again.';
     } finally {
       btn.disabled = false; btn.textContent = 'Register My Unit';
+    }
+  }
+
+  $('forgotSubmitBtn').addEventListener('click', doRequestReset);
+  $('forgotEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doRequestReset(); });
+
+  async function doRequestReset() {
+    const email = $('forgotEmail').value.trim().toLowerCase();
+    const errEl = $('forgotErr');
+    const btn   = $('forgotSubmitBtn');
+    if (!email) { errEl.textContent = 'Please enter your email address.'; return; }
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res  = await fetch('/api/auth/resident/request-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        errEl.textContent = data.message || 'Something went wrong. Please try again.';
+        btn.disabled = false; btn.textContent = 'Send Reset Link';
+        return;
+      }
+      // Anti-enumeration: this same confirmation shows whether or not the
+      // email actually matched an account, matching the backend's response.
+      $('forgotEmailField').hidden = true;
+      $('forgotConfirm').hidden = false;
+      btn.hidden = true;
+    } catch {
+      errEl.textContent = 'Connection error. Please try again.';
+      btn.disabled = false; btn.textContent = 'Send Reset Link';
+    }
+  }
+
+  // Set via the ?resetToken= query param at boot (see bottom of this IIFE).
+  let _resetToken = null;
+
+  $('resetSubmitBtn').addEventListener('click', doResetPassword);
+  ['resetPassword', 'resetConfirm'].forEach(id => {
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doResetPassword(); });
+  });
+
+  async function doResetPassword() {
+    const password = $('resetPassword').value;
+    const confirm  = $('resetConfirm').value;
+    const errEl = $('resetErr');
+    const btn   = $('resetSubmitBtn');
+    if (!password) { errEl.textContent = 'Please enter a new password.'; return; }
+    if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; $('resetPassword').focus(); return; }
+    if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; $('resetConfirm').focus(); return; }
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Setting password…';
+    try {
+      const res  = await fetch('/api/auth/resident/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: _resetToken, password }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        errEl.textContent = data.message || 'This reset link is invalid or has expired.';
+        $('resetBackToSignInLink').hidden = false;
+        return;
+      }
+      member = data.member;
+      _authExpiredHandled = false;
+      try { localStorage.removeItem('lumina_signed_out'); } catch {}
+      sessionStorage.setItem(SESS, JSON.stringify(member));
+      localStorage.setItem(SESS, JSON.stringify(member));
+      // Drop the token from the URL so refreshing or re-sharing the link can't replay it.
+      history.replaceState({}, '', location.pathname);
+      bootPortal();
+    } catch {
+      errEl.textContent = 'Connection error. Please try again.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Set New Password';
     }
   }
 
@@ -2602,13 +2704,22 @@
 
   function bind(id, h) { const el = $(id); if (el) el.addEventListener('click', h); }
 
-  // Restore an existing session and boot the portal LAST - after every top-level
-  // declaration above is initialized - so bootPortal() can safely read them.
-  // The token itself lives in an httpOnly cookie now (invisible to this JS), so
-  // stored member info is the only client-side signal that a session might exist;
-  // if the cookie's actually gone/expired, the first real API call 401s and
-  // handleAuthExpired() bounces back to login.
-  try { member = JSON.parse(sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || 'null'); } catch {}
-  if (member) bootPortal();
+  // A password-reset link takes priority over any existing session - someone
+  // clicking it clearly wants to set a new password right now, even if this
+  // browser already has a (possibly stale, possibly someone else's) session.
+  const _resetTokenFromUrl = new URLSearchParams(location.search).get('resetToken');
+  if (_resetTokenFromUrl) {
+    _resetToken = _resetTokenFromUrl;
+    showPanel('reset');
+  } else {
+    // Restore an existing session and boot the portal LAST - after every top-level
+    // declaration above is initialized - so bootPortal() can safely read them.
+    // The token itself lives in an httpOnly cookie now (invisible to this JS), so
+    // stored member info is the only client-side signal that a session might exist;
+    // if the cookie's actually gone/expired, the first real API call 401s and
+    // handleAuthExpired() bounces back to login.
+    try { member = JSON.parse(sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || 'null'); } catch {}
+    if (member) bootPortal();
+  }
 
 })();
