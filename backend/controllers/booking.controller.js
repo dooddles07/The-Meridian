@@ -1,6 +1,7 @@
 const mongoose  = require('mongoose');
 const Booking   = require('../models/booking.model');
 const facilities = require('../config/facilities');
+const email     = require('../services/email.service');
 
 const dbReady = () => mongoose.connection.readyState === 1;
 
@@ -42,10 +43,20 @@ function overlaps(aStart, aEnd, bStart, bEnd) { return aStart < bEnd && aEnd > b
 // so neither a stale hold nor a stuck-Confirmed booking outlives the request
 // that would have exposed it.
 async function expireStaleDeposits() {
+  // Found first (not a blind updateMany) so each affected resident can be
+  // emailed - otherwise a booking would just vanish with no explanation.
+  const stale = await Booking.find({ status: 'Deposit Pending', depositDueAt: { $lt: new Date() } }).lean();
+  if (!stale.length) return;
   await Booking.updateMany(
-    { status: 'Deposit Pending', depositDueAt: { $lt: new Date() } },
+    { _id: { $in: stale.map(b => b._id) } },
     { $set: { status: 'Cancelled', cancelReason: 'deposit_expired' } },
   );
+  stale.forEach(b => {
+    email.sendBookingCancelledEmail({
+      to: b.resident_email, name: b.resident_name, facilityName: b.facilityName,
+      date: b.date, slot: b.slot, reason: 'deposit_expired',
+    }).catch(() => {});
+  });
 }
 
 // A Confirmed booking whose slot has actually ended becomes Completed on its
@@ -200,6 +211,12 @@ async function create(req, res) {
     contact_id: req.resident.contact_id, resident_name: req.resident.name,
     resident_email: req.resident.email, resident_unit: req.resident.unit,
   });
+  const emailArgs = { to: req.resident.email, name: req.resident.name, facilityName: facility.name, date, slot };
+  if (facility.deposit) {
+    email.sendBookingPendingEmail({ ...emailArgs, depositAmount: facility.depositAmount, depositDueAt }).catch(() => {});
+  } else {
+    email.sendBookingConfirmedEmail(emailArgs).catch(() => {});
+  }
   return res.json({ success: true, appointmentId: String(doc._id), depositDueAt });
 }
 
@@ -224,6 +241,7 @@ async function update(req, res) {
   existing.date = date; existing.slot = slot; existing.slotStartMin = slotStartMin; existing.slotEndMin = slotEndMin;
   existing.pax  = pax;  existing.notes = (req.body.notes || '').trim();
   await existing.save();
+  email.sendBookingUpdatedEmail({ to: existing.resident_email, name: existing.resident_name, facilityName: facility.name, date, slot }).catch(() => {});
   return res.json({ success: true });
 }
 
@@ -237,6 +255,10 @@ async function cancel(req, res) {
   }
   existing.status = 'Cancelled';
   await existing.save();
+  email.sendBookingCancelledEmail({
+    to: existing.resident_email, name: existing.resident_name, facilityName: existing.facilityName,
+    date: existing.date, slot: existing.slot, reason: 'resident',
+  }).catch(() => {});
   return res.json({ success: true });
 }
 
@@ -256,6 +278,10 @@ async function confirmDeposit(req, res) {
     existing.status = 'Confirmed';
     existing.depositStatus = 'held'; // money is now actually collected
     await existing.save();
+    email.sendBookingConfirmedEmail({
+      to: existing.resident_email, name: existing.resident_name, facilityName: existing.facilityName,
+      date: existing.date, slot: existing.slot,
+    }).catch(() => {});
   } else if (existing.cancelReason === 'deposit_expired') {
     return res.status(400).json({ success: false, message: 'The 24-hour deposit window for this booking has passed and it was automatically cancelled. Please make a new booking.' });
   } else if (existing.status !== 'Confirmed') {
@@ -298,8 +324,20 @@ async function updateStage(req, res) {
     const facility = facilities.facByKey(existing.facilityKey);
     if (facility && facility.deposit) existing.depositStatus = 'held';
   }
+  const wasStatus = existing.status;
   existing.status = stage;
   await existing.save();
+  if (stage === 'Confirmed' && wasStatus === 'Deposit Pending') {
+    email.sendBookingConfirmedEmail({
+      to: existing.resident_email, name: existing.resident_name, facilityName: existing.facilityName,
+      date: existing.date, slot: existing.slot,
+    }).catch(() => {});
+  } else if (stage === 'Cancelled') {
+    email.sendBookingCancelledEmail({
+      to: existing.resident_email, name: existing.resident_name, facilityName: existing.facilityName,
+      date: existing.date, slot: existing.slot, reason: 'management',
+    }).catch(() => {});
+  }
   return res.json({ success: true, message: `Booking moved to ${stage}.`, stage });
 }
 
