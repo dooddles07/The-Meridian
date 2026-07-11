@@ -88,24 +88,6 @@ function requireResident(req, res, next) {
   next();
 }
 
-// Endpoints a resident OR a management operator may call (e.g. confirming a deposit).
-// Residents are locked to their own token identity; management is a trusted operator
-// acting on an explicit target (opportunity_id) so its request fields are left intact.
-function requireResidentOrManagement(req, res, next) {
-  const payload = _verifyBearer(req, res);
-  if (!payload) return;
-  if (payload.role === 'resident') {
-    req.user = payload;
-    _injectResidentIdentity(req, payload);
-    return next();
-  }
-  if (payload.role === 'management') {
-    req.user = payload;
-    return next();
-  }
-  return res.status(403).json({ success: false, message: 'Access denied.' });
-}
-
 function errorHandler(err, req, res, _next) {
   // Log the full stack server-side. The 5xx response body is genericised (and given
   // a reference id) by the response sanitizer; intentional 4xx messages are preserved
@@ -118,30 +100,7 @@ function errorHandler(err, req, res, _next) {
   });
 }
 
-// Audit trail for privileged actions. Records every state-changing request
-// (POST/PUT/DELETE/PATCH) after it completes — actor from the token, route, target id
-// and resulting status — to an append-only collection. Reads (GET) are skipped.
-// Non-fatal: a logging failure never affects the action.
-function auditLog(req, res, next) {
-  if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) return next();
-  res.on('finish', () => {
-    try {
-      const mongoose = require('mongoose');
-      if (mongoose.connection.readyState !== 1) return;
-      require('../models/audit.model').create({
-        actor:  (req.user && (req.user.username || req.user.email)) || 'unknown',
-        role:   (req.user && req.user.role) || 'unknown',
-        method: req.method,
-        path:   (req.originalUrl || '').split('?')[0],
-        target: (req.params && req.params.id) || '',
-        status: res.statusCode,
-      }).catch(() => {});
-    } catch { /* never block on audit logging */ }
-  });
-  next();
-}
-
 const requireManagement = requireRole('management');
 const requireGuardhouse = requireRole('guardhouse');
 
-module.exports = { requireRole, requireManagement, requireGuardhouse, requireResident, requireResidentOrManagement, auditLog, errorHandler };
+module.exports = { requireRole, requireManagement, requireGuardhouse, requireResident, errorHandler };

@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
-// Persisted resident accounts. Seeded from LUMINA_RESIDENTS on boot; their GHL
-// contact is auto-created/updated (upserted) on login and on management actions.
+// Persisted resident accounts. Seeded from LUMINA_RESIDENTS on boot.
 const residentSchema = new mongoose.Schema({
   email:          { type: String, required: true, unique: true, lowercase: true, trim: true },
   password:       { type: String, default: '' },
@@ -9,7 +8,6 @@ const residentSchema = new mongoose.Schema({
   name:           { type: String, default: '' },
   residentType:   { type: String, default: 'Resident' },
   phone:          { type: String, default: '' },
-  ghl_contact_id: { type: String, default: '' },
   active:         { type: Boolean, default: true },
   // Password reset: only the SHA-256 hash of the raw token is stored (fast hash
   // is correct here — unlike passwords, this is high-entropy random data, not

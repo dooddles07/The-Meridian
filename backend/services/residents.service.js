@@ -1,14 +1,12 @@
 const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
 const crypto   = require('crypto');
-const ghl      = require('./ghl.service');
 const Resident = require('../models/resident.model');
 const { RESIDENTS, normalizeUnit, clean } = require('../models/auth.model');
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-const UNIT_FIELD = 'local-field-unit';
 const dbReady    = () => mongoose.connection.readyState === 1;
 
 // Idempotent upsert by email — safe to reseed without duplicating accounts.
@@ -21,7 +19,7 @@ async function seed() {
       await Resident.updateOne(
         { email },
         { $setOnInsert: { email },
-          $set: { unit: r.unit || '', name: r.name || '', residentType: r.residentType || 'Resident', ghl_contact_id: r.ghl_contact_id || '', active: true } },
+          $set: { unit: r.unit || '', name: r.name || '', residentType: r.residentType || 'Resident', active: true } },
         { upsert: true }
       );
     }
@@ -74,28 +72,6 @@ async function createResident({ name, email, unit, password }) {
   }
 }
 
-// Creates/updates the GHL contact for this account and persists the id back to the DB.
-async function ensureContact(account) {
-  if (!account || !account.email || !ghl.isConfigured()) return account?.ghl_contact_id || '';
-  const parts = clean(account.name).split(/\s+/).filter(Boolean);
-  try {
-    const c = await ghl.upsertContact({
-      email:     clean(account.email),
-      firstName: parts[0] || clean(account.email),
-      lastName:  parts.slice(1).join(' '),
-      customFields: account.unit ? [{ id: UNIT_FIELD, field_value: normalizeUnit(account.unit) }] : [],
-    });
-    const id = c && c.id;
-    if (id && dbReady()) {
-      Resident.updateOne({ email: clean(account.email).toLowerCase() }, { $set: { ghl_contact_id: id } }).catch(() => {});
-    }
-    return id || account.ghl_contact_id || '';
-  } catch (e) {
-    console.warn('[residents] ensureContact failed:', e.response?.data?.message || e.message);
-    return account.ghl_contact_id || '';
-  }
-}
-
 // List all resident accounts (DB if available, else the configured seed list).
 async function listResidents() {
   if (dbReady()) {
@@ -144,6 +120,6 @@ async function resetPasswordByToken(residentDoc, newPassword) {
 }
 
 module.exports = {
-  seed, findByEmail, createResident, ensureContact, listResidents, dbReady,
+  seed, findByEmail, createResident, listResidents, dbReady,
   setResetToken, verifyResetToken, resetPasswordByToken,
 };

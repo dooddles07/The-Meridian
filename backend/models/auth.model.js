@@ -1,7 +1,7 @@
 // Account store — env-driven, no hardcoded accounts. All accounts come from the
 // environment; nothing is baked into source. Required env vars:
 //   LUMINA_MANAGEMENT  JSON: [{ "username", "password", "displayName" }]
-//   LUMINA_RESIDENTS   JSON: [{ "email", "unit", "name", "residentType", "ghl_contact_id" }]
+//   LUMINA_RESIDENTS   JSON: [{ "email", "unit", "name", "residentType" }]
 //   LUMINA_GUARDHOUSE  JSON: [{ "username", "password", "displayName" }]
 
 const bcrypt = require('bcryptjs');

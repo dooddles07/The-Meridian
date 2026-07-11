@@ -66,8 +66,7 @@ async function residentSignup(req, res) {
     return res.status(err.status || 500).json({ success: false, message: err.message || 'Unable to create account.' });
   }
 
-  // Create-or-update the GHL contact by email and persist its id, same as login.
-  account.contact_id = await residents.ensureContact(account);
+  account.contact_id = String(account._id);
   return issueResidentSession(res, account);
 }
 
@@ -80,9 +79,7 @@ async function residentLogin(req, res) {
   const matched = model.passwordMatches(account ? account.password : model.DUMMY_HASH, password);
   if (!account || !matched) return res.status(401).json({ success: false, message: 'Invalid email or password.' });
 
-  // Create-or-update the GHL contact by email and persist its id. Self-healing —
-  // a deleted/recreated contact is restored here on next login.
-  account.contact_id = await residents.ensureContact(account);
+  account.contact_id = String(account._id);
   return issueResidentSession(res, account);
 }
 
@@ -115,7 +112,7 @@ async function resetPassword(req, res) {
     return res.status(400).json({ success: false, message: 'This reset link is invalid or has expired. Please request a new one.' });
   }
   const account = await residents.resetPasswordByToken(residentDoc, password);
-  account.contact_id = await residents.ensureContact(account);
+  account.contact_id = String(account._id);
   return issueResidentSession(res, account);
 }
 

@@ -1,5 +1,5 @@
 // Thin Resend REST client — one place for the API key + sender so callers never
-// touch HTTP directly. Follows the same shape as ghl.service.js.
+// touch HTTP directly.
 
 const axios = require('axios');
 
@@ -22,8 +22,7 @@ async function sendEmail({ to, subject, html }) {
 }
 
 // Degrades gracefully when unconfigured: logs the link instead of throwing, so
-// local dev works without a real Resend key (mirrors ghl.service.js's isConfigured
-// gate elsewhere in this codebase).
+// local dev works without a real Resend key.
 async function sendPasswordResetEmail({ to, name, resetUrl }) {
   if (!isConfigured()) {
     console.log(`[email] RESEND_API_KEY not set — reset link (dev only): ${resetUrl}`);
