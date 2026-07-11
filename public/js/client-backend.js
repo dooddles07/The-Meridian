@@ -29,9 +29,8 @@
   var PREVIEW_RESIDENT   = { email: 'alex.tan@preview.thelumina.app', password: 'LuminaPreview2026!' };
   var PREVIEW_MANAGEMENT = { username: 'admin', password: 'hBJSjqnm7OrqAa1!' };
 
-  // Resident and management logins share one session cookie name, so establishing
-  // both in the background on the same page load would let one silently overwrite
-  // the other. Scope each real login to the one portal page that actually needs it.
+  // Each role has its own real login (and its own session cookie name), so only
+  // establish the real background session for the portal page actually being viewed.
   var PATH = location.pathname;
   var onResidentPortal   = PATH.indexOf('portal.html') !== -1;
   var onManagementPortal = PATH.indexOf('management.html') !== -1;
@@ -141,22 +140,12 @@
         pay('BBQ Pit - refundable deposit', 200, 'Deposit', 'paid',    'DEP-BBQ001', 'local-opp-bbq',  '', me),
         pay('Move-In - admin fee + deposit', 2200, 'Deposit', 'paid',   'DEP-MOV001', 'local-opp-move', '', me),
       ],
-      announcements: [
-        ann('Scheduled Water Tank Cleaning', 'Water supply will be interrupted on the maintenance date below. Please store water in advance.', 'Maintenance', { pinned: true, eventAt: daysFromNow(4) + 'T09:00:00+08:00', eventEndAt: daysFromNow(4) + 'T14:00:00+08:00', blocked_facilities: ['pool'] }),
-        ann('Annual General Meeting 2026', 'All residents are invited to the AGM at the function room. Please RSVP so we can plan seating.', 'Event', { rsvp_enabled: true, eventAt: daysFromNow(14) + 'T19:30:00+08:00', event_venue: 'Function Room' }),
-        ann('New Recycling Guidelines', 'Updated recycling bin locations and sorting rules are now in effect across all blocks.', 'General', {}),
-      ],
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
         convo(me, [
           { sender: 'resident',   sender_name: 'Alex Tan',   body: 'Hi, could you confirm the visitor parking rules for weekends?', minsAgo: 180 },
           { sender: 'management', sender_name: 'Management', body: 'Hello Alex - weekend visitor parking is free up to 4 hours at lots V1 - V8. Just register the vehicle at the guardhouse.', minsAgo: 120 },
         ], false),
-      ],
-      resources: [
-        resource('House Rules & By-Laws', 'Policies', 'house-rules.txt', 'text/plain'),
-        resource('Facility Booking Guide', 'Guides', 'facility-guide.txt', 'text/plain'),
-        resource('Fire Evacuation Plan', 'Safety', 'evacuation-plan.txt', 'text/plain'),
       ],
       guardLog: [],
     };
@@ -184,21 +173,12 @@
     function pay(desc, amount, category, status, ref, oppId, fee, m) {
       return { id: uid('local-pay'), description: desc, amount: amount, currency: 'SGD', category: category, status: status, reference: ref, opportunity_id: oppId, fee_label: fee, resident_unit: m.unit, resident_email: m.email, paid_at: status === 'paid' ? nowISO() : null, due_at: null, createdAt: nowISO() };
     }
-    function ann(title, body, category, opt) {
-      opt = opt || {};
-      return { id: uid('local-ann'), title: title, body: body, category: category, eventAt: opt.eventAt || null, eventEndAt: opt.eventEndAt || null, pinned: !!opt.pinned, rsvp_enabled: !!opt.rsvp_enabled, blocked_facilities: opt.blocked_facilities || [], event_venue: opt.event_venue || '', createdAt: nowISO() };
-    }
     function convo(m, msgs, resolved) {
       var messages = msgs.map(function (x) {
         return { id: uid('local-msg'), sender: x.sender, sender_name: x.sender_name, body: x.body, createdAt: new Date(Date.now() - x.minsAgo * 60000).toISOString() };
       });
       var last = messages[messages.length - 1];
       return { id: uid('local-convo'), contact_id: m.contact_id, resident_name: m.name, resident_unit: m.unit, resident_email: m.email, last_message_at: last.createdAt, last_message_preview: last.body.slice(0, 80), last_sender: last.sender, unread_management: 0, unread_resident: 0, resolved: !!resolved, messages: messages };
-    }
-    function resource(title, category, fileName, fileType) {
-      var text = 'The Lumina · ' + title + '\n\nThis is a sample document included with this portfolio build.';
-      var data = 'data:' + fileType + ';base64,' + btoa(unescape(encodeURIComponent(text)));
-      return { id: uid('local-res'), title: title, category: category, visibility: 'residents', file_data: data, file_name: fileName, file_type: fileType, file_size: text.length, uploaded_by: 'Management', createdAt: nowISO() };
     }
   }
 
@@ -290,9 +270,7 @@
       return ok({ items: items, total: items.length });
     }
 
-    // ANNOUNCEMENTS / RSVP / MESSAGES (resident)
-    if (p === '/api/announcements') return ok({ announcements: db.announcements });
-
+    // RSVP / MESSAGES (resident) — announcements themselves are real (see isRealPath)
     if (p === '/api/rsvp' && method === 'POST') {
       var aId = body.announcement_id, cId = body.contact_id || MEMBER.contact_id;
       db.rsvps[aId] = db.rsvps[aId] || {};
@@ -369,13 +347,6 @@
     if (p === '/api/feedback/mine') return ok({ items: db.feedback.map(function (x) { return { type: x.type, category: x.category, desc: x.desc, incident_date: x.incident_date, incident_time: x.incident_time, ts: x.ts }; }) });
     if (p === '/api/move/mine')     return ok({ items: db.moves.map(function (x) { return { move_type: x.move_type, move_date: x.move_date, move_time: x.move_time, notes: x.notes, ts: x.ts }; }) });
     if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
-
-    // RESOURCES (resident)
-    if (p === '/api/resources') return ok({ resources: db.resources.map(stripFile) });
-    if ((m = p.match(/^\/api\/resources\/([^/]+)\/download$/)) && method === 'GET') {
-      var rr = db.resources.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-      return rr ? ok({ file_data: rr.file_data, file_name: rr.file_name, file_type: rr.file_type }) : J({ success: false, message: 'Not found.' }, 404);
-    }
 
     // GUARDHOUSE
     if (p === '/api/guardhouse/lookup') {
@@ -463,21 +434,6 @@
     }
     if (p === '/api/management/payments') return ok({ payments: db.payments });
 
-    if (p === '/api/management/announcements' && method === 'GET') return ok({ announcements: db.announcements });
-    if (p === '/api/management/announcements' && method === 'POST') {
-      var a = { id: uid('local-ann'), title: body.title, body: body.body, category: body.category || 'General', eventAt: body.eventAt || null, eventEndAt: body.eventEndAt || null, pinned: !!body.pinned, rsvp_enabled: !!body.rsvp_enabled, blocked_facilities: body.blocked_facilities || [], event_venue: body.event_venue || '', createdAt: nowISO() };
-      db.announcements.unshift(a); persist();
-      return ok({ announcement: a });
-    }
-    if ((m = p.match(/^\/api\/management\/announcements\/([^/]+)$/)) && method === 'DELETE') {
-      db.announcements = db.announcements.filter(function (x) { return x.id !== decodeURIComponent(m[1]); }); persist();
-      return ok();
-    }
-    if ((m = p.match(/^\/api\/management\/announcements\/([^/]+)$/)) && method === 'PATCH') {
-      var a2 = db.announcements.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-      if (a2) { a2.pinned = !!body.pinned; persist(); }
-      return ok({ announcement: a2 });
-    }
     if ((m = p.match(/^\/api\/management\/rsvp\/([^/]+)$/)) && method === 'GET') {
       var aId2 = decodeURIComponent(m[1]);
       var resp = db.rsvps[aId2] ? Object.keys(db.rsvps[aId2]).map(function (k) { var v = db.rsvps[aId2][k]; return { resident_name: v.resident_name, resident_unit: v.resident_unit, response: v.response, attendee_count: v.attendee_count, updatedAt: v.updatedAt }; }) : [];
@@ -515,21 +471,6 @@
       db.conversations.unshift(nc); persist();
       return ok({ message: nc.messages[0], conversation_id: nc.id });
     }
-    if (p === '/api/management/resources' && method === 'GET') return ok({ resources: db.resources.map(stripFile) });
-    if ((m = p.match(/^\/api\/management\/resources\/([^/]+)\/download$/)) && method === 'GET') {
-      var mr = db.resources.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-      return mr ? ok({ file_data: mr.file_data, file_name: mr.file_name, file_type: mr.file_type }) : J({ success: false, message: 'Not found.' }, 404);
-    }
-    if (p === '/api/management/resources' && method === 'POST') {
-      var nr = { id: uid('local-res'), title: body.title, category: body.category || 'General', visibility: body.visibility || 'residents', file_data: body.file_data || '', file_name: body.file_name || '', file_type: body.file_type || '', file_size: body.file_size || 0, uploaded_by: 'Management', createdAt: nowISO() };
-      db.resources.unshift(nr); persist();
-      return ok({ resource: stripFile(nr) });
-    }
-    if ((m = p.match(/^\/api\/management\/resources\/([^/]+)$/)) && method === 'DELETE') {
-      db.resources = db.resources.filter(function (x) { return x.id !== decodeURIComponent(m[1]); }); persist();
-      return ok();
-    }
-
     // Fallback
     console.warn('[client-backend] unhandled route:', method, p);
     return J({ success: true, items: [], message: 'Not implemented.' }, 200);
@@ -538,7 +479,6 @@
   function convoMeta(c) {
     return { id: c.id, contact_id: c.contact_id, resident_name: c.resident_name, resident_unit: c.resident_unit, resident_email: c.resident_email, last_message_at: c.last_message_at, last_message_preview: c.last_message_preview, last_sender: c.last_sender, unread_management: c.unread_management, unread_resident: c.unread_resident, resolved: c.resolved };
   }
-  function stripFile(r) { return { id: r.id, title: r.title, category: r.category, visibility: r.visibility, file_name: r.file_name, file_type: r.file_type, file_size: r.file_size, uploaded_by: r.uploaded_by, createdAt: r.createdAt }; }
   function fmtLog(e) {
     return { id: String(e._id), cat: e.cat, key: e.key, type: e.type, label: e.label, name: e.name, meta: e.meta, time: new Date(e.updatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) };
   }
