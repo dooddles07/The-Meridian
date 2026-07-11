@@ -2696,7 +2696,7 @@
                 <span class="res-item-meta">${d.file_size ? _fmtSize(d.file_size) + ' · ' : ''}Updated ${esc(_resDate(d.createdAt))}</span>
               </div>
               <div class="res-item-actions">
-                <button class="res-view-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="View ${esc(d.title)}" title="View">
+                <button class="res-view-btn" data-res-id="${esc(d.id)}" data-title="${esc(d.title)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="View ${esc(d.title)}" title="View">
                   <span class="material-symbols-outlined">visibility</span>
                 </button>
                 <button class="res-download-btn" data-res-id="${esc(d.id)}" data-file-name="${esc(d.file_name)}" data-file-type="${esc(d.file_type)}" aria-label="Download ${esc(d.title)}">
@@ -2714,7 +2714,7 @@
       btn.addEventListener('click', () => _downloadResource(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
     });
     container.querySelectorAll('.res-view-btn').forEach(btn => {
-      btn.addEventListener('click', () => _viewResource(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
+      btn.addEventListener('click', () => _viewResource(btn.dataset.resId, btn.dataset.title, btn.dataset.fileName, btn.dataset.fileType, btn));
     });
   }
 
@@ -2741,12 +2741,10 @@
     }
   }
 
-  // Opens the document in a new tab using the browser's native PDF/image viewer
-  // instead of forcing a download. The tab is opened synchronously (before the
-  // async fetch) so popup blockers see it as a direct response to the click.
-  async function _viewResource(id, fileName, fileType, btn) {
+  // Opens the document in an in-page modal (not a new tab) using an iframe -
+  // the browser's native PDF/image viewer renders inside it either way.
+  async function _viewResource(id, title, fileName, fileType, btn) {
     if (!btn) return;
-    const placeholder = window.open('', '_blank');
     const orig = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
@@ -2755,16 +2753,41 @@
       const data = await res.json();
       if (!data.success || !data.file_data) throw new Error(data.message || 'Could not open document.');
       const blobUrl = _dataUrlToBlobUrl(data.file_data, data.file_type || fileType);
-      if (placeholder) placeholder.location.href = blobUrl;
-      else window.open(blobUrl, '_blank');
+      _openPreviewModal(blobUrl, title || fileName);
     } catch (err) {
-      if (placeholder) placeholder.close();
       toast('Could not open document: ' + err.message, 'err');
     } finally {
       btn.disabled = false;
       btn.innerHTML = orig;
     }
   }
+
+  let _previewBlobUrl = null;
+  function _openPreviewModal(blobUrl, title) {
+    const modal = $('resPreviewModal');
+    const frame = $('resPreviewFrame');
+    if (!modal || !frame) return;
+    if (_previewBlobUrl) URL.revokeObjectURL(_previewBlobUrl);
+    _previewBlobUrl = blobUrl;
+    frame.src = blobUrl;
+    const titleEl = $('resPreviewTitle');
+    if (titleEl) titleEl.textContent = title || 'Document';
+    modal.classList.add('open');
+  }
+  function _closePreviewModal() {
+    const modal = $('resPreviewModal');
+    const frame = $('resPreviewFrame');
+    if (modal) modal.classList.remove('open');
+    if (frame) frame.src = 'about:blank';
+    if (_previewBlobUrl) { URL.revokeObjectURL(_previewBlobUrl); _previewBlobUrl = null; }
+  }
+  (() => {
+    const modal = $('resPreviewModal');
+    if (!modal) return;
+    bind('resPreviewClose', _closePreviewModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) _closePreviewModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) _closePreviewModal(); });
+  })();
 
   function _dataUrlToBlobUrl(dataUrl, fallbackMime) {
     const comma = dataUrl.indexOf(',');

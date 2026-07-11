@@ -61,6 +61,16 @@
 .modal-body { flex: 1; overflow-y: auto; }
 .modal-body iframe { width: 100%; min-height: clamp(360px, 70vh, 600px); border: none; display: block; }
 
+/* Document preview modal - wider/taller than the default modal-box since it's
+   showing a full page of a PDF, not a short form. */
+.modal-box--preview { max-width: 900px; width: 94vw; max-height: 94vh; }
+.modal-box--preview .modal-body { padding: 0; }
+.modal-box--preview .modal-body iframe { min-height: 0; height: 80vh; }
+@media (max-width: 640px) {
+  .modal-box--preview { max-height: 96vh; }
+  .modal-box--preview .modal-body iframe { height: 78vh; }
+}
+
 /* In-modal Booking Form */
 .bk { display: flex; flex-direction: column; }
 .bk-banner {

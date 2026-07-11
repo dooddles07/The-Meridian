@@ -28,6 +28,10 @@ app.use(helmet({
       styleSrc:       ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
       fontSrc:        ["'self'", 'data:', 'https://fonts.gstatic.com'],
       imgSrc:         ["'self'", 'data:', 'blob:', 'https://api.qrserver.com'],
+      // Lets the resource-preview modal frame a blob: URL (the downloaded
+      // file rendered as a PDF/image) - without this, defaultSrc's 'self'
+      // silently blocks it and the iframe just shows a broken-document icon.
+      frameSrc:       ["'self'", 'blob:'],
       objectSrc:      ["'none'"],
       baseUri:        ["'self'"],
       frameAncestors: ["'none'"],

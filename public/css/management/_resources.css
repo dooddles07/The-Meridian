@@ -1,3 +1,56 @@
+/* Document preview modal - reuses the shared .modal-overlay open/close
+   mechanism (see _modal.css) with its own box, since the existing
+   .stage-modal-box is sized/styled for a short option list, not a document. */
+.res-preview-modal-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  width: 94vw;
+  max-width: 900px;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.res-preview-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.res-preview-modal-title {
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text);
+}
+.res-preview-modal-close {
+  background: none;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  color: var(--muted);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.res-preview-modal-close:hover { border-color: var(--red); color: var(--red); }
+.res-preview-modal-body { flex: 1; overflow: hidden; }
+.res-preview-modal-body iframe { width: 100%; height: 80vh; border: none; display: block; }
+@media (max-width: 640px) {
+  .res-preview-modal-box { max-height: 96vh; }
+  .res-preview-modal-body iframe { height: 78vh; }
+}
+
 .res-upload-panel { margin-bottom: 0.25rem; }
 
 .res-upload-body { padding: 16px; }

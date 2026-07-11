@@ -1811,7 +1811,7 @@
           <span class="res-item-meta">${_resEsc(d.category)} · ${_resEsc(d.file_name)}${d.file_size ? ' · ' + _resFmtSize(d.file_size) : ''}${d.createdAt ? ' · Uploaded ' + _resFmtDate(d.createdAt) : ''}</span>
         </div>
         <div class="res-item-actions">
-          <button class="res-view-btn" data-res-id="${_resEsc(d.id)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="View">
+          <button class="res-view-btn" data-res-id="${_resEsc(d.id)}" data-title="${_resEsc(d.title)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="View">
             <span class="material-symbols-outlined">visibility</span>
           </button>
           <button class="res-dl-btn" data-res-id="${_resEsc(d.id)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="Download">
@@ -1832,7 +1832,7 @@
       });
     });
     el.querySelectorAll('.res-view-btn').forEach(btn => {
-      btn.addEventListener('click', () => _resMgmtView(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
+      btn.addEventListener('click', () => _resMgmtView(btn.dataset.resId, btn.dataset.title, btn.dataset.fileName, btn.dataset.fileType, btn));
     });
     el.querySelectorAll('.res-dl-btn').forEach(btn => {
       btn.addEventListener('click', () => _resMgmtDownload(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
@@ -1904,11 +1904,9 @@
     }
   }
 
-  // Opens in a new tab via the browser's native viewer instead of forcing a
-  // download. Tab is opened synchronously (before the async fetch) so popup
-  // blockers see it as a direct response to the click.
-  async function _resMgmtView(id, fileName, fileType, btn) {
-    const placeholder = window.open('', '_blank');
+  // Opens the document in an in-page modal (not a new tab) using an iframe -
+  // the browser's native PDF/image viewer renders inside it either way.
+  async function _resMgmtView(id, title, fileName, fileType, btn) {
     const orig = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
@@ -1917,16 +1915,41 @@
       const data = await res.json();
       if (!data.success || !data.file_data) throw new Error(data.message || 'Could not open document.');
       const blobUrl = _resDataUrlToBlobUrl(data.file_data, data.file_type || fileType);
-      if (placeholder) placeholder.location.href = blobUrl;
-      else window.open(blobUrl, '_blank');
+      _openResPreviewModal(blobUrl, title || fileName);
     } catch (err) {
-      if (placeholder) placeholder.close();
       toast('Could not open document: ' + err.message, true);
     } finally {
       btn.disabled = false;
       btn.innerHTML = orig;
     }
   }
+
+  let _resPreviewBlobUrl = null;
+  function _openResPreviewModal(blobUrl, title) {
+    const modal = $('resPreviewModal');
+    const frame = $('resPreviewFrame');
+    if (!modal || !frame) return;
+    if (_resPreviewBlobUrl) URL.revokeObjectURL(_resPreviewBlobUrl);
+    _resPreviewBlobUrl = blobUrl;
+    frame.src = blobUrl;
+    const titleEl = $('resPreviewTitle');
+    if (titleEl) titleEl.textContent = title || 'Document';
+    modal.classList.add('open');
+  }
+  function _closeResPreviewModal() {
+    const modal = $('resPreviewModal');
+    const frame = $('resPreviewFrame');
+    if (modal) modal.classList.remove('open');
+    if (frame) frame.src = 'about:blank';
+    if (_resPreviewBlobUrl) { URL.revokeObjectURL(_resPreviewBlobUrl); _resPreviewBlobUrl = null; }
+  }
+  (() => {
+    const modal = $('resPreviewModal');
+    if (!modal) return;
+    bind('resPreviewClose', _closeResPreviewModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) _closeResPreviewModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) _closeResPreviewModal(); });
+  })();
 
   function _resDataUrlToBlobUrl(dataUrl, fallbackMime) {
     const comma = dataUrl.indexOf(',');
