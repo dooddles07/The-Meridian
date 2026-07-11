@@ -258,6 +258,9 @@
     panelRegister.hidden = name !== 'register';
     panelForgot.hidden   = name !== 'forgot';
     panelReset.hidden    = name !== 'reset';
+    // Cleared on every switch - doResetPassword() re-shows it right after
+    // calling showPanel('signin'), so it only ever appears in that one case.
+    $('loginSuccessMsg').hidden = true;
 
     // The tab bar only represents Sign In vs Register - forgot/reset are
     // sub-flows, so the tabs (and their aria-selected state) hide entirely
@@ -449,14 +452,16 @@
         $('resetBackToSignInLink').hidden = false;
         return;
       }
-      member = data.member;
-      _authExpiredHandled = false;
-      try { localStorage.removeItem('lumina_signed_out'); } catch {}
-      sessionStorage.setItem(SESS, JSON.stringify(member));
-      localStorage.setItem(SESS, JSON.stringify(member));
+      // Deliberately NOT auto-logging in here - land back on Sign In so the
+      // resident actually tests their new password, rather than trusting a
+      // session that was only ever proven by possessing the emailed link.
       // Drop the token from the URL so refreshing or re-sharing the link can't replay it.
       history.replaceState({}, '', location.pathname);
-      bootPortal();
+      showPanel('signin');
+      $('loginEmail').value = data.member.email;
+      $('loginSuccessMsg').textContent = 'Password updated. Sign in with your new password.';
+      $('loginSuccessMsg').hidden = false;
+      $('loginPassword').focus();
     } catch {
       errEl.textContent = 'Connection error. Please try again.';
     } finally {

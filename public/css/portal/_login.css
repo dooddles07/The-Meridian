@@ -147,6 +147,15 @@
 [data-theme="dark"] .btn-login { background: var(--gold); color: #0c0b09; }
 [data-theme="dark"] .btn-login:hover { background: var(--gold-dk); }
 .login-err { font-size: 0.8125rem; color: var(--red); min-height: 20px; margin-top: 8px; }
+.login-success {
+  font-size: 0.8125rem;
+  color: var(--green);
+  background: rgba(31,107,69,0.08);
+  border: 1px solid rgba(31,107,69,0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 16px;
+}
 
 /* Small text-link affordances: "Forgot password?" under a field, "Back to Sign
    In" links below a sub-flow's submit button. Buttons styled as links (not
