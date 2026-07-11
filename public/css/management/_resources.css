@@ -66,9 +66,17 @@
   background: color-mix(in srgb, var(--gold) 10%, var(--surface-2));
 }
 
+.res-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 1.2rem 0;
+}
+
 .res-search {
   position: relative;
-  margin: 1.2rem 0;
+  flex: 1;
+  min-width: 0;
 }
 .res-search-icon {
   position: absolute;
@@ -93,6 +101,29 @@
 }
 .res-search input:focus { border-color: var(--gold); }
 
+.res-select-toggle-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.res-select-toggle-btn:hover:not(.res-select-toggle-btn--active) { border-color: var(--gold); color: var(--gold); }
+.res-select-toggle-btn .material-symbols-outlined { font-size: 1.0625rem; }
+.res-select-toggle-btn--active {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: #0c0b09;
+}
+
 .res-bulk-bar {
   display: flex;
   align-items: center;
@@ -105,6 +136,10 @@
   font-size: 0.8125rem;
   color: var(--text);
 }
+/* The [hidden] attribute alone loses to the display:flex rule above (same
+   specificity, this rule comes later in the cascade) - without this, setting
+   el.hidden = true in JS silently has no visual effect. */
+.res-bulk-bar[hidden] { display: none; }
 .res-bulk-delete-btn {
   margin-left: auto;
   display: inline-flex;

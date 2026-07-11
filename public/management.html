@@ -504,14 +504,19 @@
           </div>
         </div>
 
-        <div class="res-search">
-          <span class="material-symbols-outlined res-search-icon">search</span>
-          <input type="text" id="resSearchInput" placeholder="Search documents…" autocomplete="off" />
+        <div class="res-toolbar">
+          <div class="res-search">
+            <span class="material-symbols-outlined res-search-icon">search</span>
+            <input type="text" id="resSearchInput" placeholder="Search documents…" autocomplete="off" />
+          </div>
+          <button class="res-select-toggle-btn" id="resSelectToggleBtn" type="button">
+            <span class="material-symbols-outlined">checklist</span> Select
+          </button>
         </div>
 
         <div class="res-bulk-bar" id="resBulkBar" hidden>
           <span id="resBulkCount">0 selected</span>
-          <button class="res-bulk-delete-btn" id="resBulkDeleteBtn">
+          <button class="res-bulk-delete-btn" id="resBulkDeleteBtn" disabled>
             <span class="material-symbols-outlined">delete</span> Delete Selected
           </button>
           <button class="res-bulk-cancel-btn" id="resBulkCancelBtn">Cancel</button>

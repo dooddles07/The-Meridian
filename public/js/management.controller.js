@@ -1765,14 +1765,32 @@
   const RES_NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // "NEW" badge for docs published in the last 7 days
   let _mgmtAllDocs = [];
   const _resSelected = new Set();
+  let _selectMode = false;
 
   function _updateBulkBar() {
     const bar = $('resBulkBar');
-    if (!bar) return;
-    if (_resSelected.size === 0) { bar.hidden = true; return; }
-    bar.hidden = false;
+    if (bar) bar.hidden = !_selectMode;
     const countEl = $('resBulkCount');
     if (countEl) countEl.textContent = `${_resSelected.size} selected`;
+    const delBtn = $('resBulkDeleteBtn');
+    if (delBtn) delBtn.disabled = _resSelected.size === 0;
+    const toggleBtn = $('resSelectToggleBtn');
+    if (toggleBtn) toggleBtn.classList.toggle('res-select-toggle-btn--active', _selectMode);
+  }
+
+  // Select mode is off by default - checkboxes and the bulk bar only appear
+  // once the user deliberately opts in via the "Select" button, instead of
+  // cluttering every row unconditionally.
+  function _setSelectMode(on) {
+    _selectMode = on;
+    if (!on) _resSelected.clear();
+    _updateBulkBar();
+    _renderMgmtResources($('resSearchInput')?.value || '');
+  }
+
+  const resSelectToggleBtn = $('resSelectToggleBtn');
+  if (resSelectToggleBtn) {
+    resSelectToggleBtn.addEventListener('click', () => _setSelectMode(!_selectMode));
   }
 
   function _renderResList(containerId, docs) {
@@ -1786,7 +1804,7 @@
       const isNew = d.createdAt && (Date.now() - new Date(d.createdAt).getTime()) < RES_NEW_WINDOW_MS;
       return `
       <div class="res-item" data-res-id="${_resEsc(d.id)}">
-        <input type="checkbox" class="res-select-cb" data-res-id="${_resEsc(d.id)}" ${_resSelected.has(d.id) ? 'checked' : ''} aria-label="Select ${_resEsc(d.title)}" />
+        ${_selectMode ? `<input type="checkbox" class="res-select-cb" data-res-id="${_resEsc(d.id)}" ${_resSelected.has(d.id) ? 'checked' : ''} aria-label="Select ${_resEsc(d.title)}" />` : ''}
         <span class="material-symbols-outlined res-item-icon">${_resEsc(RES_CAT_ICONS[d.category] || 'description')}</span>
         <div class="res-item-info">
           <span class="res-item-title">${_resEsc(d.title)}${isNew ? '<span class="res-new-badge">New</span>' : ''}</span>
@@ -1963,7 +1981,7 @@
         })));
         const failed = results.filter(r => r.status === 'rejected').length;
         toast(failed ? `Deleted ${ids.length - failed} of ${ids.length}; ${failed} failed.` : `${ids.length} document${ids.length > 1 ? 's' : ''} deleted.`, !!failed);
-        _resSelected.clear();
+        _setSelectMode(false);
         loadMgmtResources();
       } catch (err) {
         toast(err.message, true);
@@ -1974,11 +1992,7 @@
   }
   const resBulkCancelBtn = $('resBulkCancelBtn');
   if (resBulkCancelBtn) {
-    resBulkCancelBtn.addEventListener('click', () => {
-      _resSelected.clear();
-      _updateBulkBar();
-      _renderMgmtResources($('resSearchInput')?.value || '');
-    });
+    resBulkCancelBtn.addEventListener('click', () => _setSelectMode(false));
   }
 
   // File input preview + drag-and-drop
