@@ -87,7 +87,6 @@
     facility: 'local-pipeline-facility', guest: 'local-pipeline-guest', parcel: 'local-pipeline-parcel',
     defect: 'local-pipeline-defect', feedback: 'local-pipeline-feedback', move: 'local-pipeline-move',
   };
-  var DEPOSIT_FACILITIES = { bbq: true, pool: true, verandah: true };
 
   // Store
   var DB_KEY = 'lumina_db_v2';
@@ -111,11 +110,6 @@
         { name: 'Priya Nair', unit: '05-11', email: 'priya.nair@example.com', phone: '+65 9222 1188', type: 'Owner', ghlLinked: true, contact_id: 'local-contact-2' },
         { name: 'Marcus Lee', unit: '18-02', email: 'marcus.lee@example.com', phone: '+65 9777 4321', type: 'Tenant', ghlLinked: true, contact_id: 'local-contact-3' },
         { name: 'Sofia Reyes', unit: '09-14', email: 'sofia.reyes@example.com', phone: '+65 9345 8890', type: 'Owner', ghlLinked: false, contact_id: 'local-contact-4' },
-      ],
-      bookings: [
-        row('Confirmed',      'pool',   'Swimming Pool', '🏊', me, daysFromNow(2),  '9:00 AM - 10:00 AM', 2, ''),
-        row('Deposit Pending','bbq',    'BBQ Pit',       '🍖', me, daysFromNow(5),  '6:00 PM - 8:00 PM',  8, 'Family gathering'),
-        row('Completed',      'tennis', 'Tennis Court',  '🎾', me, daysFromNow(-6), '7:00 AM - 8:00 AM',  2, ''),
       ],
       guests: [
         guest('Jane Lim',   'jane.lim@example.com',   '+65 9800 1122', 'Family & Friends', daysFromNow(1), 'Registered',  me),
@@ -151,10 +145,6 @@
     };
     return d;
 
-    function row(status, key, name, emoji, m, date, slot, pax, notes) {
-      var id = uid('local-appt');
-      return { id: id, facilityKey: key, facility: name, facilityName: name, emoji: emoji, resident: m.name, unit: m.unit, pax: pax, date: date, slot: slot, notes: notes, status: status, stage: status, oppId: uid('local-opp'), contactId: m.contact_id };
-    }
     function guest(visitor, email, phone, type, date, stage, m) {
       return { oppId: uid('local-opp'), contactId: m.contact_id, reference: guestRef(date), visitor: visitor, visitorEmail: email, visitorPhone: phone, visitorType: type, host: m.name, unit: m.unit, phone: phone, visitDate: date, duration: 'Single Visit (Day)', stage: stage, createdAt: nowISO() };
     }
@@ -231,38 +221,6 @@
     }
     if (p === '/api/pipelines/verify') return ok({ allOk: true, report: {} });
 
-    // BOOKING
-    if (p === '/api/booking/availability') return ok({ busy: [] });
-    if (p === '/api/booking/opp-stage')    return ok({ stage: 'Confirmed' });
-    if (p === '/api/booking/mine') {
-      var mine = db.bookings;
-      var statuses = {}; mine.forEach(function (b) { statuses[b.id] = b.status; });
-      return ok({ items: mine, statuses: statuses, stages: STAGES.facility });
-    }
-    if (p === '/api/booking' && method === 'POST') {
-      var fk = body.facilityKey;
-      var status = DEPOSIT_FACILITIES[fk] ? 'Deposit Pending' : 'Confirmed';
-      var id = uid('local-appt');
-      db.bookings.push({
-        id: id, facilityKey: fk, facility: body.facilityName || fk, facilityName: body.facilityName || fk,
-        emoji: body.emoji || '', resident: body.member_name || MEMBER.name, unit: body.member_unit || MEMBER.unit,
-        pax: body.pax || 1, date: body.date, slot: body.slot, notes: body.notes || '', status: status, stage: status,
-        oppId: uid('local-opp'), contactId: body.contact_id || MEMBER.contact_id,
-      });
-      persist();
-      return ok({ message: 'Booking confirmed.', appointmentId: id, calendarId: 'local-cal-' + fk, pipelineConnected: true });
-    }
-    if ((m = p.match(/^\/api\/booking\/([^/]+)$/)) && method === 'PUT') {
-      var b1 = db.bookings.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-      if (b1) { b1.date = body.date || b1.date; b1.slot = body.slot || b1.slot; b1.pax = body.pax || b1.pax; b1.notes = body.notes != null ? body.notes : b1.notes; persist(); }
-      return ok({ message: 'Booking updated.' });
-    }
-    if ((m = p.match(/^\/api\/booking\/([^/]+)$/)) && method === 'DELETE') {
-      var b2 = db.bookings.find(function (x) { return x.id === decodeURIComponent(m[1]); });
-      if (b2) { b2.status = 'Cancelled'; b2.stage = 'Cancelled'; persist(); }
-      return ok({ message: 'Booking cancelled.', mongoCancelled: true, oppMoved: true, apptCancelled: true });
-    }
-
     // OPPORTUNITIES (resident "My …")
     if (p === '/api/opportunities') {
       var kind = qs.get('pipeline') || 'guest';
@@ -302,10 +260,11 @@
     // PAYMENTS
     if (p === '/api/payments/mine') return ok({ payments: db.payments });
     if (p === '/api/payments/pay-deposit' && method === 'POST') {
-      var amt = body.fee_amount || (body.facility_key === 'verandah' ? 600 : body.pipeline === 'move' ? 2200 : 200);
-      // Confirm the matching booking (by oppId) so the resident + management see it move.
-      var bk = db.bookings.find(function (x) { return x.oppId === body.opportunity_id; }) || db.bookings.find(function (x) { return DEPOSIT_FACILITIES[x.facilityKey] && x.status === 'Deposit Pending'; });
-      if (bk) { bk.status = 'Confirmed'; bk.stage = 'Confirmed'; }
+      // Facility bookings are real now (see isRealPath) - the caller also hits the
+      // real /api/booking/:id/confirm-deposit or /api/management/bookings/:id/stage
+      // to actually flip the booking's status. This mock only still owns the
+      // Move-In/Out deposit path and the payment-history record for both.
+      var amt = body.fee_amount || (body.pipeline === 'move' ? 2200 : 200);
       db.payments.unshift({ id: uid('local-pay'), description: body.description || 'Booking deposit', amount: amt, currency: 'SGD', category: 'Deposit', status: 'paid', reference: 'DEP-' + String(body.opportunity_id || uid('')).slice(-6).toUpperCase(), opportunity_id: body.opportunity_id || '', fee_label: body.fee_label || '', resident_unit: body.unit || MEMBER.unit, resident_email: (body.email || MEMBER.email), paid_at: nowISO(), due_at: null, createdAt: nowISO() });
       persist();
       return ok({ message: 'Deposit paid - your booking is now confirmed.', amount: amt, stage: 'Confirmed' });
@@ -425,13 +384,6 @@
       return ok({ message: 'Moved to ' + body.stage + '.', stage: body.stage });
     }
     if (p === '/api/management/residents') return ok({ residents: db.residents.map(function (r) { return { name: r.name, unit: r.unit, email: r.email, phone: r.phone, type: r.type, ghlLinked: r.ghlLinked }; }), total: db.residents.length });
-    if (p === '/api/management/bookings' && method === 'GET') return ok({ items: db.bookings, total: db.bookings.length, stages: STAGES.facility });
-    if ((m = p.match(/^\/api\/management\/bookings\/([^/]+)\/stage$/)) && method === 'PUT') {
-      var bId = decodeURIComponent(m[1]);
-      var bk2 = db.bookings.find(function (x) { return x.oppId === bId || x.id === bId; });
-      if (bk2) { bk2.status = body.stage; bk2.stage = body.stage; persist(); }
-      return ok({ message: 'Booking moved to ' + body.stage + '.', stage: body.stage });
-    }
     if (p === '/api/management/payments') return ok({ payments: db.payments });
 
     if ((m = p.match(/^\/api\/management\/rsvp\/([^/]+)$/)) && method === 'GET') {
@@ -484,14 +436,15 @@
   }
 
   // fetch override — resident signup/login, management/guardhouse login,
-  // logout, the resources library, and announcements (both resident and
-  // management sides of each) are all real (Mongo-backed, via the reference
-  // backend deployed on Railway), so those paths pass through untouched
-  // (logout MUST reach the real network - it's what actually clears the
-  // httpOnly session cookie server-side; the mock can't do that). Everything
-  // else stays mocked: those other resident/management/guardhouse data views
-  // were built against a real CRM (GoHighLevel) that isn't configured here,
-  // so they'd just 503 against the real backend — the mock keeps them working.
+  // logout, the resources library, announcements, and facility bookings (both
+  // resident and management sides of each) are all real (Mongo-backed, via the
+  // reference backend deployed on Railway), so those paths pass through
+  // untouched (logout MUST reach the real network - it's what actually clears
+  // the httpOnly session cookie server-side; the mock can't do that).
+  // Everything else stays mocked: those other resident/management/guardhouse
+  // data views were built against a real CRM (GoHighLevel) that isn't
+  // configured here, so they'd just 503 against the real backend — the mock
+  // keeps them working.
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -504,7 +457,9 @@
         || s.indexOf('/api/resources') !== -1
         || s.indexOf('/api/management/resources') !== -1
         || s.indexOf('/api/announcements') !== -1
-        || s.indexOf('/api/management/announcements') !== -1;
+        || s.indexOf('/api/management/announcements') !== -1
+        || s.indexOf('/api/booking') !== -1
+        || s.indexOf('/api/management/bookings') !== -1;
       if (s.indexOf('/api/') !== -1 && !isRealPath) {
         return Promise.resolve(handle(s, opts));
       }

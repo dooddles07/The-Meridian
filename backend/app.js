@@ -62,6 +62,7 @@ app.use('/api/auth',          require('./routes/auth.routes'));
 app.use('/api/resources',     require('./routes/resource.routes'));
 app.use('/api/announcements', require('./routes/announcement.routes'));
 app.use('/api/rsvp',          require('./routes/rsvp.routes'));
+app.use('/api/booking',       require('./routes/booking.routes'));
 app.use('/api/management',    require('./routes/management.routes'));
 
 // Scoped to /api so mounting this app alongside static file serving (local dev,

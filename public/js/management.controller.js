@@ -1405,6 +1405,15 @@
       });
       const data = await res.json();
       if (!data.success) { toast(data.message || 'Could not confirm.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; return; }
+      // The mock call above only logs the payment record; a facility booking's own
+      // status still needs the real stage endpoint to actually flip to Confirmed.
+      if (d.pipeline === 'facility') {
+        const sr = await fetch(`/api/management/bookings/${encodeURIComponent(d.oppId)}/stage`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ stage: 'Confirmed' }),
+        }).then(r => r.json()).catch(() => ({}));
+        if (!sr.success) { toast(sr.message || 'Payment recorded, but could not confirm the booking.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; return; }
+      }
       toast('Marked paid - booking confirmed.');
       loadPaymentsPanel();
     } catch { toast('Connection error.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; }

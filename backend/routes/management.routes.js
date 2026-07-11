@@ -3,6 +3,7 @@ const router       = express.Router();
 const rateLimit    = require('express-rate-limit');
 const resources    = require('../controllers/resource.controller');
 const announcements = require('../controllers/announcement.controller');
+const bookings     = require('../controllers/booking.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
 
 router.use(requireManagement);
@@ -29,5 +30,8 @@ router.get('/announcements',           announcements.listAll);
 router.post('/announcements',          mutateLimiter, auditLog, announcements.create);
 router.patch('/announcements/:id',     mutateLimiter, auditLog, announcements.patch);
 router.delete('/announcements/:id',    mutateLimiter, auditLog, announcements.remove);
+
+router.get('/bookings',                bookings.listForManagement);
+router.put('/bookings/:id/stage',      mutateLimiter, auditLog, bookings.updateStage);
 
 module.exports = router;

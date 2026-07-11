@@ -1929,7 +1929,17 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         });
         const d = await r.json().catch(() => ({}));
-        if (d.success) toast('Payment confirmed - your booking is now confirmed.', 'ok');
+        // The mock call above only logs the payment record (Move-In deposits have
+        // no other real side effect); a facility booking's own status still needs
+        // its dedicated real endpoint to actually flip Deposit Pending -> Confirmed.
+        let bookingOk = true;
+        if (ctx.payKey && ctx.payKey !== 'move') {
+          const br = await fetch(`/api/booking/${encodeURIComponent(ctx.oppId)}/confirm-deposit`, { method: 'PATCH' });
+          const bd = await br.json().catch(() => ({}));
+          bookingOk = !!bd.success;
+          if (bookingOk) syncBookingStatuses();
+        }
+        if (d.success && bookingOk) toast('Payment confirmed - your booking is now confirmed.', 'ok');
         else           toast(d.message || 'Could not confirm your payment. Please try again.', 'err');
       } catch {
         toast('Connection error confirming your payment. Please try again.', 'err');
