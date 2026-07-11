@@ -39,6 +39,14 @@ async function createDepositCheckoutSession({ bookingId, facilityName, amount, b
   });
 }
 
+// Looked up before minting a new session, so a resident clicking "Pay
+// Deposit" again reuses/checks the one already in flight instead of always
+// creating a fresh one (see createCheckoutSession in booking.controller.js).
+async function retrieveCheckoutSession(sessionId) {
+  if (!stripe) { const e = new Error('Payments are not configured.'); e.status = 503; throw e; }
+  return stripe.checkout.sessions.retrieve(sessionId);
+}
+
 // Verifies the webhook actually came from Stripe (not a spoofed request) using
 // the raw request body + the signing secret from the Stripe dashboard/CLI.
 function constructWebhookEvent(rawBody, signature) {
@@ -56,4 +64,4 @@ async function refundDeposit({ paymentIntentId, amount }) {
   return stripe.refunds.create({ payment_intent: paymentIntentId, amount: toCents(amount) });
 }
 
-module.exports = { isConfigured, createDepositCheckoutSession, constructWebhookEvent, refundDeposit };
+module.exports = { isConfigured, createDepositCheckoutSession, retrieveCheckoutSession, constructWebhookEvent, refundDeposit };

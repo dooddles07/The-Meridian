@@ -2125,6 +2125,15 @@
     try {
       const res  = await fetch(`/api/booking/${encodeURIComponent(bookingId)}/checkout-session`, { method: 'POST' });
       const data = await res.json();
+      // A prior click may have already been paid (Stripe confirmed it before
+      // our webhook did) - that's good news, not a failure, so it gets its
+      // own success path instead of falling into the generic error toast.
+      if (data.success && data.alreadyPaid) {
+        toast(data.message || 'This deposit has already been paid.', 'ok');
+        btn.disabled = false; btn.textContent = orig;
+        loadPayments();
+        return;
+      }
       if (!data.success || !data.url) {
         toast(data.message || 'Could not start checkout. Please try again.', 'err');
         btn.disabled = false; btn.textContent = orig;

@@ -280,6 +280,28 @@ async function createCheckoutSession(req, res) {
   const facility = facilities.facByKey(existing.facilityKey);
   const amount = facility ? facility.depositAmount : 0;
   if (!amount) return res.status(400).json({ success: false, message: 'No deposit amount configured for this facility.' });
+
+  // A session from an earlier "Pay Deposit" click may already be in flight -
+  // reuse/reconcile it instead of always minting a new one, so completing two
+  // separate sessions (new tab, back button, retry) can never charge the
+  // resident's card twice for the same booking.
+  if (existing.stripeCheckoutSessionId) {
+    const prior = await stripeService.retrieveCheckoutSession(existing.stripeCheckoutSessionId).catch(() => null);
+    if (prior && prior.status === 'complete') {
+      // Stripe already has a successful payment the webhook may not have
+      // processed yet - reconcile right here rather than let a second charge happen.
+      existing.status = 'Confirmed';
+      existing.depositStatus = 'held';
+      if (prior.payment_intent) existing.stripePaymentIntentId = prior.payment_intent;
+      await existing.save();
+      return res.json({ success: true, alreadyPaid: true, message: 'This deposit has already been paid.' });
+    }
+    if (prior && prior.status === 'open') {
+      return res.json({ success: true, url: prior.url }); // still awaiting payment - same session, not a new one
+    }
+    // 'expired' (or lookup failed) - falls through to create a fresh session below.
+  }
+
   // Facilities like the Verandah split the charge into a non-refundable
   // booking fee + a refundable deposit - shown as two Stripe line items
   // (still one card charge) so the resident sees exactly what's refundable.
@@ -290,6 +312,8 @@ async function createCheckoutSession(req, res) {
     bookingId: String(existing._id), facilityName: existing.facilityName,
     amount, bookingFee, refundableAmount, residentEmail: existing.resident_email,
   });
+  existing.stripeCheckoutSessionId = session.id;
+  await existing.save();
   return res.json({ success: true, url: session.url });
 }
 

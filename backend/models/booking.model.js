@@ -37,6 +37,11 @@ const schema = new mongoose.Schema({
   // bookings confirmed without a real charge (the honor-system confirmDeposit
   // path, or a management "mark as paid") - refund then stays internal-only.
   stripePaymentIntentId: { type: String, default: '' },
+  // Set when a Checkout Session is CREATED (before payment completes), so a
+  // second "Pay Deposit" click can reuse/check it instead of always minting a
+  // fresh one - without this, two sessions for the same booking could both
+  // be completed and the resident's card charged twice. See createCheckoutSession.
+  stripeCheckoutSessionId: { type: String, default: '' },
   contact_id:     { type: String, required: true, index: true },
   resident_name:  { type: String, default: '' },
   resident_email: { type: String, default: '' },
