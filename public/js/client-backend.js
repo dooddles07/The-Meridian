@@ -161,7 +161,7 @@
       return { id: uid('local-move'), opportunityId: uid('local-opp'), contactId: m.contact_id, move_type: type, move_date: date, move_time: time, notes: notes, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function pay(desc, amount, category, status, ref, oppId, fee, m) {
-      return { id: uid('local-pay'), description: desc, amount: amount, currency: 'SGD', category: category, status: status, reference: ref, opportunity_id: oppId, fee_label: fee, resident_unit: m.unit, resident_email: m.email, paid_at: status === 'paid' ? nowISO() : null, due_at: null, createdAt: nowISO() };
+      return { id: uid('local-pay'), description: desc, amount: amount, currency: 'USD', category: category, status: status, reference: ref, opportunity_id: oppId, fee_label: fee, resident_unit: m.unit, resident_email: m.email, paid_at: status === 'paid' ? nowISO() : null, due_at: null, createdAt: nowISO() };
     }
     function convo(m, msgs, resolved) {
       var messages = msgs.map(function (x) {
@@ -265,7 +265,7 @@
       // to actually flip the booking's status. This mock only still owns the
       // Move-In/Out deposit path and the payment-history record for both.
       var amt = body.fee_amount || (body.pipeline === 'move' ? 2200 : 200);
-      db.payments.unshift({ id: uid('local-pay'), description: body.description || 'Booking deposit', amount: amt, currency: 'SGD', category: 'Deposit', status: 'paid', reference: 'DEP-' + String(body.opportunity_id || uid('')).slice(-6).toUpperCase(), opportunity_id: body.opportunity_id || '', fee_label: body.fee_label || '', resident_unit: body.unit || MEMBER.unit, resident_email: (body.email || MEMBER.email), paid_at: nowISO(), due_at: null, createdAt: nowISO() });
+      db.payments.unshift({ id: uid('local-pay'), description: body.description || 'Booking deposit', amount: amt, currency: 'USD', category: 'Deposit', status: 'paid', reference: 'DEP-' + String(body.opportunity_id || uid('')).slice(-6).toUpperCase(), opportunity_id: body.opportunity_id || '', fee_label: body.fee_label || '', resident_unit: body.unit || MEMBER.unit, resident_email: (body.email || MEMBER.email), paid_at: nowISO(), due_at: null, createdAt: nowISO() });
       persist();
       return ok({ message: 'Deposit paid - your booking is now confirmed.', amount: amt, stage: 'Confirmed' });
     }

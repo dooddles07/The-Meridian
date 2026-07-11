@@ -973,7 +973,7 @@
           window.Swal.fire({
             icon:               'success',
             title:              'Booking Saved!',
-            html:               `Your <b>${esc(f.name)}</b> booking needs a <b>SGD ${depositAmt.toFixed(2)}</b> deposit to be confirmed.<br><br>`
+            html:               `Your <b>${esc(f.name)}</b> booking needs a <b>USD ${depositAmt.toFixed(2)}</b> deposit to be confirmed.<br><br>`
                                + `⚠ Pay within <b>24 hours</b>${dueTxt ? ` (by ${esc(dueTxt)})` : ''} or this booking will be automatically cancelled and the slot released.<br><br>`
                                + `Go to the <b>Payments</b> tab to pay now.`,
             confirmButtonText:  'Go to Payments',
@@ -983,7 +983,7 @@
             cancelButtonColor:  '#9a9088',
           }).then(r => { if (r.isConfirmed) navigate('payments'); });
         } else {
-          toast(`Booking saved! Pay the SGD ${depositAmt.toFixed(2)} deposit within 24 hours from the Payments tab.`);
+          toast(`Booking saved! Pay the USD ${depositAmt.toFixed(2)} deposit within 24 hours from the Payments tab.`);
         }
       } else if (window.Swal) {
         window.Swal.fire({
@@ -1015,7 +1015,7 @@
     move: [{ label: 'Admin Fee + Refundable Deposit', url: 'checkout.html' }],
   };
   const VERANDAH_FEES = [
-    { label: 'Booking Fee + Refundable Deposit', feeLabel: 'deposit', amount: 600, url: 'checkout.html' },
+    { label: 'Booking Fee + Refundable Deposit', feeLabel: 'deposit', amount: 400, url: 'checkout.html' },
   ];
   // A facility requires a deposit if it has payment links OR is the Verandah
   // (whose fees live in VERANDAH_FEES, not PAY_LINKS).
@@ -1818,15 +1818,15 @@
   }
 
   // Payments (read-only history)
-  // Move is one payment: SGD 200 admin fee + SGD 2000 refundable deposit = SGD 2200.
-  // On completion the SGD 2000 deposit is refunded (shown on the Deposit Refunded card).
+  // Move is one payment: USD 200 admin fee + USD 2000 refundable deposit = USD 2200.
+  // On completion the USD 2000 deposit is refunded (shown on the Deposit Refunded card).
   const MOVE_REFUNDABLE_DEPOSIT = 2000;
   // bbq/pool/verandah are bootstrap fallback values only, overwritten below from
   // the server the instant the fetch resolves - the real source of truth is
   // depositAmount in backend/config/facilities.js. move/default aren't facility
   // bookings (they're the separate, still-mock Move-In pipeline) so they stay
   // local literals; there's no backend config for them to drift from.
-  const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 600, move: 2200, default: 50 };
+  const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 400, move: 2200, default: 50 };
   (async () => {
     try {
       const res  = await fetch('/api/booking/facilities');
@@ -1928,7 +1928,7 @@
       amount = PAY_DEPOSITS.move;
     }
     const isVerandah = key === 'verandah';
-    const amtStr     = `SGD ${Number(amount).toFixed(2)}`;
+    const amtStr     = `USD ${Number(amount).toFixed(2)}`;
     const title      = _facilityTitle(key, item.name);
     // Prefer clean local booking data; fall back to parsing the opportunity name.
     const details    = _localBookingDetail(key, item) || _parseBookingDetails(item);
@@ -1947,7 +1947,7 @@
         return `<div class="pay-fee-row">
           <span class="pay-fee-row__name">${esc(fee.label)}</span>
           <div class="pay-fee-row__right">
-            <span class="pay-fee-row__amt">SGD ${fee.amount.toFixed(2)}</span>
+            <span class="pay-fee-row__amt">USD ${fee.amount.toFixed(2)}</span>
             ${isPaid
               ? '<span class="pay-tag paid">paid</span>'
               : `<button class="pay-pay-btn"
@@ -1991,7 +1991,7 @@
                      ? (key === 'move' ? 'Refundable Deposit · Refunded' : `${baseMeta} · Refunded`)
                      : `${baseMeta} · Confirmed`;
     const histAmtStr = (isRefunded && key === 'move')
-                     ? `SGD ${Number(MOVE_REFUNDABLE_DEPOSIT).toFixed(2)}`
+                     ? `USD ${Number(MOVE_REFUNDABLE_DEPOSIT).toFixed(2)}`
                      : amtStr;
     const tagHtml    = isForfeited ? '<span class="pay-tag forfeited">forfeited</span>'
                      : isRefunded  ? '<span class="pay-tag refunded">refunded</span>'

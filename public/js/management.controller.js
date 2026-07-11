@@ -1383,7 +1383,7 @@
     return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
   }
   function payMoney(n, cur) {
-    return `${cur || 'SGD'} ${(Number(n) || 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${cur || 'USD'} ${(Number(n) || 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   let _mgmtPending = [];
   const DEPOSIT_FACS = ['bbq', 'pool', 'verandah'];
@@ -1393,7 +1393,7 @@
   // resident-side figure the way three separately hardcoded copies could.
   // move isn't a facility booking (separate, still-mock Move-In pipeline), so
   // it stays a local literal - no backend config for it to drift from.
-  const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 600, move: 2200 };
+  const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 400, move: 2200 };
   (async () => {
     try {
       const res  = await fetch('/api/booking/facilities');
@@ -1431,7 +1431,7 @@
           ? _mgmtPending.map((d, i) => `<tr>
               <td>${esc(d.resident || '')}</td><td>${d.unit ? '#' + esc(d.unit) : ''}</td>
               <td>${esc(d.desc)}</td><td>${d.date ? esc(payDate(d.date)) : ''}</td>
-              <td>${d.amount ? esc(payMoney(d.amount, 'SGD')) : ''}</td>
+              <td>${d.amount ? esc(payMoney(d.amount, 'USD')) : ''}</td>
               <td><span class="tag" style="background:rgba(49,46,129,.15);color:var(--gold,#312e81)">Deposit Pending</span>${d.depositDueAt ? `<div style="font-size:0.68rem;color:var(--orange,#d47848);font-weight:600;margin-top:3px">${esc(depositCountdown(d.depositDueAt))}</div>` : ''}</td>
               <td><button class="btn-primary" style="padding:5px 12px;font-size:0.72rem" data-paid="${i}">Mark as Paid</button></td>
             </tr>`).join('')
@@ -1452,13 +1452,13 @@
         date: p.paid_at || p.createdAt, unit: p.resident_unit,
         desc: p.description, category: p.category, amount: p.amount, currency: p.currency, status: p.status,
       }));
-      // Only the SGD 2000 refundable deposit is returned (the SGD 200 admin fee is not).
+      // Only the USD 2000 refundable deposit is returned (the USD 200 admin fee is not).
       const MOVE_REFUNDABLE_DEPOSIT = 2000;
       (mv.items || []).filter(o => o.stage === 'Deposit Refunded' && o.oppId).forEach(o => {
         histRows.push({
           date: o.createdAt || '', unit: o.unit,
           desc: o.reference || 'Move-In / Move-Out', category: 'Refundable Deposit',
-          amount: MOVE_REFUNDABLE_DEPOSIT, currency: 'SGD', status: 'refunded',
+          amount: MOVE_REFUNDABLE_DEPOSIT, currency: 'USD', status: 'refunded',
         });
       });
       histRows.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));

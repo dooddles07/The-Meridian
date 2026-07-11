@@ -4,7 +4,7 @@
 // so it's intentionally left out here - this file exists purely so booking
 // creation/edit/availability can be checked against real rules server-side
 // instead of trusting whatever the client sends.
-// depositAmount (SGD) lives ONLY here - the frontend used to hardcode this
+// depositAmount (USD) lives ONLY here - the frontend used to hardcode this
 // same figure in 3 separate places (PAY_DEPOSITS/VERANDAH_FEES in
 // portal.controller.js, DEPOSIT_AMOUNTS in management.controller.js), a real
 // drift risk. Both now fetch GET /api/booking/facilities once at boot and
@@ -20,7 +20,7 @@ const FACILITIES = [
   { key: 'gym',        name: 'Gymnasium',        emoji: '🏋️', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1 },
   { key: 'fitness',    name: 'Fitness Room',     emoji: '🤸', variableDuration: true, open: 6,  close: 23, slot: 1, maxPax: 1 },
   { key: 'bbq',        name: 'BBQ Pit',          emoji: '🔥', deposit: true, depositAmount: 200, open: 10, close: 23, slot: 3, maxPax: 15 },
-  { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, depositAmount: 600, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, maxAdvanceDays: 31, maxBlocksPerDay: 2 },
+  { key: 'verandah',   name: 'The Verandah',     emoji: '🥂', deposit: true, depositAmount: 400, open: 7,  close: 23, slot: 4, slotStep: 240, maxPax: 40, maxAdvanceDays: 31, maxBlocksPerDay: 2 },
 ];
 
 const facByKey = key => FACILITIES.find(f => f.key === key);

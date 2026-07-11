@@ -133,7 +133,7 @@
 
     <div class="amount-wrap">
       <div class="amount-label">Amount due</div>
-      <div class="amount" id="amount">SGD 0.00</div>
+      <div class="amount" id="amount">USD 0.00</div>
       <div class="amount-for" id="amountFor" hidden></div>
     </div>
 
@@ -157,7 +157,7 @@
       var amt = raw != null ? Number(raw) : NaN;
       var el = document.getElementById('amount');
       if (!isNaN(amt) && amt > 0) {
-        el.textContent = 'SGD ' + amt.toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        el.textContent = 'USD ' + amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       } else {
         el.textContent = 'Refundable deposit';
       }

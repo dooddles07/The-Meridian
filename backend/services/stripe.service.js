@@ -20,7 +20,7 @@ async function createDepositCheckoutSession({ bookingId, facilityName, amount, r
     line_items: [{
       quantity: 1,
       price_data: {
-        currency: 'sgd',
+        currency: 'usd',
         unit_amount: Math.round(Number(amount) * 100), // Stripe wants the smallest currency unit (cents)
         product_data: { name: `${facilityName} — Refundable Deposit` },
       },
