@@ -94,6 +94,7 @@
     }
     .pay-facility-title { font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text,#14110f); line-height:1.3; }
     .pay-facility-detail { font-size:0.8rem; color:var(--text-2,#9a9088); margin-top:3px; line-height:1.4; }
+    .pay-deposit-countdown { font-size:0.72rem; font-weight:600; color:#c0392b; margin-top:4px; }
     /* ── Verandah split-fee card ── */
     .pay-due--verandah { flex-direction:column; align-items:stretch; gap:0; padding:0; }
     .pay-due--verandah .pay-due__body { padding:11px 14px 9px; border-bottom:1px solid rgba(192,57,43,.14); }
@@ -329,6 +330,7 @@
               <div class="matters-eyebrow">Your Next Booking</div>
               <div class="matters-value" id="nextBookingTitle">No upcoming bookings</div>
               <div class="matters-sub"  id="nextBookingTime"></div>
+              <div class="matters-status" id="nextBookingStatus" hidden></div>
               <a class="matters-link">Book a facility →</a>
             </div>
             <div class="matters-card blue-top" data-view="notices" style="cursor:pointer">

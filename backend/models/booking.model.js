@@ -14,6 +14,15 @@ const schema = new mongoose.Schema({
   pax:            { type: Number, default: 1 },
   notes:          { type: String, default: '' },
   status:         { type: String, enum: ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'], default: 'Confirmed' },
+  // Only set for deposit-required facilities, at creation time (now + 24h). A
+  // background sweep (see expireStaleDeposits in the controller) auto-cancels
+  // any booking still Deposit Pending past this point, releasing the slot -
+  // otherwise an unpaid booking would hold it forever.
+  depositDueAt:   { type: Date, default: null },
+  // Set when the sweep (not the resident) is what cancelled the booking, so the
+  // frontend can show "deposit not paid in time" instead of a plain Cancelled,
+  // which would otherwise look like a bug ("I never cancelled this!").
+  cancelReason:   { type: String, default: '' },
   contact_id:     { type: String, required: true, index: true },
   resident_name:  { type: String, default: '' },
   resident_email: { type: String, default: '' },

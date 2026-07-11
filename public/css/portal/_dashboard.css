@@ -38,6 +38,8 @@
   letter-spacing: -0.01em;
 }
 .matters-sub { font-size: 15px; color: var(--muted); line-height: 1.5; }
+.matters-status { font-size: 13px; font-weight: 600; margin-top: 6px; }
+.matters-status--warn { color: var(--orange); }
 .matters-link {
   display: inline-block;
   font-size: 14px;

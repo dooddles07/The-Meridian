@@ -1343,15 +1343,25 @@
       // Deposit amounts (SGD). Move = 200 admin fee + 2000 refundable deposit = 2200.
       const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 600, move: 2200 };
       _mgmtPending = [];
-      (bk.items || []).forEach(b => { if (DEPOSIT_FACS.includes(b.facilityKey) && FACILITY_PENDING.includes(b.stage) && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0 }); });
-      (mv.items || []).forEach(o => { if (MOVE_PENDING.includes(o.stage) && o.oppId) _mgmtPending.push({ pipeline: 'move', oppId: o.oppId, facility_key: '', resident: o.contact, unit: o.unit, date: '', desc: o.reference || 'Move-In / Move-Out', amount: DEPOSIT_AMOUNTS.move }); });
+      (bk.items || []).forEach(b => { if (DEPOSIT_FACS.includes(b.facilityKey) && FACILITY_PENDING.includes(b.stage) && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0, depositDueAt: b.depositDueAt || '' }); });
+      (mv.items || []).forEach(o => { if (MOVE_PENDING.includes(o.stage) && o.oppId) _mgmtPending.push({ pipeline: 'move', oppId: o.oppId, facility_key: '', resident: o.contact, unit: o.unit, date: '', desc: o.reference || 'Move-In / Move-Out', amount: DEPOSIT_AMOUNTS.move, depositDueAt: '' }); });
       if (pBody) {
+        // Facility deposits auto-cancel 24h after booking if unpaid (see the
+        // backend's expireStaleDeposits) - flag it here so management doesn't get
+        // blindsided by a booking vanishing from this list before they act on it.
+        const depositCountdown = (iso) => {
+          if (!iso) return '';
+          const ms = new Date(iso).getTime() - Date.now();
+          if (ms <= 0) return 'expiring now';
+          const hrs = Math.floor(ms / 3600000), mins = Math.floor((ms % 3600000) / 60000);
+          return hrs >= 1 ? `${hrs}h ${mins}m left` : `${mins}m left`;
+        };
         pBody.innerHTML = _mgmtPending.length
           ? _mgmtPending.map((d, i) => `<tr>
               <td>${esc(d.resident || '')}</td><td>${d.unit ? '#' + esc(d.unit) : ''}</td>
               <td>${esc(d.desc)}</td><td>${d.date ? esc(payDate(d.date)) : ''}</td>
               <td>${d.amount ? esc(payMoney(d.amount, 'SGD')) : ''}</td>
-              <td><span class="tag" style="background:rgba(49,46,129,.15);color:var(--gold,#312e81)">Deposit Pending</span></td>
+              <td><span class="tag" style="background:rgba(49,46,129,.15);color:var(--gold,#312e81)">Deposit Pending</span>${d.depositDueAt ? `<div style="font-size:0.68rem;color:var(--orange,#d47848);font-weight:600;margin-top:3px">${esc(depositCountdown(d.depositDueAt))}</div>` : ''}</td>
               <td><button class="btn-primary" style="padding:5px 12px;font-size:0.72rem" data-paid="${i}">Mark as Paid</button></td>
             </tr>`).join('')
           : '<tr class="empty-row"><td colspan="7">No pending deposits.</td></tr>';

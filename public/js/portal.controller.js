@@ -873,11 +873,17 @@
       syncBookingStatuses(); // reconcile with the server (Mongo) record
 
       if (isDepositFacility(f.key)) {
+        const depositAmt = PAY_DEPOSITS[f.key] || PAY_DEPOSITS.default;
+        const dueTxt = data.depositDueAt
+          ? new Date(data.depositDueAt).toLocaleString('en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Singapore' })
+          : '';
         if (window.Swal) {
           window.Swal.fire({
             icon:               'success',
             title:              'Booking Saved!',
-            html:               `Your <b>${esc(f.name)}</b> booking is pending deposit.<br><br>Go to the <b>Payments</b> tab to pay your deposit and confirm it.`,
+            html:               `Your <b>${esc(f.name)}</b> booking needs a <b>SGD ${depositAmt.toFixed(2)}</b> deposit to be confirmed.<br><br>`
+                               + `⚠ Pay within <b>24 hours</b>${dueTxt ? ` (by ${esc(dueTxt)})` : ''} or this booking will be automatically cancelled and the slot released.<br><br>`
+                               + `Go to the <b>Payments</b> tab to pay now.`,
             confirmButtonText:  'Go to Payments',
             showCancelButton:   true,
             cancelButtonText:   'Later',
@@ -885,7 +891,7 @@
             cancelButtonColor:  '#9a9088',
           }).then(r => { if (r.isConfirmed) navigate('payments'); });
         } else {
-          toast('Booking saved! Pay your deposit from the Payments tab.');
+          toast(`Booking saved! Pay the SGD ${depositAmt.toFixed(2)} deposit within 24 hours from the Payments tab.`);
         }
       } else if (window.Swal) {
         window.Swal.fire({
@@ -952,6 +958,17 @@
   const UPCOMING_STATUSES = ['Confirmed', 'Deposit Pending'];
   const isUpcoming = s => UPCOMING_STATUSES.includes(s);
 
+  // Unpaid deposit bookings auto-cancel 24h after creation (see the backend's
+  // expireStaleDeposits) - show the countdown so it isn't a silent surprise.
+  function _depositCountdown(iso) {
+    if (!iso) return '';
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) return 'Payment window expired';
+    const hrs  = Math.floor(ms / 3600000);
+    const mins = Math.floor((ms % 3600000) / 60000);
+    return hrs >= 1 ? `Pay within ${hrs}h ${mins}m` : `Pay within ${mins}m`;
+  }
+
   function _bkTableHTML(rows, showActions) {
     if (!rows.length) return null;
     return '<div class="bk-table-scroll"><table class="data-table"><thead><tr>'
@@ -966,7 +983,12 @@
           const noteToggle = hasNote
             ? ` &nbsp;·&nbsp; <span class="bk-note-toggle" data-note="${b.id}">Notes <span class="phi">▸</span></span>`
             : '';
-          const row = `<tr><td>${b.emoji} ${esc(b.facilityName)}</td><td style="font-size:0.8rem">${fmtDate(b.date)}</td><td style="font-size:0.8rem">${esc(b.slot)}</td><td style="font-size:0.8rem">${b.pax || 1}</td><td><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></td>${showActions ? `<td style="white-space:nowrap">${actions}${noteToggle}</td>` : ''}</tr>`;
+          const statusExtra = b.status === 'Deposit Pending' && b.depositDueAt
+            ? `<div class="bk-deposit-countdown">${esc(_depositCountdown(b.depositDueAt))}</div>`
+            : (b.status === 'Cancelled' && b.cancelReason === 'deposit_expired'
+                ? `<div class="bk-expired-note">Deposit window expired</div>`
+                : '');
+          const row = `<tr><td>${b.emoji} ${esc(b.facilityName)}</td><td style="font-size:0.8rem">${fmtDate(b.date)}</td><td style="font-size:0.8rem">${esc(b.slot)}</td><td style="font-size:0.8rem">${b.pax || 1}</td><td><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span>${statusExtra}</td>${showActions ? `<td style="white-space:nowrap">${actions}${noteToggle}</td>` : ''}</tr>`;
           const noteRow = hasNote
             ? `<tr class="bk-note-row" id="bknote-${b.id}" style="display:none"><td colspan="${showActions ? 6 : 5}" style="font-size:0.78rem;color:var(--text-2,#5a514a)"><span style="color:var(--gold,#312e81);font-weight:600">Note:</span> ${esc(b.notes)}</td></tr>`
             : '';
@@ -1048,12 +1070,26 @@
     const today = todaySGT();
     const up = getBookings().filter(b => b.date >= today && !isFinished(b.status)).sort((a, b) => a.date.localeCompare(b.date));
     if ($('bookingCountBadge')) $('bookingCountBadge').textContent = up.length + ' Active';
+    const statusEl = $('nextBookingStatus');
     if (up.length) {
       if ($('nextBookingTitle')) $('nextBookingTitle').textContent = `${up[0].emoji} ${up[0].facilityName}`;
       if ($('nextBookingTime'))  $('nextBookingTime').textContent  = `${fmtDate(up[0].date)} · ${up[0].slot}`;
+      // The soonest booking can be Deposit Pending - surface that here too, not
+      // just in the full My Bookings list, since this hero card is the first
+      // thing a resident sees and would otherwise look identical either way.
+      if (statusEl) {
+        if (up[0].status === 'Deposit Pending') {
+          statusEl.hidden = false;
+          statusEl.className = 'matters-status matters-status--warn';
+          statusEl.textContent = `⚠ ${_depositCountdown(up[0].depositDueAt)} to confirm`;
+        } else {
+          statusEl.hidden = true;
+        }
+      }
     } else {
       if ($('nextBookingTitle')) $('nextBookingTitle').textContent = 'No upcoming bookings';
       if ($('nextBookingTime'))  $('nextBookingTime').textContent  = '';
+      if (statusEl) statusEl.hidden = true;
     }
     const db = $('dashBookings');
     if (db) db.innerHTML = !up.length ? '<div class="panel-empty">No bookings on record.</div>'
@@ -1131,6 +1167,8 @@
         notes:        it.notes || '',
         status:       it.status || it.stage || 'Confirmed',
         oppId:        it.oppId || '',
+        depositDueAt: it.depositDueAt || '',
+        cancelReason: it.cancelReason || '',
       }));
     } catch { return; }
     renderMyBookings(); renderDashboardBookings(); populateBookingSelector();
@@ -1785,8 +1823,12 @@
     // Prefer clean local booking data; fall back to parsing the opportunity name.
     const details    = _localBookingDetail(key, item) || _parseBookingDetails(item);
     const rawLabel   = esc(item.name || (type === 'facility' ? 'Facility Booking' : 'Move In / Out'));
-    // Two-line header used by all card variants.
-    const headerHtml = `<div class="pay-facility-title">${esc(title)}</div>${details ? `<div class="pay-facility-detail">${esc(details)}</div>` : ''}`;
+    // Two-line header used by all card variants. Pending facility deposits also
+    // get the payment-window countdown so it's visible right where the Pay
+    // button lives, not just buried in My Bookings.
+    const countdownHtml = (isPending && type === 'facility' && item.depositDueAt)
+      ? `<div class="pay-deposit-countdown">⚠ ${esc(_depositCountdown(item.depositDueAt))}</div>` : '';
+    const headerHtml = `<div class="pay-facility-title">${esc(title)}</div>${details ? `<div class="pay-facility-detail">${esc(details)}</div>` : ''}${countdownHtml}`;
 
     // Verandah pending: two separate fee rows
     if (isPending && isVerandah) {
@@ -1984,7 +2026,7 @@
       // with a linked opportunity, named so the card can detect the facility + show details.
       const facItems = (bRes.items || [])
         .filter(b => b.oppId)
-        .map(b => ({ id: b.oppId, stage: b.stage, name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
+        .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
         .filter(o => _facKeyFromOppName(o.name));
       const moveItems = mRes.items || [];
 
