@@ -1,11 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
-const crypto   = require('crypto');
 const Resident = require('../models/resident.model');
 const { RESIDENTS, normalizeUnit, clean } = require('../models/auth.model');
-
-const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 const dbReady    = () => mongoose.connection.readyState === 1;
 
@@ -106,43 +102,6 @@ async function listResidents() {
   return RESIDENTS;
 }
 
-// Generates a reset token, stores only its hash + a 30min expiry, and returns
-// the RAW token (only ever held in memory here, for the caller to email) plus
-// the account. Returns null if no active account matches — the controller
-// responds identically either way so this never leaks whether an email exists.
-async function setResetToken(email) {
-  if (!dbReady()) return null;
-  const e = clean(email).toLowerCase();
-  const account = await Resident.findOne({ email: e, active: true });
-  if (!account) return null;
-  const rawToken = crypto.randomBytes(32).toString('hex');
-  account.resetTokenHash = hashToken(rawToken);
-  account.resetTokenExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
-  await account.save();
-  return { account: account.toObject(), rawToken };
-}
-
-// Looks up an unexpired match by the token's hash. Returns the live Mongoose
-// document (not .lean()) since resetPasswordByToken needs to .save() it.
-async function verifyResetToken(rawToken) {
-  if (!dbReady() || !rawToken) return null;
-  return Resident.findOne({
-    resetTokenHash: hashToken(rawToken),
-    resetTokenExpires: { $gt: new Date() },
-    active: true,
-  });
-}
-
-// Sets the new password and clears the token fields so the link is single-use.
-async function resetPasswordByToken(residentDoc, newPassword) {
-  residentDoc.password = await bcrypt.hash(clean(newPassword), 12);
-  residentDoc.resetTokenHash = '';
-  residentDoc.resetTokenExpires = null;
-  await residentDoc.save();
-  return residentDoc.toObject();
-}
-
 module.exports = {
   seed, seedPreviewAccount, findByEmail, createResident, listResidents, dbReady,
-  setResetToken, verifyResetToken, resetPasswordByToken,
 };

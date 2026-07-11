@@ -35,12 +35,6 @@
   text-align: center;
   margin-bottom: 32px;
 }
-.login-desc {
-  font-size: 0.8125rem;
-  color: var(--muted);
-  line-height: 1.5;
-  margin-bottom: 20px;
-}
 .login-tabs {
   display: flex;
   gap: 4px;
@@ -64,11 +58,6 @@
 }
 .login-tab:hover { color: var(--text); }
 .login-tab--active { color: var(--text); border-bottom-color: var(--gold); }
-
-/* Applied when a resident lands on the Set New Password panel via an emailed
-   link - hides the Sign In / Register tabs so it reads as its own deliberate
-   step, not a third co-equal tab choice. */
-.login-card--reset-mode .login-tabs { display: none; }
 
 /* Owner/Tenant choice on the Register panel - a filled segmented pair, not the
    underline .login-tabs treatment, so it doesn't read as a third top-level tab. */
@@ -173,52 +162,6 @@
 [data-theme="dark"] .btn-login { background: var(--gold); color: #0c0b09; }
 [data-theme="dark"] .btn-login:hover { background: var(--gold-dk); }
 .login-err { font-size: 0.8125rem; color: var(--red); min-height: 20px; margin-top: 8px; }
-.login-success {
-  font-size: 0.8125rem;
-  color: var(--green);
-  background: rgba(31,107,69,0.08);
-  border: 1px solid rgba(31,107,69,0.25);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  margin-bottom: 16px;
-}
-
-/* Small text-link affordances: "Forgot password?" under a field, "Back to Sign
-   In" links below a sub-flow's submit button. Buttons styled as links (not
-   real <a>) since they're pure client-side panel switches, not navigation. */
-.login-link-inline {
-  display: block;
-  background: none;
-  border: none;
-  padding: 0;
-  margin-top: 8px;
-  font-size: 0.75rem;
-  color: var(--muted);
-  text-align: right;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.login-link-inline:hover { color: var(--gold); text-decoration: underline; }
-.login-link-inline--center { text-align: center; margin-top: 16px; }
-
-/* Post-submit confirmation state for the request-reset panel: replaces the
-   email field, matching the backend's anti-enumeration behavior (identical
-   message whether or not the account exists). */
-.login-confirm {
-  text-align: center;
-  padding: 8px 4px 4px;
-}
-.login-confirm__icon {
-  font-size: 2rem;
-  color: var(--gold);
-  display: block;
-  margin-bottom: 12px;
-}
-.login-confirm p {
-  font-size: 0.8125rem;
-  color: var(--text-2);
-  line-height: 1.5;
-}
 .login-footer {
   margin-top: 24px;
   padding-top: 20px;

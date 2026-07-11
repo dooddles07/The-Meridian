@@ -222,13 +222,6 @@ setup and zero credentials.
 - **Resources** and **Announcements/RSVP** - documents and notices are stored and served
   from MongoDB, shared live across the resident and management portals.
 
-Email (booking notifications and password-reset links) is built but currently
-**disabled** - the code lives in
-[`backend/services/email.service.js`](backend/services/email.service.js) via the
-[Resend](https://resend.com) API, but Resend's free sender can only deliver to the
-account owner's own inbox until a real domain is verified, so it's switched off rather
-than silently failing for every other resident.
-
 **Client-side mock** ([`public/js/client-backend.js`](public/js/client-backend.js)) -
 overrides `window.fetch` for everything not listed above (guests, parcels, defects,
 feedback, moves, messages, the payments ledger) and serves it from an in-browser store
