@@ -260,6 +260,22 @@
     const opts = stages.map(s => `<option value="${esc(s)}" ${s === b.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
     return `<select class="bk-stage-select" data-opp="${esc(b.oppId)}">${opts}</select>`;
   }
+  // At-a-glance KPI strip above the bookings table (reuses the same .kpi-row/
+  // .kpi-card tiles the Dashboard uses, computed client-side from whatever the
+  // last /api/management/bookings fetch returned - no separate endpoint).
+  function _renderBookingSummary(items) {
+    const today = _periodRange('today');
+    const week  = _periodRange('week');
+    const inRange = (d, r) => !!d && d >= r.start && d <= r.end;
+    const ACTIVE = new Set(['Confirmed', 'Deposit Pending']);
+    const set = (id, v) => { if ($(id)) $(id).textContent = v; };
+    set('bkKpiToday',     items.filter(b => inRange(b.date, today) && ACTIVE.has(b.stage)).length);
+    set('bkKpiWeek',      items.filter(b => inRange(b.date, week)  && ACTIVE.has(b.stage)).length);
+    set('bkKpiPending',   items.filter(b => b.stage === 'Deposit Pending').length);
+    set('bkKpiActive',    items.filter(b => ACTIVE.has(b.stage)).length);
+    set('bkKpiCancelled', items.filter(b => b.stage === 'Cancelled').length);
+  }
+
   // Set on first load to the bookings filter/search function, so every live refresh
   // can re-apply the manager's current filter instead of resetting it to "show all".
   let _applyBkFilter = null;
@@ -276,6 +292,8 @@
     }
     const items  = data.items  || [];
     const stages = data.stages || ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'];
+
+    _renderBookingSummary(items);
 
     const body = $('bookingsBody');
     if (body) {
