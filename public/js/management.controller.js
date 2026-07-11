@@ -368,7 +368,10 @@
             });
             const d = await r.json();
             if (!d.success) throw new Error(d.message || 'Could not update deposit.');
-            toast(action === 'refund' ? 'Deposit marked as refunded.' : 'Deposit marked as forfeited.');
+            const refundMsg = d.stripeRefunded
+              ? 'Refunded via Stripe - money is on its way back to the resident\'s card.'
+              : 'Marked as refunded (no real Stripe charge was on file for this booking).';
+            toast(action === 'refund' ? refundMsg : 'Deposit marked as forfeited.');
           } catch (e) {
             toast(e.message || 'Could not update deposit.', true);
           } finally {

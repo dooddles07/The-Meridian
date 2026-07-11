@@ -31,6 +31,12 @@ const schema = new mongoose.Schema({
   depositStatus:    { type: String, enum: ['none', 'held', 'refunded', 'forfeited'], default: 'none' },
   depositResolvedAt:{ type: Date, default: null },
   depositNote:      { type: String, default: '' }, // required reason when forfeited
+  // Set by the Stripe webhook once a real Checkout Session completes - lets
+  // manageDeposit issue an actual stripe.refunds.create() later instead of
+  // just flipping depositStatus with no money ever moving back. Empty for
+  // bookings confirmed without a real charge (the honor-system confirmDeposit
+  // path, or a management "mark as paid") - refund then stays internal-only.
+  stripePaymentIntentId: { type: String, default: '' },
   contact_id:     { type: String, required: true, index: true },
   resident_name:  { type: String, default: '' },
   resident_email: { type: String, default: '' },

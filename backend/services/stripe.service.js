@@ -47,4 +47,13 @@ function constructWebhookEvent(rawBody, signature) {
   return stripe.webhooks.constructEvent(rawBody, signature, secret);
 }
 
-module.exports = { isConfigured, createDepositCheckoutSession, constructWebhookEvent };
+// Actually returns money to the card - amount is the REFUNDABLE portion only
+// (e.g. Verandah's $400, never the $200 booking fee bundled in the same
+// charge). Stripe partial-refunds against the PaymentIntent, so the
+// non-refundable part of the original charge is simply left alone.
+async function refundDeposit({ paymentIntentId, amount }) {
+  if (!stripe) { const e = new Error('Payments are not configured.'); e.status = 503; throw e; }
+  return stripe.refunds.create({ payment_intent: paymentIntentId, amount: toCents(amount) });
+}
+
+module.exports = { isConfigured, createDepositCheckoutSession, constructWebhookEvent, refundDeposit };

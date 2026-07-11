@@ -348,11 +348,30 @@ async function manageDeposit(req, res) {
   if (existing.depositStatus !== 'held') {
     return res.status(400).json({ success: false, message: 'This booking has no held deposit to resolve.' });
   }
+
+  // Forfeit keeps the money - no Stripe call needed. Refund actually has to
+  // move money back, and only the refundable portion (e.g. Verandah's $400,
+  // never the $200 booking fee bundled in the same charge).
+  let stripeRefunded = false;
+  if (action === 'refund' && existing.stripePaymentIntentId) {
+    const facility = facilities.facByKey(existing.facilityKey);
+    const refundableAmount = (facility && (facility.refundableAmount || facility.depositAmount)) || 0;
+    if (refundableAmount > 0) {
+      try {
+        await stripeService.refundDeposit({ paymentIntentId: existing.stripePaymentIntentId, amount: refundableAmount });
+        stripeRefunded = true;
+      } catch (err) {
+        console.warn('[stripe] refund failed:', err.message);
+        return res.status(502).json({ success: false, message: 'Could not process the refund with Stripe. Please try again or check the Stripe dashboard.' });
+      }
+    }
+  }
+
   existing.depositStatus = action === 'refund' ? 'refunded' : 'forfeited';
   existing.depositResolvedAt = new Date();
   existing.depositNote = String(note || '').trim();
   await existing.save();
-  return res.json({ success: true, depositStatus: existing.depositStatus });
+  return res.json({ success: true, depositStatus: existing.depositStatus, stripeRefunded });
 }
 
 module.exports = { availability, listMine, create, update, cancel, confirmDeposit, createCheckoutSession, listForManagement, updateStage, manageDeposit, listFacilities };

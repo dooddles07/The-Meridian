@@ -23,6 +23,9 @@ async function handleWebhook(req, res) {
       if (booking && booking.status === 'Deposit Pending') {
         booking.status = 'Confirmed';
         booking.depositStatus = 'held';
+        // string ID on a completed Session in `payment` mode - not expanded,
+        // exactly what stripe.refunds.create() needs later.
+        if (session.payment_intent) booking.stripePaymentIntentId = session.payment_intent;
         await booking.save();
       }
     }
