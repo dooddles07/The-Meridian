@@ -51,6 +51,28 @@
   .res-preview-modal-body iframe { height: 78vh; }
 }
 
+/* Edit-document modal - reuses the preview modal's head/close styling,
+   sized like a form panel instead of a document viewer. */
+.res-edit-modal-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  width: 94vw;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.res-edit-modal-body { padding: 16px; }
+.res-edit-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
 .res-upload-panel { margin-bottom: 0.25rem; }
 
 .res-upload-body { padding: 16px; }
@@ -362,6 +384,7 @@
 }
 
 .res-view-btn,
+.res-edit-btn,
 .res-dl-btn,
 .res-del-btn {
   display: inline-flex;
@@ -376,11 +399,15 @@
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .res-view-btn .material-symbols-outlined,
+.res-edit-btn .material-symbols-outlined,
 .res-dl-btn  .material-symbols-outlined,
 .res-del-btn .material-symbols-outlined { font-size: 1rem; }
 
 .res-view-btn { color: var(--muted); }
 .res-view-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+
+.res-edit-btn { color: var(--muted); }
+.res-edit-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
 
 .res-dl-btn  { color: var(--gold); }
 .res-dl-btn:hover:not(:disabled)  { background: var(--gold); border-color: var(--gold); color: #0c0b09; }
@@ -389,6 +416,7 @@
 .res-del-btn:hover:not(:disabled) { background: rgba(220,66,50,0.15); border-color: var(--red); color: var(--red); }
 
 .res-view-btn:disabled,
+.res-edit-btn:disabled,
 .res-dl-btn:disabled,
 .res-del-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 

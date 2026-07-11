@@ -762,6 +762,54 @@
   </div>
 </div>
 
+<div id="resEditModal" class="modal-overlay">
+  <div class="res-edit-modal-box">
+    <div class="res-preview-modal-head">
+      <span class="res-preview-modal-title">Edit Document</span>
+      <button class="res-preview-modal-close" id="resEditClose">✕</button>
+    </div>
+    <div class="res-edit-modal-body">
+      <div class="res-form-row">
+        <label class="res-label" for="resEditTitle">Document Title</label>
+        <input class="res-input" type="text" id="resEditTitle" maxlength="200" />
+      </div>
+      <div class="res-form-row res-form-row--2col">
+        <div>
+          <label class="res-label" for="resEditCategory">Category</label>
+          <select class="res-input" id="resEditCategory">
+            <option value="By-Laws">By-Laws</option>
+            <option value="Fire Safety">Fire Safety Rules &amp; Regulations</option>
+            <option value="Meeting Minutes">Meeting Minutes</option>
+            <option value="Strata Title Plan">Strata Title Plan</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="res-label" for="resEditVisibility">Visibility</label>
+          <select class="res-input" id="resEditVisibility">
+            <option value="residents">Shared with Residents</option>
+            <option value="owners">Owners Only</option>
+            <option value="tenants">Tenants Only</option>
+            <option value="management">Management Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="res-form-row">
+        <label class="res-label">Replace File <span class="res-hint">(optional — leave blank to keep current file)</span></label>
+        <label class="res-file-btn" for="resEditFile">
+          <span class="material-symbols-outlined">attach_file</span>
+          <span id="resEditFileName">Keep current file</span>
+        </label>
+        <input type="file" id="resEditFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" />
+      </div>
+    </div>
+    <div class="res-edit-modal-foot">
+      <button class="res-bulk-cancel-btn" id="resEditCancelBtn">Cancel</button>
+      <button class="res-upload-btn" id="resEditSaveBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <script src="js/shared.js"></script>
 <script src="js/client-backend.js"></script>

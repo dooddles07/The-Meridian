@@ -1817,6 +1817,9 @@
           <button class="res-view-btn" data-res-id="${_resEsc(d.id)}" data-title="${_resEsc(d.title)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="View">
             <span class="material-symbols-outlined">visibility</span>
           </button>
+          <button class="res-edit-btn" data-res-id="${_resEsc(d.id)}" title="Edit">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
           <button class="res-dl-btn" data-res-id="${_resEsc(d.id)}" data-file-name="${_resEsc(d.file_name)}" data-file-type="${_resEsc(d.file_type)}" title="Download">
             <span class="material-symbols-outlined">download</span>
           </button>
@@ -1836,6 +1839,9 @@
     });
     el.querySelectorAll('.res-view-btn').forEach(btn => {
       btn.addEventListener('click', () => _resMgmtView(btn.dataset.resId, btn.dataset.title, btn.dataset.fileName, btn.dataset.fileType, btn));
+    });
+    el.querySelectorAll('.res-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => _openResEditModal(btn.dataset.resId));
     });
     el.querySelectorAll('.res-dl-btn').forEach(btn => {
       btn.addEventListener('click', () => _resMgmtDownload(btn.dataset.resId, btn.dataset.fileName, btn.dataset.fileType, btn));
@@ -1953,6 +1959,85 @@
     modal.addEventListener('click', (e) => { if (e.target === modal) _closeResPreviewModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) _closeResPreviewModal(); });
   })();
+
+  let _resEditId = null;
+  function _openResEditModal(id) {
+    const doc = _mgmtAllDocs.find(d => d.id === id);
+    const modal = $('resEditModal');
+    if (!doc || !modal) return;
+    _resEditId = id;
+    $('resEditTitle').value = doc.title || '';
+    $('resEditCategory').value = doc.category || 'Other';
+    $('resEditVisibility').value = doc.visibility || 'residents';
+    $('resEditFile').value = '';
+    $('resEditFileName').textContent = 'Keep current file';
+    modal.classList.add('open');
+  }
+  function _closeResEditModal() {
+    const modal = $('resEditModal');
+    if (modal) modal.classList.remove('open');
+    _resEditId = null;
+  }
+  (() => {
+    const modal = $('resEditModal');
+    if (!modal) return;
+    bind('resEditClose', _closeResEditModal);
+    bind('resEditCancelBtn', _closeResEditModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) _closeResEditModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) _closeResEditModal(); });
+  })();
+
+  const resEditFileInput = $('resEditFile');
+  if (resEditFileInput) {
+    resEditFileInput.addEventListener('change', () => {
+      const file = resEditFileInput.files?.[0];
+      $('resEditFileName').textContent = file ? file.name : 'Keep current file';
+    });
+  }
+
+  const resEditSaveBtn = $('resEditSaveBtn');
+  if (resEditSaveBtn) {
+    resEditSaveBtn.addEventListener('click', async () => {
+      if (!_resEditId) return;
+      const title = ($('resEditTitle')?.value || '').trim();
+      if (!title) { toast('Please enter a document title.', true); return; }
+      const category   = $('resEditCategory')?.value   || 'Other';
+      const visibility = $('resEditVisibility')?.value || 'residents';
+      const file = $('resEditFile')?.files?.[0];
+      const MAX_BYTES = 10 * 1024 * 1024;
+      if (file && file.size > MAX_BYTES) { toast('File is too large. Maximum size is 10 MB.', true); return; }
+      resEditSaveBtn.disabled    = true;
+      resEditSaveBtn.textContent = 'Saving…';
+      try {
+        const body = { title, category, visibility };
+        if (file) {
+          body.file_data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload  = e => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Could not read file.'));
+            reader.readAsDataURL(file);
+          });
+          body.file_name = file.name;
+          body.file_type = file.type;
+        }
+        const res  = await fetch(`/api/management/resources/${encodeURIComponent(_resEditId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Update failed.');
+        toast('Document updated.');
+        _closeResEditModal();
+        loadMgmtResources();
+      } catch (err) {
+        toast(err.message, true);
+      } finally {
+        resEditSaveBtn.disabled    = false;
+        resEditSaveBtn.textContent = 'Save Changes';
+      }
+    });
+  }
 
   function _resDataUrlToBlobUrl(dataUrl, fallbackMime) {
     const comma = dataUrl.indexOf(',');
