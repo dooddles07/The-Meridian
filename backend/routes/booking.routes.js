@@ -10,6 +10,11 @@ const mutateLimiter = rateLimit({
   message: { success: false, message: 'Too many changes. Please wait a few minutes and try again.' },
 });
 
+// Public - no role check. Just static facility/deposit metadata, no different
+// from what both portals already hardcode in their own bundled JS; letting
+// management fetch it too (it isn't resident-authenticated) is the whole point.
+router.get('/facilities', controller.listFacilities);
+
 router.use(requireResident);
 
 router.get('/availability',            controller.availability);

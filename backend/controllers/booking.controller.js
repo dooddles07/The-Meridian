@@ -4,6 +4,19 @@ const facilities = require('../config/facilities');
 
 const dbReady = () => mongoose.connection.readyState === 1;
 
+// GET /api/booking/facilities - public, no auth: just static catalogue metadata
+// (key/name/deposit/depositAmount), no different from what's already visible
+// in the frontend's own bundled JS. Exists so both portals fetch deposit
+// amounts from one place instead of hardcoding them.
+function listFacilities(req, res) {
+  return res.json({
+    success: true,
+    facilities: facilities.FACILITIES.map(f => ({
+      key: f.key, name: f.name, deposit: !!f.deposit, depositAmount: f.depositAmount || 0,
+    })),
+  });
+}
+
 const EDITABLE_STATUSES = ['Deposit Pending', 'Confirmed'];
 const ALL_STAGES        = ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'];
 
@@ -283,4 +296,4 @@ async function manageDeposit(req, res) {
   return res.json({ success: true, depositStatus: existing.depositStatus });
 }
 
-module.exports = { availability, listMine, create, update, cancel, confirmDeposit, listForManagement, updateStage, manageDeposit };
+module.exports = { availability, listMine, create, update, cancel, confirmDeposit, listForManagement, updateStage, manageDeposit, listFacilities };

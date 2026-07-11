@@ -1386,6 +1386,21 @@
     return `${cur || 'SGD'} ${(Number(n) || 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   let _mgmtPending = [];
+  const DEPOSIT_FACS = ['bbq', 'pool', 'verandah'];
+  // bbq/pool/verandah are bootstrap fallback values only, overwritten once the
+  // fetch below resolves - the real source of truth is depositAmount in
+  // backend/config/facilities.js, so this can't silently drift from the
+  // resident-side figure the way three separately hardcoded copies could.
+  // move isn't a facility booking (separate, still-mock Move-In pipeline), so
+  // it stays a local literal - no backend config for it to drift from.
+  const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 600, move: 2200 };
+  (async () => {
+    try {
+      const res  = await fetch('/api/booking/facilities');
+      const data = await res.json();
+      (data.facilities || []).forEach(f => { if (f.deposit && f.depositAmount) DEPOSIT_AMOUNTS[f.key] = f.depositAmount; });
+    } catch { /* keep the bootstrap fallback values above */ }
+  })();
   async function loadPaymentsPanel() {
     const pBody = $('mgmtPendingBody'), hBody = $('mgmtPayHistBody');
     try {
@@ -1396,11 +1411,8 @@
       ]);
       // Pending deposits: facility bookings sit at "Deposit Pending" until paid; the
       // Move pipeline starts at "Requested", so a move owes a deposit at either stage.
-      const DEPOSIT_FACS = ['bbq', 'pool', 'verandah'];
       const FACILITY_PENDING = ['Deposit Pending'];
       const MOVE_PENDING     = ['Requested', 'Deposit Pending'];
-      // Deposit amounts (SGD). Move = 200 admin fee + 2000 refundable deposit = 2200.
-      const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 600, move: 2200 };
       _mgmtPending = [];
       (bk.items || []).forEach(b => { if (DEPOSIT_FACS.includes(b.facilityKey) && FACILITY_PENDING.includes(b.stage) && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0, depositDueAt: b.depositDueAt || '' }); });
       (mv.items || []).forEach(o => { if (MOVE_PENDING.includes(o.stage) && o.oppId) _mgmtPending.push({ pipeline: 'move', oppId: o.oppId, facility_key: '', resident: o.contact, unit: o.unit, date: '', desc: o.reference || 'Move-In / Move-Out', amount: DEPOSIT_AMOUNTS.move, depositDueAt: '' }); });

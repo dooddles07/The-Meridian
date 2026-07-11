@@ -1729,7 +1729,23 @@
   // Move is one payment: SGD 200 admin fee + SGD 2000 refundable deposit = SGD 2200.
   // On completion the SGD 2000 deposit is refunded (shown on the Deposit Refunded card).
   const MOVE_REFUNDABLE_DEPOSIT = 2000;
+  // bbq/pool/verandah are bootstrap fallback values only, overwritten below from
+  // the server the instant the fetch resolves - the real source of truth is
+  // depositAmount in backend/config/facilities.js. move/default aren't facility
+  // bookings (they're the separate, still-mock Move-In pipeline) so they stay
+  // local literals; there's no backend config for them to drift from.
   const PAY_DEPOSITS = { bbq: 200, pool: 200, verandah: 600, move: 2200, default: 50 };
+  (async () => {
+    try {
+      const res  = await fetch('/api/booking/facilities');
+      const data = await res.json();
+      (data.facilities || []).forEach(f => {
+        if (!f.deposit || !f.depositAmount) return;
+        PAY_DEPOSITS[f.key] = f.depositAmount;
+        if (f.key === 'verandah' && VERANDAH_FEES[0]) VERANDAH_FEES[0].amount = f.depositAmount;
+      });
+    } catch { /* keep the bootstrap fallback values above */ }
+  })();
   // A deposit is outstanding only while at "Deposit Pending".
   const DEPOSIT_STAGES = new Set(['Deposit Pending']);
   // Derive the facility key from a GHL opportunity name.
