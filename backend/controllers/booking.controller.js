@@ -311,6 +311,7 @@ async function createCheckoutSession(req, res) {
   const session = await stripeService.createDepositCheckoutSession({
     bookingId: String(existing._id), facilityName: existing.facilityName,
     amount, bookingFee, refundableAmount, residentEmail: existing.resident_email,
+    depositDueAt: existing.depositDueAt,
   });
   existing.stripeCheckoutSessionId = session.id;
   await existing.save();
