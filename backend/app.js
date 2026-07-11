@@ -11,6 +11,13 @@ require('./config/logging');
 require('dns').setServers(['1.1.1.1', '8.8.8.8']);
 
 const express      = require('express');
+// Express 4 doesn't forward a rejected promise from an async route handler to
+// next(err)/errorHandler on its own - it becomes an unhandled rejection, which
+// crashes the whole Node process (e.g. an invalid :id hitting Mongoose's
+// findById/findOne throws a CastError this way). This patches Express so every
+// async handler's rejection is caught and routed to errorHandler instead -
+// must load before any routes are required.
+require('express-async-errors');
 const helmet       = require('helmet');
 const cors         = require('cors');
 const cookieParser = require('cookie-parser');
