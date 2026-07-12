@@ -116,6 +116,7 @@ async function listMine(req, res) {
       status: m.status, stage: m.status,
       depositDueAt: m.depositDueAt || null, cancelReason: m.cancelReason || '',
       depositStatus: m.depositStatus || 'none', depositResolvedAt: m.depositResolvedAt || null, depositNote: m.depositNote || '',
+      depositConfirmedVia: m.depositConfirmedVia || '',
     })),
   });
 }
@@ -143,6 +144,7 @@ async function confirmDeposit(req, res) {
   if (existing.status === 'Deposit Pending') {
     existing.status = 'Confirmed';
     existing.depositStatus = 'held';
+    existing.depositConfirmedVia = 'manual'; // honor-system click, not a verified Stripe charge
     await existing.save();
   } else if (existing.cancelReason === 'deposit_expired') {
     return res.status(400).json({ success: false, message: 'The 24-hour deposit window for this request has passed and it was automatically cancelled. Please submit a new request.' });
@@ -180,6 +182,7 @@ async function listForManagement(req, res) {
       moveDate: m.moveDate, moveTime: m.moveTime, notes: m.notes, stage: m.status,
       depositDueAt: m.depositDueAt || null, cancelReason: m.cancelReason || '',
       depositStatus: m.depositStatus || 'none', depositResolvedAt: m.depositResolvedAt || null, depositNote: m.depositNote || '',
+      depositConfirmedVia: m.depositConfirmedVia || '',
     })),
     stages: ALL_STAGES,
   });
@@ -198,7 +201,7 @@ async function updateStage(req, res) {
   // Covers management confirming a deposit manually ("Mark as Paid") rather
   // than the resident's own Stripe checkout - either path collects the
   // money, so either path must start the deposit's held/refund/forfeit lifecycle.
-  if (stage === 'Confirmed' && existing.depositStatus === 'none') existing.depositStatus = 'held';
+  if (stage === 'Confirmed' && existing.depositStatus === 'none') { existing.depositStatus = 'held'; existing.depositConfirmedVia = 'manual'; }
   existing.status = stage;
   await existing.save();
   return res.json({ success: true, message: `Request moved to ${stage}.`, stage });

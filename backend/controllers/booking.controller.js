@@ -170,6 +170,7 @@ async function listMine(req, res) {
       status: b.status, stage: b.status,
       depositDueAt: b.depositDueAt || null, cancelReason: b.cancelReason || '',
       depositStatus: b.depositStatus || 'none', depositResolvedAt: b.depositResolvedAt || null, depositNote: b.depositNote || '',
+      depositConfirmedVia: b.depositConfirmedVia || '',
     })),
   });
 }
@@ -258,6 +259,7 @@ async function confirmDeposit(req, res) {
   if (existing.status === 'Deposit Pending') {
     existing.status = 'Confirmed';
     existing.depositStatus = 'held'; // money is now actually collected
+    existing.depositConfirmedVia = 'manual'; // honor-system click, not a verified Stripe charge
     await existing.save();
   } else if (existing.cancelReason === 'deposit_expired') {
     return res.status(400).json({ success: false, message: 'The 24-hour deposit window for this booking has passed and it was automatically cancelled. Please make a new booking.' });
@@ -307,6 +309,7 @@ async function listForManagement(req, res) {
       resident: b.resident_name, unit: b.resident_unit, date: b.date, slot: b.slot, pax: b.pax, stage: b.status,
       depositDueAt: b.depositDueAt || null, cancelReason: b.cancelReason || '',
       depositStatus: b.depositStatus || 'none', depositResolvedAt: b.depositResolvedAt || null, depositNote: b.depositNote || '',
+      depositConfirmedVia: b.depositConfirmedVia || '',
     })),
     stages: ALL_STAGES,
   });
@@ -327,7 +330,7 @@ async function updateStage(req, res) {
   // money, so either path must start the deposit's held/refund/forfeit lifecycle.
   if (stage === 'Confirmed' && existing.depositStatus === 'none') {
     const facility = facilities.facByKey(existing.facilityKey);
-    if (facility && facility.deposit) existing.depositStatus = 'held';
+    if (facility && facility.deposit) { existing.depositStatus = 'held'; existing.depositConfirmedVia = 'manual'; }
   }
   existing.status = stage;
   await existing.save();

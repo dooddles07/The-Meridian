@@ -31,6 +31,12 @@ const schema = new mongoose.Schema({
   depositStatus:    { type: String, enum: ['none', 'held', 'refunded', 'forfeited'], default: 'none' },
   depositResolvedAt:{ type: Date, default: null },
   depositNote:      { type: String, default: '' }, // required reason when forfeited
+  // Audit trail: how the deposit actually got collected - 'stripe' only ever
+  // set by the webhook (a real charge happened), 'manual' by either the
+  // resident's honor-system confirmDeposit or management's own "mark as paid"
+  // (updateStage). Without this, a Stripe-verified payment and a management
+  // override look identical in the record.
+  depositConfirmedVia: { type: String, enum: ['', 'stripe', 'manual'], default: '' },
   // Set by the Stripe webhook once a real Checkout Session completes - lets
   // manageDeposit issue an actual stripe.refunds.create() later instead of
   // just flipping depositStatus with no money ever moving back. Empty for

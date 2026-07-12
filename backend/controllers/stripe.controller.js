@@ -28,6 +28,7 @@ async function handleWebhook(req, res) {
       if (doc && doc.status === 'Deposit Pending') {
         doc.status = 'Confirmed';
         doc.depositStatus = 'held';
+        doc.depositConfirmedVia = 'stripe';
         // string ID on a completed Session in `payment` mode - not expanded,
         // exactly what stripe.refunds.create() needs later.
         if (session.payment_intent) doc.stripePaymentIntentId = session.payment_intent;

@@ -106,7 +106,14 @@ table { width: 100%; border-collapse: collapse; }
 .bk-syncing { color: var(--gold); font-style: italic; animation: bk-pulse 1.4s ease-in-out infinite; }
 @keyframes bk-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-.bk-deposit-actions { display: flex; gap: 4px; }
+.bk-deposit-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.bk-deposit-via {
+  width: 100%;
+  font-size: 0.62rem;
+  color: var(--muted, #9a9088);
+  font-style: italic;
+  margin-top: 2px;
+}
 .bk-deposit-btn {
   font-size: 0.65rem;
   font-weight: 600;

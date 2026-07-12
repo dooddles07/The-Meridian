@@ -19,6 +19,9 @@ const schema = new mongoose.Schema({
   depositStatus:    { type: String, enum: ['none', 'held', 'refunded', 'forfeited'], default: 'none' },
   depositResolvedAt:{ type: Date, default: null },
   depositNote:      { type: String, default: '' }, // required reason when forfeited
+  // Audit trail: how the deposit actually got collected - see booking.model.js's
+  // identical field for the full rationale.
+  depositConfirmedVia: { type: String, enum: ['', 'stripe', 'manual'], default: '' },
   stripePaymentIntentId:   { type: String, default: '' },
   stripeCheckoutSessionId: { type: String, default: '' },
   contact_id:     { type: String, required: true, index: true },

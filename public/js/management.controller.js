@@ -255,15 +255,25 @@
   // Deposit is tracked separately from the booking's own stage - a Completed
   // booking's deposit can sit "held" for days while the facility is inspected
   // before management decides to refund or forfeit it.
+  // depositConfirmedVia: 'stripe' (webhook-verified real charge) vs 'manual'
+  // (resident's honor-system tap or management's own "mark as paid") - shown
+  // so management knows, before clicking Refund, whether there's actually a
+  // real charge to refund or just an internal record.
+  function depositViaHint(via) {
+    if (via === 'stripe') return '<div class="bk-deposit-via" title="Confirmed by a verified Stripe payment">via Stripe</div>';
+    if (via === 'manual')  return '<div class="bk-deposit-via" title="Confirmed manually - no verified Stripe charge on file">via manual override</div>';
+    return '';
+  }
   function bkDepositCell(b) {
     if (b.depositStatus === 'held') {
       return `<div class="bk-deposit-actions">
         <button class="bk-deposit-btn bk-deposit-btn--refund" data-deposit-action="refund" data-id="${esc(b.oppId)}">Refund</button>
         <button class="bk-deposit-btn bk-deposit-btn--forfeit" data-deposit-action="forfeit" data-id="${esc(b.oppId)}">Forfeit</button>
+        ${depositViaHint(b.depositConfirmedVia)}
       </div>`;
     }
-    if (b.depositStatus === 'refunded')  return `<span class="badge badge-closed">Refunded</span>`;
-    if (b.depositStatus === 'forfeited') return `<span class="badge badge-uncollected" title="${esc(b.depositNote || '')}">Forfeited</span>`;
+    if (b.depositStatus === 'refunded')  return `<span class="badge badge-closed">Refunded</span>${depositViaHint(b.depositConfirmedVia)}`;
+    if (b.depositStatus === 'forfeited') return `<span class="badge badge-uncollected" title="${esc(b.depositNote || '')}">Forfeited</span>${depositViaHint(b.depositConfirmedVia)}`;
     return `<span style="color:var(--muted)">—</span>`;
   }
 
