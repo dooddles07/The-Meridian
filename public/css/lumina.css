@@ -154,7 +154,7 @@ a { color: inherit; text-decoration: none; }
   --text:  #f5f2ea;
   --muted: #cac0ac;
   --gold:  #b6b3f8;
-  padding: clamp(48px, 10vh, 92px) clamp(24px, 6vw, 56px) clamp(36px, 7vh, 64px);
+  padding: 64px clamp(24px, 6vw, 56px);
 }
 /* Anchored to the viewport, not the hero card - the photo it credits now
    spans the whole page. Uses the page's own muted/faint tokens rather than a
