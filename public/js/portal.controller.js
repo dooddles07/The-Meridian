@@ -1255,7 +1255,6 @@
       'Notified':             'sbadge-submitted',
       'Collected':            'sbadge-resolved',
       'Uncollected / Returned':'sbadge-closed',
-      'Requested':            'sbadge-submitted',
       'Deposit Pending':      'sbadge-reported',
       'Deposit Paid':         'sbadge-acknowledged',
       'Confirmed':            'sbadge-confirmed',
@@ -2075,13 +2074,17 @@
     if (member.contact_id) qs.set('contact_id', member.contact_id);
     if (member.email)      qs.set('email', member.email);
     try {
+      // Both are real backends now (booking.controller.js / move.controller.js) -
+      // resident-scoped, with the live status + id, so anything that shows in
+      // My Bookings/My Move Bookings also shows here. No per-fetch .catch() here
+      // on purpose - a genuine failure must reach the outer catch and show the
+      // "Could not load" error below, not silently resolve to {} and render as
+      // if there were simply no deposits (a resident could miss a real pending one).
       const [bRes, mRes] = await Promise.all([
-        // Both are real backends now (booking.controller.js / move.controller.js) -
-        // resident-scoped, with the live status + id, so anything that shows in
-        // My Bookings/My Move Bookings also shows here.
-        fetch(`/api/booking/mine?${qs.toString()}`).then(r => r.json()).catch(() => ({})),
-        fetch('/api/move/mine').then(r => r.json()).catch(() => ({})),
+        fetch(`/api/booking/mine?${qs.toString()}`).then(r => r.json()),
+        fetch('/api/move/mine').then(r => r.json()),
       ]);
+      if (!bRes.success || !mRes.success) throw new Error('payments fetch failed');
       const facItems = (bRes.items || [])
         .filter(b => b.oppId && DEPOSIT_FACILITY_KEYS.has(b.facilityKey))
         .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', depositStatus: b.depositStatus || 'none', depositNote: b.depositNote || '', facilityKey: b.facilityKey, name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }));
