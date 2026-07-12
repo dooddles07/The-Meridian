@@ -153,17 +153,37 @@
     return hours * 60 + m;
   }
 
-  // Fetch already-booked ranges (SGT minutes) for a facility/date from the server.
-  // GHL is the shared source of truth, so this reflects EVERY resident's bookings.
-  // Fails open to [] - the server's createBooking guard is the authoritative block.
+  // Fetch already-booked ranges (SGT minutes) for a facility/date from MongoDB
+  // (the real source of truth - booking.controller.js), reflecting EVERY
+  // resident's bookings. Returns null (not []) on a genuine fetch/parse
+  // failure so callers can tell "confirmed nothing busy" apart from "couldn't
+  // check" - rendering every slot as bookable on a failed check would let a
+  // resident submit a booking that was never actually verified against the
+  // real availability, only rejected later if the server happens to conflict.
   async function fetchBusyRanges(facilityKey, date, excludeId) {
     try {
       let url = `/api/booking/availability?facilityKey=${encodeURIComponent(facilityKey)}&date=${encodeURIComponent(date)}`;
       if (excludeId) url += `&exclude=${encodeURIComponent(excludeId)}`;
       const res  = await fetch(url);
       const data = await res.json();
-      return (data && data.busy) || [];
-    } catch { return []; }
+      if (!data || !data.success) return null;
+      return data.busy || [];
+    } catch { return null; }
+  }
+
+  // Neither the calendar's native min/max nor a typed-in date get a second
+  // check anywhere else client-side - this is that check, shared by the slot
+  // grid (so an out-of-bounds date shows a clear error instead of a full
+  // grid of pills that would only fail at submit) and confirmBooking (the
+  // actual submit-time backstop).
+  function _dateBoundsError(f, dateVal) {
+    const today = todaySGT();
+    if (!dateVal || dateVal < today) return 'Please choose a valid date.';
+    if (f.maxAdvanceDays) {
+      const maxDate = addDays(today, f.maxAdvanceDays);
+      if (dateVal > maxDate) return `${f.name} can only be booked up to ${f.maxAdvanceDays} days in advance.`;
+    }
+    return null;
   }
 
   // Dispatches to the fixed-duration picker (BBQ/Verandah - one pill IS the
@@ -189,8 +209,19 @@
     if (!dateVal) {
       grid.innerHTML = `<div class="bk-slot-empty">Select a date first</div>`;
       hidden.value = '';
+      grid._busy = null;
       _updateSlotEnd('');
       if (hint) { hint.className = 'bk-slot-hint'; hint.innerHTML = ''; }
+      return;
+    }
+
+    const boundsErr = _dateBoundsError(f, dateVal);
+    if (boundsErr) {
+      grid.innerHTML = `<div class="bk-slot-empty">Choose a valid date to see time slots.</div>`;
+      hidden.value = '';
+      grid._busy = null;
+      _updateSlotEnd('');
+      if (hint) { hint.className = 'bk-slot-hint err'; hint.innerHTML = `⚠ ${esc(boundsErr)}`; }
       return;
     }
 
@@ -205,6 +236,15 @@
     const busy = await fetchBusyRanges(f.key, dateVal, _editing ? _editing.id : '');
     // Bail if the user changed the date while we were fetching (stale response).
     if (($('bkDate') && $('bkDate').value) !== dateVal) return;
+
+    if (busy === null) {
+      grid.innerHTML = `<div class="bk-slot-empty">Could not check availability.</div>`;
+      hidden.value = '';
+      grid._busy = null;
+      _updateSlotEnd('');
+      if (hint) { hint.className = 'bk-slot-hint err'; hint.innerHTML = '⚠ Could not check availability - please try a different date or reload.'; }
+      return;
+    }
 
     const overlaps = (start, end) => busy.some(b => start < b.end && end > b.start);
 
@@ -290,6 +330,13 @@
       return;
     }
 
+    const boundsErr = _dateBoundsError(f, dateVal);
+    if (boundsErr) {
+      startGrid.innerHTML = `<div class="bk-slot-empty">Choose a valid date to see start times.</div>`;
+      if (hint) { hint.className = 'bk-slot-hint err'; hint.innerHTML = `⚠ ${esc(boundsErr)}`; }
+      return;
+    }
+
     const isToday  = dateVal === todaySGT();
     const nowMins  = isToday ? nowSGTMins() : -1;
     const openMin  = f.open * 60;
@@ -302,6 +349,12 @@
 
     const busy = await fetchBusyRanges(f.key, dateVal, _editing ? _editing.id : '');
     if (($('bkDate') && $('bkDate').value) !== dateVal) return; // stale - date changed mid-fetch
+
+    if (busy === null) {
+      startGrid.innerHTML = `<div class="bk-slot-empty">Could not check availability.</div>`;
+      if (hint) { hint.className = 'bk-slot-hint err'; hint.innerHTML = '⚠ Could not check availability - please try a different date or reload.'; }
+      return;
+    }
 
     // Legal starts: every stepMin minutes from open, as long as at least one
     // 1-hour unit fits before closing (longer durations are checked once a
@@ -874,6 +927,8 @@
     const btn     = $('bkConfirm');
 
     if (!date) { errEl.textContent = 'Please choose a date.'; return; }
+    const boundsErr = _dateBoundsError(f, date);
+    if (boundsErr) { errEl.textContent = boundsErr; return; }
     if (!slot)  { errEl.textContent = 'Please choose a time slot.'; return; }
     if (date === todaySGT() && parseSlotStart(slot) <= nowSGTMins()) {
       errEl.textContent = 'That time slot has already passed. Please choose another.'; return;
