@@ -28,7 +28,25 @@
     // history as something the back button lands on. Checked in a fixed
     // order — resident first — for the rare case someone is signed into more
     // than one role in the same browser.
+    //
+    // localStorage is shared across every same-origin tab though - so if a
+    // resident is signed in on tab A and an admin explicitly logs out of
+    // management on tab B, this script (running fresh on tab B's navigation to
+    // index.html) would still see the resident's still-valid lumina_member in
+    // localStorage and bounce tab B straight into portal.html instead of
+    // showing the chooser the admin actually asked for by clicking Logout.
+    // Each portal's logout handler sets this one-shot, per-TAB (sessionStorage,
+    // not localStorage) flag right before navigating here specifically to
+    // suppress that - it's consumed (removed) immediately so it only ever
+    // skips the very next redirect check, not any later visit to this page.
     (function () {
+      var suppressOnce = false;
+      try {
+        if (sessionStorage.getItem('lumina_just_logged_out')) {
+          sessionStorage.removeItem('lumina_just_logged_out');
+          suppressOnce = true;
+        }
+      } catch (e) {}
       function loggedIn(key, stores) {
         for (var i = 0; i < stores.length; i++) {
           try { if (stores[i].getItem(key)) return true; } catch (e) {}
@@ -41,7 +59,10 @@
         if (loggedIn('gh_session',    [sessionStorage]))               { location.replace('guardhouse-portal.html'); return true; }
         return false;
       }
-      redirectIfSignedIn();
+      // Only the immediate check on this load is suppressed - the flag is
+      // already consumed above, so a later bfcache restore of this same page
+      // (pageshow below) runs the normal check again, unsuppressed.
+      if (!suppressOnce) redirectIfSignedIn();
       // Chrome/Safari can restore this exact page from the back/forward cache
       // without re-running the script above - pageshow fires on that restore too.
       window.addEventListener('pageshow', function (e) { if (e.persisted) redirectIfSignedIn(); });
