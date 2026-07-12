@@ -229,6 +229,10 @@
     }).join('');
 
     grid.innerHTML = pills || '<div class="bk-slot-empty">No slots configured for this facility.</div>';
+    // Stashed so confirmBooking's maxBlocksPerDay pre-check can use the same
+    // venue-wide count the server enforces, instead of the resident's own
+    // bookings only - see confirmBooking for why that mismatch mattered.
+    grid._busy = busy;
     hidden.value = keepVal;
     _updateSlotEnd(keepVal);
     if (_editing && !keepVal && prevVal === _editing.slot && hint) {
@@ -858,10 +862,19 @@
       errEl.textContent = `Pax must be between 1 and ${f.maxPax}.`; return;
     }
     if (f.maxBlocksPerDay) {
-      const sameDayCount = getBookings().filter(b => b.facilityKey === f.key && b.date === date && !isFinished(b.status) && (!editing || b.id !== editing.id)).length;
-      if (sameDayCount >= f.maxBlocksPerDay) {
-        errEl.textContent = `Maximum ${f.maxBlocksPerDay} block${f.maxBlocksPerDay > 1 ? 's' : ''} of ${f.name} may be booked per day.`; return;
+      // Venue-wide, not just this resident's own bookings - matches the server's
+      // own check (booking.controller.js's checkBlocksPerDay). grid._busy (stashed
+      // by _refreshFixedSlots for the currently-selected date) already excludes
+      // Cancelled bookings and the booking being edited, same as the server query.
+      const grid = $('bkSlotGrid');
+      if (grid && Array.isArray(grid._busy)) {
+        const sameDayCount = grid._busy.length;
+        if (sameDayCount >= f.maxBlocksPerDay) {
+          errEl.textContent = `Maximum ${f.maxBlocksPerDay} block${f.maxBlocksPerDay > 1 ? 's' : ''} of ${f.name} may be booked per day.`; return;
+        }
       }
+      // If busy data isn't available yet, fail open here - the server's own
+      // check (now applied on both create AND edit) is the real backstop.
     }
 
     errEl.textContent = '';
@@ -1975,10 +1988,15 @@
                      : key === 'move' ? 'Admin Fee + Refundable Deposit'
                      : 'Deposit';
     // Only the refundable deposit is returned on a move refund (admin fee is non-refundable).
+    // A held deposit can outlive its booking (e.g. cancelled after the deposit
+    // was already paid) - say so explicitly instead of claiming "Confirmed"
+    // for a booking/move that no longer is.
     const histMeta   = isForfeited
                      ? `${baseMeta} · Forfeited${item.depositNote ? ` — ${esc(item.depositNote)}` : ''}`
                      : isRefunded
                      ? (key === 'move' ? 'Refundable Deposit · Refunded' : `${baseMeta} · Refunded`)
+                     : item.stage === 'Cancelled'
+                     ? `${baseMeta} · Held (booking cancelled - pending resolution)`
                      : `${baseMeta} · Confirmed`;
     const histAmtStr = (isRefunded && key === 'move')
                      ? `USD ${Number(MOVE_REFUNDABLE_DEPOSIT).toFixed(2)}`
@@ -2095,12 +2113,13 @@
         ...facItems.filter(o => DEPOSIT_STAGES.has(o.stage)).map(o => [o, 'facility']),
         ...moveItems.filter(o => DEPOSIT_STAGES.has(o.stage)).map(o => [o, 'move']),
       ];
-      // A deposit that's since been refunded/forfeited moves out of the plain
-      // "Confirmed" bucket into "resolved" below, even though the booking/move's
-      // own status is still Confirmed/Completed - the two are tracked separately.
+      // Bucketed by the deposit's OWN state, not the booking/move's stage - a
+      // cancelled booking whose deposit is still 'held' (money not yet refunded
+      // or forfeited) must still show up here, not disappear from Payments
+      // entirely just because the underlying booking is no longer Confirmed.
       const confirmed = [
-        ...facItems.filter(o => (o.stage === 'Confirmed' || o.stage === 'Completed') && o.depositStatus !== 'refunded' && o.depositStatus !== 'forfeited').map(o => [o, 'facility']),
-        ...moveItems.filter(o => (o.stage === 'Confirmed' || o.stage === 'Completed') && o.depositStatus !== 'refunded' && o.depositStatus !== 'forfeited').map(o => [o, 'move']),
+        ...facItems.filter(o => o.depositStatus === 'held').map(o => [o, 'facility']),
+        ...moveItems.filter(o => o.depositStatus === 'held').map(o => [o, 'move']),
       ];
       const refunded = [
         ...facItems.filter(o => o.depositStatus === 'refunded' || o.depositStatus === 'forfeited').map(o => [o, 'facility']),

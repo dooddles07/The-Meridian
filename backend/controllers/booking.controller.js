@@ -135,6 +135,21 @@ function validateBookingInput(req, res, { excludeId } = {}) {
 // slot the same as Confirmed does (no payment-timeout/release logic exists, so
 // letting an unpaid pending booking block others would let it be silently
 // bumped by a second resident, which is worse).
+// Venue-level cap (e.g. Verandah: max 2 event blocks/day across ALL residents,
+// not per-resident - it's a shared space, not a personal quota). Shared by
+// create() and update() so an edit can't bypass the cap that a fresh booking
+// would be rejected for.
+async function checkBlocksPerDay(facility, date, excludeId) {
+  if (!facility.maxBlocksPerDay) return null;
+  const query = { facilityKey: facility.key, date, status: { $ne: 'Cancelled' } };
+  if (excludeId) query._id = { $ne: excludeId };
+  const sameDayCount = await Booking.countDocuments(query);
+  if (sameDayCount >= facility.maxBlocksPerDay) {
+    return `Maximum ${facility.maxBlocksPerDay} block${facility.maxBlocksPerDay > 1 ? 's' : ''} of ${facility.name} may be booked per day.`;
+  }
+  return null;
+}
+
 async function hasConflict(facilityKey, date, slotStartMin, slotEndMin, excludeId) {
   const query = { facilityKey, date, status: { $ne: 'Cancelled' } };
   if (excludeId) query._id = { $ne: excludeId };
@@ -183,14 +198,8 @@ async function create(req, res) {
   if (!valid) return;
   const { facility, date, slot, slotStartMin, slotEndMin, pax } = valid;
 
-  if (facility.maxBlocksPerDay) {
-    // Venue-level cap (e.g. Verandah: max 2 event blocks/day across ALL residents,
-    // not per-resident - it's a shared space, not a personal quota).
-    const sameDayCount = await Booking.countDocuments({ facilityKey: facility.key, date, status: { $ne: 'Cancelled' } });
-    if (sameDayCount >= facility.maxBlocksPerDay) {
-      return res.status(409).json({ success: false, message: `Maximum ${facility.maxBlocksPerDay} block${facility.maxBlocksPerDay > 1 ? 's' : ''} of ${facility.name} may be booked per day.` });
-    }
-  }
+  const blockErr = await checkBlocksPerDay(facility, date);
+  if (blockErr) return res.status(409).json({ success: false, message: blockErr });
 
   if (await hasConflict(facility.key, date, slotStartMin, slotEndMin)) {
     return res.status(409).json({ success: false, message: 'That time slot was just booked by someone else. Please choose another.' });
