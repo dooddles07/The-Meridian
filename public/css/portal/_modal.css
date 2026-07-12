@@ -109,6 +109,15 @@
   color: rgba(200,190,175,0.65);
   margin-top: 3px;
 }
+.bk-deposit-disclosure {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--orange);
+  background: rgba(212,120,72,0.1);
+  border-bottom: 1px solid rgba(212,120,72,0.25);
+  padding: 8px 20px;
+  line-height: 1.5;
+}
 .bk-form {
   padding: 18px 20px 20px;
   display: flex;
@@ -207,6 +216,12 @@
   border-radius: 6px;
   padding: 8px 12px;
   margin-bottom: 12px;
+}
+.bk-rule--warn {
+  background: rgba(212, 120, 72, 0.12);
+  border-left-color: var(--orange);
+  color: var(--orange);
+  font-weight: 600;
 }
 .bk-err { font-size: 0.75rem; color: var(--red); min-height: 16px; margin-bottom: 4px; }
 .bk-confirm {

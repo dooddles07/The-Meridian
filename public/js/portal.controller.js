@@ -653,6 +653,7 @@
           <div class="fac-row">
             <span class="fac-hours">${hoursLabel(f)}</span>
             <span class="fac-cap">${esc(f.capacity)}</span>
+            ${f.deposit ? `<span class="fac-deposit-badge">USD ${(PAY_DEPOSITS[f.key] || 0).toFixed(0)} deposit</span>` : ''}
           </div>
         </div>
       </div>`).join('');
@@ -673,6 +674,23 @@
     $('modalTitle').textContent = `${_editing ? 'Edit' : 'Book'} · ${f.name}`;
 
     const maxDate = f.maxAdvanceDays ? addDays(todaySGT(), f.maxAdvanceDays) : '';
+    // Editing never resets the deposit deadline (see booking.controller.js's
+    // update()) - it's tied to when the slot was first held, not which slot is
+    // currently chosen, so repeatedly editing can't be used to indefinitely
+    // extend an unpaid hold. Surface that explicitly so it isn't a surprise.
+    const depositNoteHtml = (_editing && _editing.status === 'Deposit Pending' && _editing.depositDueAt)
+      ? `<div class="bk-rule bk-rule--warn">${esc(_depositCountdown(_editing.depositDueAt))} - editing does not extend this deadline. Pay from the Payments tab before it expires or this booking will be automatically cancelled.</div>`
+      : '';
+    // Shown upfront, before the resident ever commits - previously this only
+    // appeared in the success dialog AFTER booking, which meant the deposit
+    // requirement itself came as a surprise.
+    const depositAmt = PAY_DEPOSITS[f.key] || 0;
+    const refundablePart = REFUNDABLE_AMOUNTS[f.key];
+    const depositDisclosureHtml = f.deposit
+      ? `<div class="bk-deposit-disclosure">Requires a USD ${depositAmt.toFixed(2)} deposit${(refundablePart && refundablePart < depositAmt)
+          ? ` - USD ${(depositAmt - refundablePart).toFixed(2)} non-refundable booking fee + USD ${refundablePart.toFixed(2)} refundable deposit`
+          : ' (fully refundable)'}, paid within 24 hours after booking.</div>`
+      : '';
 
     const slotFieldHtml = f.variableDuration
       ? `<div class="bk-field">
@@ -696,7 +714,9 @@
             <div class="bk-banner-meta">Open ${hoursLabel(f)} &nbsp;·&nbsp; ${esc(f.capacity)}</div>
           </div>
         </div>
+        ${depositDisclosureHtml}
         <div class="bk-form">
+          ${depositNoteHtml}
           <div class="bk-row">
             <div class="bk-field">
               <label>Date</label>

@@ -138,6 +138,14 @@
   border-radius: 4px;
   padding: 1px 5px;
 }
+.fac-deposit-badge {
+  font-size: 0.5625rem;
+  letter-spacing: 0.05em;
+  color: var(--orange);
+  border: 1px solid rgba(212,120,72,0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
 
 /* My Bookings - deposit payment window urgency, shown under the status badge. */
 .bk-deposit-countdown {
