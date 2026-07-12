@@ -102,6 +102,20 @@ async function listResidents() {
   return RESIDENTS;
 }
 
+// Typeahead search for the management guest desk's host lookup - substring
+// match on name/unit/email. Returns null (not []) when the DB is down so the
+// controller can tell "no matches" apart from "can't search right now".
+async function searchResidents(q, limit = 8) {
+  if (!dbReady()) return null;
+  const query = clean(q);
+  if (!query) return [];
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(escaped, 'i');
+  const rows = await Resident.find({ active: true, $or: [{ name: re }, { unit: re }, { email: re }] })
+    .limit(limit).lean();
+  return rows.map(r => ({ id: String(r._id), name: r.name, unit: r.unit, email: r.email }));
+}
+
 module.exports = {
-  seed, seedPreviewAccount, findByEmail, createResident, listResidents, dbReady,
+  seed, seedPreviewAccount, findByEmail, createResident, listResidents, searchResidents, dbReady,
 };

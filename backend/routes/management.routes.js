@@ -5,6 +5,7 @@ const resources    = require('../controllers/resource.controller');
 const announcements = require('../controllers/announcement.controller');
 const bookings     = require('../controllers/booking.controller');
 const moves        = require('../controllers/move.controller');
+const guests       = require('../controllers/guest.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
 
 router.use(requireManagement);
@@ -39,5 +40,10 @@ router.put('/bookings/:id/deposit',    mutateLimiter, auditLog, bookings.manageD
 router.get('/moves',                   moves.listForManagement);
 router.put('/moves/:id/stage',         mutateLimiter, auditLog, moves.updateStage);
 router.put('/moves/:id/deposit',       mutateLimiter, auditLog, moves.manageDeposit);
+
+router.get('/contacts/search',         guests.searchContacts);
+router.get('/guests',                  guests.listForManagement);
+router.post('/guest',                  mutateLimiter, auditLog, guests.createByManagement);
+router.put('/guests/:id/stage',        mutateLimiter, auditLog, guests.updateStage);
 
 module.exports = router;

@@ -245,12 +245,9 @@
     }
 
     // RESIDENT SUBMISSIONS + "mine" lists
-    if (p === '/api/guest' && method === 'POST') {
-      var gref = guestRef(body.visit_date);
-      db.guests.unshift({ oppId: uid('local-opp'), contactId: body.host_contact_id || MEMBER.contact_id, reference: gref, visitor: body.visitor_name, visitorEmail: body.visitor_email, visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type, host: body.host_name || MEMBER.name, unit: body.host_unit || MEMBER.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
-      persist();
-      return ok({ message: 'Visitor registered.', reference: gref });
-    }
+    // Guest registration/lookup (/api/guest, /api/guardhouse/lookup+checkin,
+    // /api/management/guest(s), /api/management/contacts/search) is now real -
+    // see isRealPath below - so those mock branches are gone from here.
     if (p === '/api/defect' && method === 'POST') {
       db.defects.unshift({ id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, desc: body.description, category: body.category || 'General', location: body.location || '', urgency: body.urgency || 'Medium', stage: 'Reported', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
       persist();
@@ -274,19 +271,8 @@
     if (p === '/api/feedback/mine') return ok({ items: db.feedback.map(function (x) { return { type: x.type, category: x.category, desc: x.desc, incident_date: x.incident_date, incident_time: x.incident_time, ts: x.ts }; }) });
     if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
 
-    // GUARDHOUSE
-    if (p === '/api/guardhouse/lookup') {
-      var ref = (qs.get('reference') || qs.get('ref') || '').trim();
-      var g = db.guests.find(function (x) { return x.reference === ref; });
-      if (!g) return ok({ found: false });
-      return ok({ found: true, reference: g.reference, visitor: g.visitor, hostUnit: g.unit, hostContactId: g.contactId, opportunityId: g.oppId, visitDate: g.visitDate, stage: g.stage, status: 'open' });
-    }
-    if (p === '/api/guardhouse/checkin' && method === 'POST') {
-      var actMap = { checkin: 'Checked In', checkout: 'Checked Out', depart: 'Departed' };
-      var g2 = db.guests.find(function (x) { return x.contactId === body.contact_id; });
-      if (g2) { g2.stage = actMap[body.action] || 'Checked In'; persist(); }
-      return ok({ tag: 'guest-' + (body.action || 'checked-in') });
-    }
+    // GUARDHOUSE - lookup/checkin are real now (see isRealPath); parcel + the
+    // shared activity log below are still mocked.
     if (p === '/api/guardhouse/parcel' && method === 'GET') {
       var pref2 = (qs.get('reference') || qs.get('ref') || '').trim();
       var pc = db.parcels.find(function (x) { return x.ref.toLowerCase() === pref2.toLowerCase(); });
@@ -316,29 +302,9 @@
       return ok();
     }
 
-    // MANAGEMENT
-    if (p === '/api/management/contacts/search') {
-      var q = (qs.get('q') || '').toLowerCase();
-      var contacts = db.residents.filter(function (r) { return (r.name + r.email + r.unit).toLowerCase().indexOf(q) !== -1; })
-        .map(function (r) { return { id: r.contact_id, name: r.name, email: r.email, unit: r.unit }; });
-      return ok({ contacts: contacts });
-    }
-    if (p === '/api/management/guest' && method === 'POST') {
-      var gref2 = guestRef(body.visit_date);
-      var host = db.residents.find(function (r) { return r.contact_id === body.host_contact_id || r.email === body.host_email; }) || MEMBER;
-      db.guests.unshift({ oppId: uid('local-opp'), contactId: host.contact_id, reference: gref2, visitor: body.visitor_name, visitorEmail: body.visitor_email || '', visitorPhone: body.visitor_phone || '', visitorType: body.visitor_type || 'Guest', host: host.name, unit: host.unit, phone: body.visitor_phone || '', visitDate: body.visit_date, duration: body.duration || 'Single Visit (Day)', stage: 'Registered', createdAt: nowISO() });
-      persist();
-      var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=' + encodeURIComponent(gref2);
-      return ok({ message: 'Visitor registered.', reference: gref2, qr_url: qrUrl });
-    }
-    if (p === '/api/management/guests' && method === 'GET') {
-      var gi = db.guests.map(function (g) { return { oppId: g.oppId, contactId: g.contactId, reference: g.reference, visitor: g.visitor, host: g.host, unit: g.unit, phone: g.phone, visitDate: g.visitDate, stage: g.stage, createdAt: g.createdAt }; });
-      return ok({ items: gi, total: gi.length, stages: STAGES.guest });
-    }
-    if ((m = p.match(/^\/api\/management\/guests\/([^/]+)\/stage$/)) && method === 'PUT') {
-      setStageById(db.guests, decodeURIComponent(m[1]), body.stage);
-      return ok({ message: 'Guest moved to ' + body.stage + '.', stage: body.stage });
-    }
+    // MANAGEMENT - guest desk (contacts/search, guest, guests, guests/:id/stage)
+    // is real now (see isRealPath); the generic opportunities pipeline below
+    // still covers defect/parcel/feedback.
     if (p === '/api/management/opportunities' && method === 'GET') {
       var pk = qs.get('pipeline');
       var list = collectionFor(pk).map(function (it) {
@@ -402,16 +368,17 @@
   }
 
   // fetch override — resident signup/login, management/guardhouse login,
-  // logout, the resources library, announcements, facility bookings, and
-  // Move-In/Out (both resident and management sides of each) are all real
-  // (Mongo-backed, via the reference backend deployed on Railway), so those
-  // paths pass through untouched (logout MUST reach the real network - it's
-  // what actually clears the httpOnly session cookie server-side; the mock
-  // can't do that).
-  // Everything else stays mocked: those other resident/management/guardhouse
-  // data views were built against a real CRM (GoHighLevel) that isn't
-  // configured here, so they'd just 503 against the real backend — the mock
-  // keeps them working.
+  // logout, the resources library, announcements, facility bookings,
+  // Move-In/Out (both resident and management sides of each), and guest
+  // passes (resident + management registration/listing, and the guardhouse's
+  // lookup/check-in) are all real (Mongo-backed, via the reference backend
+  // deployed on Railway), so those paths pass through untouched (logout MUST
+  // reach the real network - it's what actually clears the httpOnly session
+  // cookie server-side; the mock can't do that).
+  // Everything else stays mocked: parcels, defects, feedback, messages, and
+  // the guardhouse's shared activity log were built against a real CRM
+  // (GoHighLevel) that isn't configured here, so they'd just 503 against the
+  // real backend — the mock keeps them working.
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -428,7 +395,12 @@
         || s.indexOf('/api/booking') !== -1
         || s.indexOf('/api/management/bookings') !== -1
         || s.indexOf('/api/move') !== -1
-        || s.indexOf('/api/management/moves') !== -1;
+        || s.indexOf('/api/management/moves') !== -1
+        || s.indexOf('/api/guest') !== -1
+        || s.indexOf('/api/management/guest') !== -1
+        || s.indexOf('/api/management/contacts/search') !== -1
+        || s.indexOf('/api/guardhouse/lookup') !== -1
+        || s.indexOf('/api/guardhouse/checkin') !== -1;
       if (s.indexOf('/api/') !== -1 && !isRealPath) {
         return Promise.resolve(handle(s, opts));
       }
@@ -439,5 +411,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, and Move-In/Out are live (Mongo-backed); guests/parcels/defects/feedback still run on a local mock.', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, and guest passes are live (Mongo-backed); parcels/defects/feedback still run on a local mock.', 'color:#312e81;font-weight:bold');
 })();

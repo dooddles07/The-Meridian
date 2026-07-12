@@ -1569,7 +1569,7 @@
     if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
-      const res  = await fetch(oppUrl('guest'));
+      const res  = await fetch('/api/guest/mine');
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load guests.')}</div>`; return; }
       // Extract visitor name from "GST-YYYYMMDD-#### - Visitor Name (#unit)"

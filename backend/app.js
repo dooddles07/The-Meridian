@@ -78,6 +78,8 @@ app.use('/api/rsvp',          require('./routes/rsvp.routes'));
 app.use('/api/booking',       require('./routes/booking.routes'));
 app.use('/api/move',          require('./routes/move.routes'));
 app.use('/api/management',    require('./routes/management.routes'));
+app.use('/api/guest',         require('./routes/guest.routes'));
+app.use('/api/guardhouse',    require('./routes/guardhouse.routes'));
 
 // Scoped to /api so mounting this app alongside static file serving (local dev,
 // see server.js) still falls through to the static handler for non-API paths.
