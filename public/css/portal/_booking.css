@@ -86,12 +86,6 @@
   box-shadow: var(--shadow-lg);
 }
 .fac-card:active { transform: translateY(-1px); }
-.fac-card.disabled {
-  opacity: 0.45;
-  cursor: default;
-  filter: grayscale(0.5);
-}
-.fac-card.disabled:hover { border-color: var(--border); }
 .fac-img-wrap {
   aspect-ratio: 16 / 9;
   background-image: var(--fac-img);

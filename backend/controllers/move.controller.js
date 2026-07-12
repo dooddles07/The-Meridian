@@ -134,26 +134,6 @@ async function cancel(req, res) {
   return res.json({ success: true });
 }
 
-// PATCH /api/move/:id/confirm-deposit - resident taps "I've Completed Payment"
-// (manual fallback; startStripeCheckout is the primary path now).
-async function confirmDeposit(req, res) {
-  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await runSweeps();
-  const existing = await Move.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
-  if (!existing) return res.status(404).json({ success: false, message: 'Move request not found.' });
-  if (existing.status === 'Deposit Pending') {
-    existing.status = 'Confirmed';
-    existing.depositStatus = 'held';
-    existing.depositConfirmedVia = 'manual'; // honor-system click, not a verified Stripe charge
-    await existing.save();
-  } else if (existing.cancelReason === 'deposit_expired') {
-    return res.status(400).json({ success: false, message: 'The 24-hour deposit window for this request has passed and it was automatically cancelled. Please submit a new request.' });
-  } else if (existing.status !== 'Confirmed') {
-    return res.status(400).json({ success: false, message: 'This request is not awaiting a deposit.' });
-  }
-  return res.json({ success: true });
-}
-
 // POST /api/move/:id/checkout-session
 async function createCheckoutSession(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
@@ -245,7 +225,7 @@ async function manageDeposit(req, res) {
 }
 
 module.exports = {
-  create, listMine, cancel, confirmDeposit, createCheckoutSession,
+  create, listMine, cancel, createCheckoutSession,
   listForManagement, updateStage, manageDeposit,
   ADMIN_FEE, REFUNDABLE_DEPOSIT, TOTAL_DEPOSIT,
 };

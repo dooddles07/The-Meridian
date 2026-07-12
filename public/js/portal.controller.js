@@ -3,12 +3,12 @@
 
   // portal.controller.js  (served at /js/portal.controller.js)
   // Client-side controller for portal.html.
-  // Login authenticates against POST /api/auth/resident/login. Facility bookings
-  // are stored locally (browser) so the UI is fully usable; they'll be sent to
-  // GHL once the booking API is reconnected.
+  // Login authenticates against POST /api/auth/resident/login. Facility bookings,
+  // Move-In/Out, and payments are all real (Mongo/Stripe-backed) - see
+  // client-backend.js's isRealPath allowlist for exactly what's still mock
+  // (guests/parcels/defects/feedback/messages).
 
   const SESS = 'lumina_member';
-  const BK   = 'lumina_bookings';
   const $ = id => document.getElementById(id);
   // Finished bookings (no longer active): shown in history but excluded from the
   // active count, per-day limit, slot re-booking guard and guest linking.
@@ -954,7 +954,10 @@
 
     errEl.textContent = '';
 
-    // Step 1: Review before submitting
+    // Step 1: Review before submitting. Falls back to the browser's native
+    // confirm() if the SweetAlert CDN didn't load - a plain dialog beats
+    // silently skipping the review/cancel gate entirely and submitting
+    // straight through with no chance to back out.
     if (window.Swal) {
       const { isConfirmed } = await window.Swal.fire({
         title:              editing ? 'Review Your Changes' : 'Review Your Booking',
@@ -968,6 +971,9 @@
         focusConfirm:       false,
       });
       if (!isConfirmed) return;
+    } else {
+      const summary = `${editing ? 'Save changes to' : 'Book'} ${f.name} on ${fmtDate(date)}, ${slot}, ${pax} pax${notes ? ` (${notes})` : ''}?`;
+      if (!window.confirm(summary)) return;
     }
 
     // Step 2: Submit
@@ -1177,18 +1183,12 @@
         if (!isConfirmed) return;
       }
       const bkId = x.dataset.cancel;
-      const bk   = getBookings().find(b => b.id === bkId) || {};
       saveBookings(getBookings().map(b => b.id === bkId ? { ...b, status: 'Cancelled' } : b));
       renderMyBookings(); renderDashboardBookings();
       toast('Booking cancelled.');
       if (bkId && !bkId.startsWith('BK-')) {
-        const qs = new URLSearchParams();
-        if (bk.facilityName) qs.set('facility', bk.facilityName);
-        if (bk.date)         qs.set('date', bk.date);
-        if (bk.oppId)        qs.set('opp_id', bk.oppId);
-        const q = qs.toString();
-        try { await fetch(`/api/booking/${encodeURIComponent(bkId)}${q ? '?' + q : ''}`, { method: 'DELETE' }); }
-        catch (e) { console.warn('[cancel] GHL cancel failed (non-fatal):', e); }
+        try { await fetch(`/api/booking/${encodeURIComponent(bkId)}`, { method: 'DELETE' }); }
+        catch (e) { console.warn('[cancel] cancel request failed (non-fatal):', e); }
         syncBookingStatuses();
       }
     }));

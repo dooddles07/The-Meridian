@@ -15,7 +15,6 @@ router.use(requireResident);
 router.get('/mine',                  controller.listMine);
 router.post('/',                     mutateLimiter, auditLog, controller.create);
 router.delete('/:id',                mutateLimiter, auditLog, controller.cancel);
-router.patch('/:id/confirm-deposit', mutateLimiter, auditLog, controller.confirmDeposit);
 router.post('/:id/checkout-session', mutateLimiter, auditLog, controller.createCheckoutSession);
 
 module.exports = router;

@@ -253,31 +253,6 @@ async function cancel(req, res) {
   return res.json({ success: true });
 }
 
-// PATCH /api/booking/:id/confirm-deposit - resident taps "I've Completed Payment".
-// Only flips Deposit Pending -> Confirmed; anything else is a no-op error, since
-// there's no real payment gateway callback to verify against.
-async function confirmDeposit(req, res) {
-  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  await runSweeps();
-  const existing = await Booking.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
-  if (!existing) return res.status(404).json({ success: false, message: 'Booking not found.' });
-  // Idempotent: a facility with multiple fee line items (e.g. Verandah's booking
-  // fee + refundable deposit) confirms each fee separately against the same
-  // booking, so the second call arriving after it's already Confirmed is a
-  // success no-op, not an error.
-  if (existing.status === 'Deposit Pending') {
-    existing.status = 'Confirmed';
-    existing.depositStatus = 'held'; // money is now actually collected
-    existing.depositConfirmedVia = 'manual'; // honor-system click, not a verified Stripe charge
-    await existing.save();
-  } else if (existing.cancelReason === 'deposit_expired') {
-    return res.status(400).json({ success: false, message: 'The 24-hour deposit window for this booking has passed and it was automatically cancelled. Please make a new booking.' });
-  } else if (existing.status !== 'Confirmed') {
-    return res.status(400).json({ success: false, message: 'This booking is not awaiting a deposit.' });
-  }
-  return res.json({ success: true });
-}
-
 // POST /api/booking/:id/checkout-session - creates a real Stripe Checkout
 // Session for a Deposit Pending booking's deposit. The webhook (stripe.controller.js),
 // not this endpoint, is what actually confirms the booking - this just hands
@@ -334,9 +309,9 @@ async function updateStage(req, res) {
   if (stage !== existing.status && !(LEGAL_TRANSITIONS[existing.status] || []).includes(stage)) {
     return res.status(400).json({ success: false, message: `Cannot move a ${existing.status} booking to ${stage}.` });
   }
-  // Covers management confirming a deposit manually (e.g. "Mark as Paid") rather
-  // than the resident's own confirm-deposit call - either path collects the
-  // money, so either path must start the deposit's held/refund/forfeit lifecycle.
+  // Covers management confirming a deposit manually (e.g. "Mark as Paid") -
+  // the other path that starts the deposit's held/refund/forfeit lifecycle,
+  // alongside the Stripe webhook's own real-charge confirmation.
   if (stage === 'Confirmed' && existing.depositStatus === 'none') {
     const facility = facilities.facByKey(existing.facilityKey);
     if (facility && facility.deposit) { existing.depositStatus = 'held'; existing.depositConfirmedVia = 'manual'; }
@@ -388,4 +363,4 @@ async function manageDeposit(req, res) {
   return res.json({ success: true, depositStatus: existing.depositStatus, stripeRefunded });
 }
 
-module.exports = { availability, listMine, create, update, cancel, confirmDeposit, createCheckoutSession, listForManagement, updateStage, manageDeposit, listFacilities };
+module.exports = { availability, listMine, create, update, cancel, createCheckoutSession, listForManagement, updateStage, manageDeposit, listFacilities };
