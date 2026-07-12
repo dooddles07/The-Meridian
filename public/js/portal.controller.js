@@ -1358,27 +1358,55 @@
 
   const REF_RE = /GST-\d{8}-\d{4}/;
 
-  // Guest pass QR
-  function guestQrUrl(ref) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=14&data=${encodeURIComponent(ref)}`;
+  // Guest pass QR - generated locally with qrcodejs (loaded in <head>, already
+  // CSP-allowed) instead of round-tripping the visitor's reference through a
+  // third-party image API just to render a QR code. Draws synchronously into
+  // a container element (a canvas, when the browser supports it).
+  function renderQrInto(container, ref, size) {
+    container.innerHTML = '';
+    new window.QRCode(container, { text: ref, width: size, height: size, correctLevel: window.QRCode.CorrectLevel.M });
+    const el = container.querySelector('canvas, img');
+    return { el, url: el.tagName === 'CANVAS' ? el.toDataURL() : el.src };
   }
   function showGuestQr(ref) {
-    const url = guestQrUrl(ref);
-    if (!window.Swal) { window.open(`${url}&download=1`, '_blank'); return; }
+    if (!window.Swal) return;
     window.Swal.fire({
       title:              'Guest Pass',
       html:               `<div style="text-align:center">
         <div style="font-size:0.8rem;color:#312e81;font-family:'Courier New',monospace;font-weight:600;letter-spacing:0.04em;margin-bottom:12px">${esc(ref)}</div>
-        <img src="${url}" alt="Guest Pass QR" style="width:230px;height:230px;border-radius:10px;border:1px solid #e8e0d0"
-          onerror="this.outerHTML='<div style=padding:16px;color:var(--muted,#9a9088);font-size:0.82rem>QR unavailable. Use your reference code at the guardhouse.</div>'">
-        <div style="margin-top:14px">
-          <a href="${url}&download=1" download="guest-pass-${esc(ref)}.png" target="_blank" rel="noopener"
-             style="display:inline-block;background:#312e81;color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:0.82rem;font-weight:600">&#10515; Download QR</a>
-        </div>
+        <div id="gQrBox" style="width:230px;height:230px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #e8e0d0;display:flex;align-items:center;justify-content:center"></div>
+        <div style="margin-top:14px"><a id="gQrDl" href="#"
+           style="display:inline-block;background:#312e81;color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:0.82rem;font-weight:600">&#10515; Download QR</a></div>
         <div style="margin-top:10px;font-size:0.72rem;color:#9a9088">Show this at the guardhouse on arrival.</div>
       </div>`,
+      didOpen: () => {
+        const box = document.getElementById('gQrBox');
+        const dl  = document.getElementById('gQrDl');
+        try {
+          const { url } = renderQrInto(box, ref, 230);
+          dl.href = url; dl.setAttribute('download', `guest-pass-${ref}.png`);
+        } catch {
+          box.innerHTML = '<div style="padding:16px;color:var(--muted,#9a9088);font-size:0.82rem">QR unavailable. Use your reference code at the guardhouse.</div>';
+          dl.style.display = 'none';
+        }
+      },
       confirmButtonText:  'Done',
       confirmButtonColor: '#312e81',
+    });
+  }
+  // Fills every inline QR placeholder under `root` after it's been inserted
+  // into the DOM (renderRecords builds the row markup in one string) - see
+  // the qrHtml block below.
+  function fillQrImages(root) {
+    root.querySelectorAll('.qr-img[data-qr-ref]').forEach(box => {
+      const ref = box.dataset.qrRef;
+      const dl  = root.querySelector(`a.qr-dl-btn[data-qr-dl="${CSS.escape(ref)}"]`);
+      try {
+        const { url } = renderQrInto(box, ref, 110);
+        if (dl) { dl.href = url; dl.setAttribute('download', `guest-pass-${ref}.png`); dl.classList.remove('qr-dl-pending'); }
+      } catch {
+        box.outerHTML = '<div class="qr-err">QR unavailable - show reference code at guardhouse.</div>';
+      }
     });
   }
 
@@ -1455,17 +1483,12 @@
       const qrBtn = refCode
         ? `<button class="rec-qr-btn" type="button" data-qr-ref="${esc(refCode)}" title="Show guest pass QR" aria-label="Show guest pass QR"><span class="material-symbols-outlined">qr_code_2</span> QR</button>`
         : '';
-      const qrHtml = refCode ? (() => {
-        const qrUrl = guestQrUrl(refCode);
-        return `<div class="rec-qr">
-          <img src="${qrUrl}" alt="Guest Pass QR" class="qr-img" loading="lazy"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-          <div class="qr-err" style="display:none">QR unavailable - show reference code at guardhouse.</div>
-          <a href="${qrUrl}&download=1" class="qr-dl-btn" target="_blank" rel="noopener">
+      const qrHtml = refCode ? `<div class="rec-qr">
+          <div class="qr-img" data-qr-ref="${esc(refCode)}"></div>
+          <a class="qr-dl-btn qr-dl-pending" data-qr-dl="${esc(refCode)}" href="#">
             <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-2px">download</span> Download QR
           </a>
-        </div>`;
-      })() : '';
+        </div>` : '';
 
       // If ref wasn't already emitted by a custom field, show it explicitly
       const refInFields = (item.customFields || []).some(f => REF_RE.test(f.fieldValueString || ''));
@@ -1545,11 +1568,13 @@
       </details>`;
     }).join('');
 
-    // Clicking the QR button opens the pass without toggling the <details>.
-    el.querySelectorAll('[data-qr-ref]').forEach(btn => btn.addEventListener('click', e => {
+    // Clicking the QR button (or the inline preview) opens the pass without
+    // toggling the <details>.
+    el.querySelectorAll('.rec-qr-btn[data-qr-ref], .qr-img[data-qr-ref]').forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       showGuestQr(btn.dataset.qrRef);
     }));
+    fillQrImages(el);
   }
 
   // Build the opportunities URL for a pipeline, passing BOTH the session contact id

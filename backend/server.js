@@ -15,8 +15,10 @@ const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 
-// CSP allows only self, jsDelivr, Google Fonts and the QR image API — no other
-// external hosts, since this build talks to nothing but itself.
+// CSP allows only self, jsDelivr, and Google Fonts — no other external hosts,
+// since this build talks to nothing but itself. Guest-pass QR codes are
+// generated locally (qrcode.js, from jsDelivr) as data: URIs, so they need no
+// image-host allowance of their own.
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
@@ -27,7 +29,7 @@ app.use(helmet({
       scriptSrcAttr:  ["'unsafe-inline'"],
       styleSrc:       ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
       fontSrc:        ["'self'", 'data:', 'https://fonts.gstatic.com'],
-      imgSrc:         ["'self'", 'data:', 'blob:', 'https://api.qrserver.com'],
+      imgSrc:         ["'self'", 'data:', 'blob:'],
       // Lets the resource-preview modal frame a blob: URL (the downloaded
       // file rendered as a PDF/image) - without this, defaultSrc's 'self'
       // silently blocks it and the iframe just shows a broken-document icon.
