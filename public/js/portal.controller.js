@@ -2103,7 +2103,19 @@
         ...facItems.filter(o => o.depositStatus === 'refunded' || o.depositStatus === 'forfeited').map(o => [o, 'facility']),
         ...moveItems.filter(o => o.depositStatus === 'refunded' || o.depositStatus === 'forfeited').map(o => [o, 'move']),
       ];
+      // Poll re-renders this panel wholesale every 7s (see setInterval below) -
+      // without this, a resident who collapses Payment History would see it
+      // silently snap back open on the next tick since a fresh .pay-history-body
+      // always starts expanded (no `hidden` attr in _renderPayBlock's markup).
+      const prevHistoryBody = el.querySelector('.pay-history-body');
+      const historyWasHidden = !!(prevHistoryBody && prevHistoryBody.hidden);
       el.innerHTML = _renderPayBlock(pending, confirmed, refunded);
+      if (historyWasHidden) {
+        const body = el.querySelector('.pay-history-body');
+        if (body) body.hidden = true;
+        const arrow = el.querySelector('.pay-history-toggle .phi');
+        if (arrow) arrow.textContent = '▸';
+      }
       // Every deposit facility + Move-In/Out now pays through a real Stripe
       // Checkout Session - the webhook confirms it, not a self-reported "done" click.
       el.querySelectorAll('[data-pay-key]').forEach(btn => {
