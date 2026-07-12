@@ -1003,16 +1003,12 @@
     }
   }
 
-  // Payment links per deposit facility / move. bbq/pool/verandah actually pay
-  // through a real Stripe Checkout redirect now (see startStripeCheckout) -
-  // Facilities/pipelines that actually take a deposit - all pay through a real
-  // Stripe Checkout Session now (see startStripeCheckout). Kept as its own set
-  // so the "no payment configured" disabled-state check has one thing to look
-  // up regardless of facility.
-  const DEPOSIT_PAY_KEYS = new Set(['bbq', 'pool', 'verandah', 'move']);
+  // Whether a facility/pipeline takes a deposit - DEPOSIT_FACILITY_KEYS (below,
+  // server-driven) covers real facilities; 'move' is the one hand-added
+  // exception since it isn't in the facility catalogue at all.
   function isDepositFacility(key) {
     const f = FACILITIES.find(x => x.key === key);
-    return !!(f && f.deposit) || DEPOSIT_PAY_KEYS.has(key);
+    return !!(f && f.deposit) || DEPOSIT_FACILITY_KEYS.has(key) || key === 'move';
   }
   function closeModal() { if (modal) { modal.classList.remove('open'); if (host) host.innerHTML = ''; } _editing = null; }
   if (modal) {
@@ -1838,11 +1834,22 @@
   // (Verandah: $600 total, $400 of it refundable) - used purely to show an
   // informational breakdown on the pending card, not to gate payment at all.
   const REFUNDABLE_AMOUNTS = { verandah: 400, move: 2000 };
+  // Which facility keys actually require a deposit - driven entirely by the
+  // server's own facility catalogue (backend/config/facilities.js), not
+  // hand-copied here. Add `deposit: true` to a new facility server-side and it
+  // shows up in the Payments tab automatically, no frontend change needed.
+  // Bootstrap fallback matches today's catalogue; overwritten the instant the
+  // fetch below resolves. 'move' isn't in this catalogue at all (it's a
+  // separate always-deposit pipeline, not a facility), so it's added by hand.
+  const DEPOSIT_FACILITY_KEYS = new Set(['bbq', 'pool', 'verandah']);
   (async () => {
     try {
       const res  = await fetch('/api/booking/facilities');
       const data = await res.json();
-      (data.facilities || []).forEach(f => {
+      const facs = data.facilities || [];
+      DEPOSIT_FACILITY_KEYS.clear();
+      facs.forEach(f => { if (f.deposit) DEPOSIT_FACILITY_KEYS.add(f.key); });
+      facs.forEach(f => {
         if (!f.deposit || !f.depositAmount) return;
         PAY_DEPOSITS[f.key] = f.depositAmount;
         if (f.refundableAmount) REFUNDABLE_AMOUNTS[f.key] = f.refundableAmount;
@@ -1851,22 +1858,13 @@
   })();
   // A deposit is outstanding only while at "Deposit Pending".
   const DEPOSIT_STAGES = new Set(['Deposit Pending']);
-  // Derive the facility key from a GHL opportunity name.
-  function _facKeyFromOppName(name) {
-    const s = (name || '').toLowerCase();
-    if (s.includes('verandah')) return 'verandah';
-    if (s.includes('bbq') || s.includes('barbeque') || s.includes('barbecue')) return 'bbq';
-    if (s.includes('pool') || s.includes('swimming')) return 'pool';
-    return null;
-  }
   function _facilityTitle(key, itemName) {
-    if (key === 'bbq')      return 'BBQ Pit';
-    if (key === 'pool')     return 'Swimming Pool';
-    if (key === 'verandah') return 'The Verandah';
     if (key === 'move') {
       const n = (itemName || '').toLowerCase();
       return n.includes('move-out') || n.includes('move out') ? 'Move Out' : 'Move In';
     }
+    const f = FACILITIES.find(x => x.key === key);
+    if (f) return f.name;
     // Unknown key - extract the readable part before the first dash/em-dash in the GHL opp name.
     return (itemName || '').split(/\s*[ - \- - ]\s*/)[0].trim() || 'Facility Booking';
   }
@@ -1931,7 +1929,7 @@
   function _renderPayCard(item, type, isPending) {
     let key, amount;
     if (type === 'facility') {
-      key    = _facKeyFromOppName(item.name) || 'default';
+      key    = item.facilityKey || 'default';
       amount = PAY_DEPOSITS[key] || PAY_DEPOSITS.default;
     } else {
       key    = 'move';
@@ -1964,7 +1962,7 @@
         <div class="pay-due__body">${headerHtml}${breakdownHtml}</div>
         <div class="pay-due__right">
           <div class="pay-due__amt">${esc(amtStr)}</div>
-          <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-amount="${Number(amount).toFixed(2)}" data-desc="${rawLabel}"${!DEPOSIT_PAY_KEYS.has(key) ? ' disabled title="No payment method configured"' : ''}>Pay Deposit</button>
+          <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-amount="${Number(amount).toFixed(2)}" data-desc="${rawLabel}"${!(DEPOSIT_FACILITY_KEYS.has(key) || key === 'move') ? ' disabled title="No payment method configured"' : ''}>Pay Deposit</button>
         </div>
       </div>`;
     }
@@ -2085,9 +2083,8 @@
         fetch('/api/move/mine').then(r => r.json()).catch(() => ({})),
       ]);
       const facItems = (bRes.items || [])
-        .filter(b => b.oppId)
-        .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', depositStatus: b.depositStatus || 'none', depositNote: b.depositNote || '', name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
-        .filter(o => _facKeyFromOppName(o.name));
+        .filter(b => b.oppId && DEPOSIT_FACILITY_KEYS.has(b.facilityKey))
+        .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', depositStatus: b.depositStatus || 'none', depositNote: b.depositNote || '', facilityKey: b.facilityKey, name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }));
       const moveItems = (mRes.items || [])
         .map(m => ({ id: m.moveId, stage: m.status, depositDueAt: m.depositDueAt || '', depositStatus: m.depositStatus || 'none', depositNote: m.depositNote || '', name: [m.moveType, m.moveDate, m.moveTime].filter(Boolean).join(' - ') }));
 

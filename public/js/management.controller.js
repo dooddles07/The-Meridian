@@ -1490,13 +1490,14 @@
     return `${cur || 'USD'} ${(Number(n) || 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   let _mgmtPending = [];
-  const DEPOSIT_FACS = ['bbq', 'pool', 'verandah'];
-  // bbq/pool/verandah are bootstrap fallback values only, overwritten once the
-  // fetch below resolves - the real source of truth is depositAmount in
-  // backend/config/facilities.js, so this can't silently drift from the
-  // resident-side figure the way three separately hardcoded copies could.
-  // move isn't a facility booking (separate, still-mock Move-In pipeline), so
-  // it stays a local literal - no backend config for it to drift from.
+  // Which facility keys actually require a deposit - driven by the server's
+  // own facility catalogue (backend/config/facilities.js), not hand-copied
+  // here. Bootstrap fallback matches today's catalogue; overwritten the
+  // instant the fetch below resolves. 'move' is the one hand-added exception -
+  // it's a real backend now too (move.controller.js), but isn't in the
+  // facility catalogue at all (not a bookable resource), and always requires
+  // a deposit by design, so there's no server flag to fetch for it.
+  const DEPOSIT_FACS = new Set(['bbq', 'pool', 'verandah']);
   const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 600, move: 2200 };
   // Only set where part of the total is a non-refundable fee - used for the
   // History view's refunded/forfeited amount (never the full total there).
@@ -1505,7 +1506,10 @@
     try {
       const res  = await fetch('/api/booking/facilities');
       const data = await res.json();
-      (data.facilities || []).forEach(f => {
+      const facs = data.facilities || [];
+      DEPOSIT_FACS.clear();
+      facs.forEach(f => { if (f.deposit) DEPOSIT_FACS.add(f.key); });
+      facs.forEach(f => {
         if (!f.deposit || !f.depositAmount) return;
         DEPOSIT_AMOUNTS[f.key] = f.depositAmount;
         if (f.refundableAmount) REFUNDABLE_AMOUNTS[f.key] = f.refundableAmount;
@@ -1521,7 +1525,7 @@
         fetch('/api/management/moves',    { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
       ]);
       _mgmtPending = [];
-      (bk.items || []).forEach(b => { if (DEPOSIT_FACS.includes(b.facilityKey) && b.stage === 'Deposit Pending' && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0, depositDueAt: b.depositDueAt || '' }); });
+      (bk.items || []).forEach(b => { if (DEPOSIT_FACS.has(b.facilityKey) && b.stage === 'Deposit Pending' && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0, depositDueAt: b.depositDueAt || '' }); });
       (mv.items || []).forEach(m => { if (m.stage === 'Deposit Pending' && m.oppId) _mgmtPending.push({ pipeline: 'move', oppId: m.oppId, facility_key: '', resident: m.resident, unit: m.unit, date: m.moveDate, desc: m.moveType || 'Move-In / Move-Out', amount: DEPOSIT_AMOUNTS.move, depositDueAt: m.depositDueAt || '' }); });
       if (pBody) {
         // Facility deposits auto-cancel 24h after booking if unpaid (see the
