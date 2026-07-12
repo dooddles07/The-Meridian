@@ -4,6 +4,7 @@ const rateLimit    = require('express-rate-limit');
 const resources    = require('../controllers/resource.controller');
 const announcements = require('../controllers/announcement.controller');
 const bookings     = require('../controllers/booking.controller');
+const moves        = require('../controllers/move.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
 
 router.use(requireManagement);
@@ -34,5 +35,9 @@ router.delete('/announcements/:id',    mutateLimiter, auditLog, announcements.re
 router.get('/bookings',                bookings.listForManagement);
 router.put('/bookings/:id/stage',      mutateLimiter, auditLog, bookings.updateStage);
 router.put('/bookings/:id/deposit',    mutateLimiter, auditLog, bookings.manageDeposit);
+
+router.get('/moves',                   moves.listForManagement);
+router.put('/moves/:id/stage',         mutateLimiter, auditLog, moves.updateStage);
+router.put('/moves/:id/deposit',       mutateLimiter, auditLog, moves.manageDeposit);
 
 module.exports = router;

@@ -277,12 +277,19 @@
     'No-Show':         [],
     'Cancelled':       [],
   };
+  // Mirrors move.controller.js's own LEGAL_TRANSITIONS - Move has no No-Show.
+  const MOVE_LEGAL_TRANSITIONS = {
+    'Deposit Pending': ['Confirmed', 'Cancelled'],
+    'Confirmed':       ['Completed', 'Cancelled'],
+    'Completed':       [],
+    'Cancelled':       [],
+  };
   // Disabled (with a hint) when the booking has no linked pipeline opportunity yet.
-  function bkStageSelect(b, stages) {
+  function bkStageSelect(b, stages, transitions = LEGAL_TRANSITIONS) {
     if (!b.oppId) {
       return `<span class="bk-stage-none bk-syncing" title="Pipeline opportunity not yet created - auto-refreshing in a few seconds.">Syncing…</span>`;
     }
-    const legalNext = LEGAL_TRANSITIONS[b.stage] || [];
+    const legalNext = transitions[b.stage] || [];
     const legal = new Set([b.stage, ...legalNext]);
     const opts = stages.filter(s => legal.has(s)).map(s => `<option value="${esc(s)}" ${s === b.stage ? 'selected' : ''}>${esc(s)}</option>`).join('');
     const terminal = legalNext.length === 0;
@@ -920,15 +927,100 @@
   document.querySelectorAll('[data-view="parcels"]').forEach(el =>
     el.addEventListener('click', () => loadParcels().catch(e => console.error('[mgmt parcels]', e))));
 
+  // Real backend now (see backend/controllers/move.controller.js) - mirrors
+  // loadBookings()'s pattern exactly, reusing bkDateLabel/bkBadge/bkDepositCell
+  // since Move's status vocabulary is a subset of Booking's.
   async function loadMoves() {
-    const result = await loadPipelinePanel('move', 'moveBody', 'moveCount');
-    if (!result) return;
-    _pipeSnap.move = result;
+    const res  = await fetch('/api/management/moves', { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!data.success) {
+      const body = $('moveBody');
+      if (body) body.innerHTML = `<tr class="empty-row"><td colspan="9">${esc(data.message || 'Could not load move requests.')}</td></tr>`;
+      throw new Error(data.message || 'Failed to load move requests.');
+    }
+    const items  = data.items  || [];
+    const stages = data.stages || ['Deposit Pending', 'Confirmed', 'Completed', 'Cancelled'];
+    _pipeSnap.move = { items: items.map(m => ({ stage: m.stage })), stages };
     _renderPipelinesSummary();
+
+    const body = $('moveBody');
+    if (body) {
+      body.innerHTML = items.length
+        ? items.map(m => `<tr>
+            <td>${esc(m.moveType)}</td>
+            <td>${esc(m.resident || 'Resident')}</td>
+            <td>${m.unit ? '#' + esc(m.unit) : ' - '}</td>
+            <td>${esc(bkDateLabel(m.moveDate))}</td>
+            <td style="white-space:nowrap">${esc(m.moveTime)}</td>
+            <td>${esc(m.notes || '')}</td>
+            <td>${bkBadge(m.stage)}</td>
+            <td>${bkDepositCell(m)}</td>
+            <td>${bkStageSelect(m, stages, MOVE_LEGAL_TRANSITIONS)}</td>
+          </tr>`).join('')
+        : `<tr class="empty-row"><td colspan="9">No move requests.</td></tr>`;
+      body.querySelectorAll('.bk-stage-select').forEach(sel => {
+        sel.dataset.prev = sel.value;
+        sel.addEventListener('change', async () => {
+          const oppId = sel.dataset.opp, stage = sel.value;
+          sel.disabled = true;
+          try {
+            const r = await fetch(`/api/management/moves/${encodeURIComponent(oppId)}/stage`, {
+              method:  'PUT',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body:    JSON.stringify({ stage }),
+            });
+            const d = await r.json();
+            if (!d.success) throw new Error(d.message || 'Update failed.');
+            sel.dataset.prev = stage;
+            const badge = sel.closest('tr').querySelector('.badge');
+            if (badge) badge.outerHTML = bkBadge(stage);
+            toast(`Moved to ${stage}.`);
+          } catch (e) {
+            sel.value = sel.dataset.prev;
+            toast(e.message || 'Could not update stage.', true);
+          } finally {
+            sel.disabled = false;
+          }
+        });
+      });
+      body.querySelectorAll('[data-deposit-action]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const action = btn.dataset.depositAction;
+          const id     = btn.dataset.id;
+          let note = '';
+          if (action === 'forfeit') {
+            note = window.prompt('Reason for forfeiting this deposit (required, e.g. property damage):', '') || '';
+            if (!note.trim()) return;
+          } else if (!confirm('Refund this deposit back to the resident?')) {
+            return;
+          }
+          const row = btn.closest('.bk-deposit-actions');
+          if (row) row.querySelectorAll('button').forEach(b => b.disabled = true);
+          try {
+            const r = await fetch(`/api/management/moves/${encodeURIComponent(id)}/deposit`, {
+              method:  'PUT',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body:    JSON.stringify({ action, note }),
+            });
+            const d = await r.json();
+            if (!d.success) throw new Error(d.message || 'Could not update deposit.');
+            const refundMsg = d.stripeRefunded
+              ? 'Refunded via Stripe - money is on its way back to the resident\'s card.'
+              : 'Marked as refunded (no real Stripe charge was on file for this request).';
+            toast(action === 'refund' ? refundMsg : 'Deposit marked as forfeited.');
+          } catch (e) {
+            toast(e.message || 'Could not update deposit.', true);
+          } finally {
+            loadMoves();
+          }
+        });
+      });
+    }
+    if ($('moveCount')) $('moveCount').textContent = `${items.length} record${items.length === 1 ? '' : 's'}`;
 
     const mvStaSel = $('mvFilterStage');
     if (mvStaSel && mvStaSel.options.length === 1) {
-      result.stages.forEach(s => mvStaSel.add(new Option(s, s)));
+      stages.forEach(s => mvStaSel.add(new Option(s, s)));
       const mvFilter = () => {
         const q   = ($('mvSearch')?.value || '').toLowerCase();
         const sta = $('mvFilterStage')?.value || '';
@@ -940,7 +1032,6 @@
           tr.style.display = match ? '' : 'none';
           if (match) n++;
         });
-        if ($('moveCount')) $('moveCount').textContent = `${n} record${n === 1 ? '' : 's'}`;
       };
       ['mvSearch', 'mvFilterStage'].forEach(id => {
         $(id)?.addEventListener('input', mvFilter);
@@ -1396,29 +1487,32 @@
   // resident-side figure the way three separately hardcoded copies could.
   // move isn't a facility booking (separate, still-mock Move-In pipeline), so
   // it stays a local literal - no backend config for it to drift from.
-  const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 400, move: 2200 };
+  const DEPOSIT_AMOUNTS = { bbq: 200, pool: 200, verandah: 600, move: 2200 };
+  // Only set where part of the total is a non-refundable fee - used for the
+  // History view's refunded/forfeited amount (never the full total there).
+  const REFUNDABLE_AMOUNTS = { verandah: 400, move: 2000 };
   (async () => {
     try {
       const res  = await fetch('/api/booking/facilities');
       const data = await res.json();
-      (data.facilities || []).forEach(f => { if (f.deposit && f.depositAmount) DEPOSIT_AMOUNTS[f.key] = f.depositAmount; });
+      (data.facilities || []).forEach(f => {
+        if (!f.deposit || !f.depositAmount) return;
+        DEPOSIT_AMOUNTS[f.key] = f.depositAmount;
+        if (f.refundableAmount) REFUNDABLE_AMOUNTS[f.key] = f.refundableAmount;
+      });
     } catch { /* keep the bootstrap fallback values above */ }
   })();
+  // Both real backends now (booking.controller.js / move.controller.js).
   async function loadPaymentsPanel() {
     const pBody = $('mgmtPendingBody'), hBody = $('mgmtPayHistBody');
     try {
-      const [bk, mv, hist] = await Promise.all([
+      const [bk, mv] = await Promise.all([
         fetch('/api/management/bookings', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
-        fetch('/api/management/opportunities?pipeline=move', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
-        fetch('/api/management/payments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
+        fetch('/api/management/moves',    { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
       ]);
-      // Pending deposits: facility bookings sit at "Deposit Pending" until paid; the
-      // Move pipeline starts at "Requested", so a move owes a deposit at either stage.
-      const FACILITY_PENDING = ['Deposit Pending'];
-      const MOVE_PENDING     = ['Requested', 'Deposit Pending'];
       _mgmtPending = [];
-      (bk.items || []).forEach(b => { if (DEPOSIT_FACS.includes(b.facilityKey) && FACILITY_PENDING.includes(b.stage) && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0, depositDueAt: b.depositDueAt || '' }); });
-      (mv.items || []).forEach(o => { if (MOVE_PENDING.includes(o.stage) && o.oppId) _mgmtPending.push({ pipeline: 'move', oppId: o.oppId, facility_key: '', resident: o.contact, unit: o.unit, date: '', desc: o.reference || 'Move-In / Move-Out', amount: DEPOSIT_AMOUNTS.move, depositDueAt: '' }); });
+      (bk.items || []).forEach(b => { if (DEPOSIT_FACS.includes(b.facilityKey) && b.stage === 'Deposit Pending' && b.oppId) _mgmtPending.push({ pipeline: 'facility', oppId: b.oppId, facility_key: b.facilityKey, resident: b.resident, unit: b.unit, date: b.date, desc: b.facility, amount: DEPOSIT_AMOUNTS[b.facilityKey] || 0, depositDueAt: b.depositDueAt || '' }); });
+      (mv.items || []).forEach(m => { if (m.stage === 'Deposit Pending' && m.oppId) _mgmtPending.push({ pipeline: 'move', oppId: m.oppId, facility_key: '', resident: m.resident, unit: m.unit, date: m.moveDate, desc: m.moveType || 'Move-In / Move-Out', amount: DEPOSIT_AMOUNTS.move, depositDueAt: m.depositDueAt || '' }); });
       if (pBody) {
         // Facility deposits auto-cancel 24h after booking if unpaid (see the
         // backend's expireStaleDeposits) - flag it here so management doesn't get
@@ -1444,24 +1538,31 @@
       if ($('payPendingCount')) $('payPendingCount').textContent = `${_mgmtPending.length} pending`;
       const badge = $('badge-payments');
       if (badge) { if (_mgmtPending.length) { badge.style.display = ''; badge.textContent = _mgmtPending.length; } else { badge.style.display = 'none'; } }
-      // History = recorded payments (Payment collection) + Deposit Refunded moves.
-      // A refund is a GHL move-pipeline stage change, not a Payment record, so pull
-      // the amount from the matching paid deposit when one was recorded.
-      const payments = (hist.success && hist.payments) ? hist.payments : [];
-      const tagStyle = (s) => s === 'paid'     ? 'rgba(39,174,96,.15);color:#27ae60'
-                            : s === 'refunded' ? 'rgba(90,81,74,.15);color:var(--text-2,#5a514a)'
-                            :                    'rgba(49,46,129,.15);color:var(--gold,#312e81)';
-      const histRows = payments.map(p => ({
-        date: p.paid_at || p.createdAt, unit: p.resident_unit,
-        desc: p.description, category: p.category, amount: p.amount, currency: p.currency, status: p.status,
-      }));
-      // Only the USD 2000 refundable deposit is returned (the USD 200 admin fee is not).
-      const MOVE_REFUNDABLE_DEPOSIT = 2000;
-      (mv.items || []).filter(o => o.stage === 'Deposit Refunded' && o.oppId).forEach(o => {
+      // History: any booking/move whose deposit was ever actually collected
+      // (held/refunded/forfeited), read directly off the real records - no
+      // separate payment ledger to go stale/disconnect from Stripe-paid deposits.
+      const tagStyle = (s) => s === 'paid'      ? 'rgba(39,174,96,.15);color:#27ae60'
+                            : s === 'refunded'  ? 'rgba(90,81,74,.15);color:var(--text-2,#5a514a)'
+                            : s === 'forfeited' ? 'rgba(192,57,43,.12);color:#c0392b'
+                            :                     'rgba(49,46,129,.15);color:var(--gold,#312e81)';
+      const depositStatusTag = (s) => s === 'held' ? 'paid' : s; // 'held' reads as "paid" in this history view
+      // Refund/forfeit only ever concerns the refundable portion (e.g. Verandah's
+      // $400 of $600, Move's $2000 of $2200) - the amount shown is scoped to
+      // match exactly what Stripe actually moved (see manageDeposit).
+      const histAmount = (key, status) => (status === 'refunded' || status === 'forfeited') ? (REFUNDABLE_AMOUNTS[key] || DEPOSIT_AMOUNTS[key] || 0) : (DEPOSIT_AMOUNTS[key] || 0);
+      const histRows = [];
+      (bk.items || []).forEach(b => {
+        if (!b.depositStatus || b.depositStatus === 'none') return;
         histRows.push({
-          date: o.createdAt || '', unit: o.unit,
-          desc: o.reference || 'Move-In / Move-Out', category: 'Refundable Deposit',
-          amount: MOVE_REFUNDABLE_DEPOSIT, currency: 'USD', status: 'refunded',
+          date: b.depositResolvedAt || b.date, unit: b.unit, desc: b.facility, category: 'Deposit',
+          amount: histAmount(b.facilityKey, b.depositStatus), currency: 'USD', status: depositStatusTag(b.depositStatus),
+        });
+      });
+      (mv.items || []).forEach(m => {
+        if (!m.depositStatus || m.depositStatus === 'none') return;
+        histRows.push({
+          date: m.depositResolvedAt || m.moveDate, unit: m.unit, desc: m.moveType || 'Move-In / Move-Out',
+          category: 'Refundable Deposit', amount: histAmount('move', m.depositStatus), currency: 'USD', status: depositStatusTag(m.depositStatus),
         });
       });
       histRows.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -1483,22 +1584,13 @@
     if (!d) return;
     btn.disabled = true; btn.textContent = 'Confirming…';
     try {
-      const res = await fetch('/api/payments/pay-deposit', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ pipeline: d.pipeline, opportunity_id: d.oppId, facility_key: d.facility_key, description: d.desc, unit: d.unit, name: d.resident }),
-      });
-      const data = await res.json();
-      if (!data.success) { toast(data.message || 'Could not confirm.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; return; }
-      // The mock call above only logs the payment record; a facility booking's own
-      // status still needs the real stage endpoint to actually flip to Confirmed.
-      if (d.pipeline === 'facility') {
-        const sr = await fetch(`/api/management/bookings/${encodeURIComponent(d.oppId)}/stage`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ stage: 'Confirmed' }),
-        }).then(r => r.json()).catch(() => ({}));
-        if (!sr.success) { toast(sr.message || 'Payment recorded, but could not confirm the booking.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; return; }
-      }
-      toast('Marked paid - booking confirmed.');
+      const base = d.pipeline === 'move' ? '/api/management/moves' : '/api/management/bookings';
+      const sr = await fetch(`${base}/${encodeURIComponent(d.oppId)}/stage`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ stage: 'Confirmed' }),
+      }).then(r => r.json()).catch(() => ({}));
+      if (!sr.success) { toast(sr.message || 'Could not confirm.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; return; }
+      toast('Marked paid - confirmed.');
       loadPaymentsPanel();
     } catch { toast('Connection error.', true); btn.disabled = false; btn.textContent = 'Mark as Paid'; }
   }

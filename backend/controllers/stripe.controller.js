@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const Booking  = require('../models/booking.model');
+const Move     = require('../models/move.model');
 const stripeService = require('../services/stripe.service');
+
+const MODELS = { booking: Booking, move: Move };
 
 // POST /api/stripe/webhook — Stripe calls this directly (no session cookie, no
 // resident auth); the payload signature IS the auth, verified against the raw
@@ -16,17 +19,19 @@ async function handleWebhook(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const bookingId = session.metadata && session.metadata.bookingId;
-    if (bookingId && mongoose.connection.readyState === 1) {
-      const booking = await Booking.findById(bookingId).catch(() => null);
+    const kind  = session.metadata && session.metadata.kind;
+    const id    = session.metadata && session.metadata.id;
+    const Model = MODELS[kind];
+    if (Model && id && mongoose.connection.readyState === 1) {
+      const doc = await Model.findById(id).catch(() => null);
       // Idempotent: Stripe can deliver the same event more than once.
-      if (booking && booking.status === 'Deposit Pending') {
-        booking.status = 'Confirmed';
-        booking.depositStatus = 'held';
+      if (doc && doc.status === 'Deposit Pending') {
+        doc.status = 'Confirmed';
+        doc.depositStatus = 'held';
         // string ID on a completed Session in `payment` mode - not expanded,
         // exactly what stripe.refunds.create() needs later.
-        if (session.payment_intent) booking.stripePaymentIntentId = session.payment_intent;
-        await booking.save();
+        if (session.payment_intent) doc.stripePaymentIntentId = session.payment_intent;
+        await doc.save();
       }
     }
   }

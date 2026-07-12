@@ -579,16 +579,13 @@
     setInterval(loadMsgBadge, 30000); // keep the unread badge fresh
     // Live inbox: refresh the open Messages thread without a page reload.
     setInterval(() => { const v = $('view-messages'); if (v && v.classList.contains('active')) loadMessages(); }, 7000);
-    // Live payments: refresh pending deposits while the panel is open so a new
-    // booking's deposit appears once GHL creates its opportunity (a few seconds
-    // after booking), without a manual reload.
-    // Refresh only Pending Deposits on poll - re-rendering the history would collapse
-    // any open record dropdown the resident is reading.
+    // Live payments: refresh the panel while it's open so a payment confirmed
+    // by the Stripe webhook (or a management action) shows up without a manual
+    // reload. Paying itself navigates away to Stripe's own page (see
+    // startStripeCheckout), so there's no in-page payment state this could interrupt.
     setInterval(() => {
       const v = $('view-payments');
-      // Never refresh while the payment window is open - re-rendering the panel
-      // underneath an in-progress payment is what was interrupting it.
-      if (v && v.classList.contains('active') && !_isPayModalOpen()) {
+      if (v && v.classList.contains('active')) {
         const hint = $('payLastUpdated');
         if (hint) hint.textContent = 'Updating…';
         loadPayments();
@@ -1008,34 +1005,14 @@
 
   // Payment links per deposit facility / move. bbq/pool/verandah actually pay
   // through a real Stripe Checkout redirect now (see startStripeCheckout) -
-  // this url is only ever used for the still-mock Move-In/Out flow. Kept as a
-  // uniform shape mainly so the "no payment link configured" disabled-state
-  // check below has one thing to look up regardless of facility.
-  const PAY_LINKS = {
-    bbq:      [{ label: 'Refundable Deposit', url: 'checkout.html' }],
-    pool:     [{ label: 'Refundable Deposit', url: 'checkout.html' }],
-    verandah: [{ label: 'Booking Fee + Refundable Deposit', url: 'checkout.html' }],
-    move:     [{ label: 'Admin Fee + Refundable Deposit', url: 'checkout.html' }],
-  };
+  // Facilities/pipelines that actually take a deposit - all pay through a real
+  // Stripe Checkout Session now (see startStripeCheckout). Kept as its own set
+  // so the "no payment configured" disabled-state check has one thing to look
+  // up regardless of facility.
+  const DEPOSIT_PAY_KEYS = new Set(['bbq', 'pool', 'verandah', 'move']);
   function isDepositFacility(key) {
     const f = FACILITIES.find(x => x.key === key);
-    return !!(f && f.deposit) || !!PAY_LINKS[key];
-  }
-  // Append the resident's name + email so the Quantum payment link is pre-filled.
-  // Sent under several common param spellings since the exact keys vary.
-  function prefillLink(url) {
-    const parts = String(member.name || '').trim().split(/\s+/).filter(Boolean);
-    const first = parts[0] || '';
-    const last  = parts.length > 1 ? parts.slice(1).join(' ') : '';
-    const full  = String(member.name || '').trim();
-    const p = new URLSearchParams();
-    const set = (k, v) => { if (v) p.set(k, v); };
-    set('name', full); set('full_name', full); set('fullName', full);
-    set('first_name', first); set('firstName', first); set('fname', first);
-    set('last_name', last);  set('lastName', last);  set('lname', last);
-    set('email', member.email); set('customer_email', member.email);
-    const q = p.toString();
-    return q ? url + (url.includes('?') ? '&' : '?') + q : url;
+    return !!(f && f.deposit) || DEPOSIT_PAY_KEYS.has(key);
   }
   function closeModal() { if (modal) { modal.classList.remove('open'); if (host) host.innerHTML = ''; } _editing = null; }
   if (modal) {
@@ -1582,6 +1559,10 @@
     } catch (e) { console.error('[feedback]', e); el.innerHTML = '<div class="panel-empty">Connection error loading submissions.</div>'; }
   }
 
+  // Real backend now (see backend/controllers/move.controller.js) - /api/move/mine
+  // already returns complete, correct fields directly, so unlike the other
+  // still-mock pipelines this doesn't need renderRecords' GHL-name-parsing +
+  // local-saved-pool reconciliation trick at all.
   async function loadMyMoves(silent) {
     const el  = $('myMovesList');
     const cnt = $('myMovesCount');
@@ -1589,10 +1570,38 @@
     if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
-      const [res, saved] = await Promise.all([fetch(oppUrl('move')), fetchMine('move')]);
+      const res  = await fetch('/api/move/mine');
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load move bookings.')}</div>`; return; }
-      renderRecords(el, cnt, data.items, 'No move bookings on record.', { kind: 'move', saved });
+      const items = data.items || [];
+      if (cnt) cnt.textContent = items.length + ' Total';
+      if (!items.length) { el.innerHTML = '<div class="panel-empty">No move bookings on record.</div>'; return; }
+      el.innerHTML = items.map(m => {
+        const badge = stageBadge(m.status);
+        const submitted = m.createdAt
+          ? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
+          : ' - ';
+        const cancelHint = m.cancelReason === 'deposit_expired'
+          ? '<div class="rec-field"><span class="rec-label">Note</span>The 24-hour deposit payment window passed without payment.</div>' : '';
+        return `<details class="rec-item">
+          <summary class="rec-summary">
+            <div class="rec-main">
+              <span class="rec-name">${esc(m.moveType)}</span>
+              <span class="rec-meta">${submitted}</span>
+            </div>
+            <span class="sbadge ${badge}">${esc(m.status)}</span>
+            <span class="rec-chevron">›</span>
+          </summary>
+          <div class="rec-body">
+            <div class="rec-field"><span class="rec-label">Submitted Date</span>${submitted}</div>
+            <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(member.unit || '')}</div>
+            <div class="rec-field"><span class="rec-label">Move In/Out Date</span>${esc(fmtDate(m.moveDate))}</div>
+            <div class="rec-field"><span class="rec-label">Move In/Out Time</span>${esc(m.moveTime)}</div>
+            ${m.notes ? `<div class="rec-field"><span class="rec-label">Notes</span>${esc(m.notes)}</div>` : ''}
+            ${cancelHint}
+          </div>
+        </details>`;
+      }).join('');
     } catch (e) { console.error('[moves]', e); el.innerHTML = '<div class="panel-empty">Connection error loading move bookings.</div>'; }
   }
 
@@ -1828,7 +1837,7 @@
   // Only set for facilities where part of depositAmount is a non-refundable fee
   // (Verandah: $600 total, $400 of it refundable) - used purely to show an
   // informational breakdown on the pending card, not to gate payment at all.
-  const REFUNDABLE_AMOUNTS = { verandah: 400 };
+  const REFUNDABLE_AMOUNTS = { verandah: 400, move: 2000 };
   (async () => {
     try {
       const res  = await fetch('/api/booking/facilities');
@@ -1856,7 +1865,7 @@
     if (key === 'verandah') return 'The Verandah';
     if (key === 'move') {
       const n = (itemName || '').toLowerCase();
-      return n.includes('move out') ? 'Move Out' : 'Move In';
+      return n.includes('move-out') || n.includes('move out') ? 'Move Out' : 'Move In';
     }
     // Unknown key - extract the readable part before the first dash/em-dash in the GHL opp name.
     return (itemName || '').split(/\s*[ - \- - ]\s*/)[0].trim() || 'Facility Booking';
@@ -1934,10 +1943,10 @@
     // Prefer clean local booking data; fall back to parsing the opportunity name.
     const details    = _localBookingDetail(key, item) || _parseBookingDetails(item);
     const rawLabel   = esc(item.name || (type === 'facility' ? 'Facility Booking' : 'Move In / Out'));
-    // Two-line header used by all card variants. Pending facility deposits also
-    // get the payment-window countdown so it's visible right where the Pay
-    // button lives, not just buried in My Bookings.
-    const countdownHtml = (isPending && type === 'facility' && item.depositDueAt)
+    // Two-line header used by all card variants. Pending deposits also get the
+    // payment-window countdown so it's visible right where the Pay button
+    // lives, not just buried in My Bookings/My Move Bookings.
+    const countdownHtml = (isPending && item.depositDueAt)
       ? `<div class="pay-deposit-countdown">⚠ ${esc(_depositCountdown(item.depositDueAt))}</div>` : '';
     const headerHtml = `<div class="pay-facility-title">${esc(title)}</div>${details ? `<div class="pay-facility-detail">${esc(details)}</div>` : ''}${countdownHtml}`;
 
@@ -1955,7 +1964,7 @@
         <div class="pay-due__body">${headerHtml}${breakdownHtml}</div>
         <div class="pay-due__right">
           <div class="pay-due__amt">${esc(amtStr)}</div>
-          <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-amount="${Number(amount).toFixed(2)}" data-desc="${rawLabel}"${!PAY_LINKS[key] ? ' disabled title="No payment link configured"' : ''}>Pay Deposit</button>
+          <button class="pay-pay-btn" data-pay-key="${esc(key)}" data-opp-id="${esc(item.id)}" data-amount="${Number(amount).toFixed(2)}" data-desc="${rawLabel}"${!DEPOSIT_PAY_KEYS.has(key) ? ' disabled title="No payment method configured"' : ''}>Pay Deposit</button>
         </div>
       </div>`;
     }
@@ -2024,90 +2033,17 @@
     return `<div style="padding:12px 16px 14px">${html}</div>`;
   }
 
-  // The payment runs in the modal's secure iframe. We deliberately do NOT poll or
-  // auto-close it while it's open: a background poll used to close the window
-  // mid-payment (any transient fetch error made it look like the booking had left
-  // Deposit Pending). The resident stays in control - they close it themselves, or
-  // tap "I've Completed Payment" to confirm (see confirmCurrentPayment).
-  const _isPayModalOpen = () => !!$('payModal') && $('payModal').classList.contains('open');
-  let _payPoll = null;
-  function _stopPayPoll() {
-    if (_payPoll) { clearInterval(_payPoll); _payPoll = null; }
-  }
-
-  let _payCtx = null;
-  function openPayModal(url, title, oppId, feeLabel, payKey, desc) {
-    const m = $('payModal'); if (!m) return;
-    _payCtx = { oppId: oppId || '', feeLabel: feeLabel || '', payKey: payKey || '', desc: desc || '' };
-    $('payModalTitle').textContent = title || 'Pay Deposit';
-    $('payFrame').src = prefillLink(url);
-    m.classList.add('open');
-  }
-  function closePayModal() {
-    _stopPayPoll();
-    const m = $('payModal'); if (m) m.classList.remove('open');
-    const f = $('payFrame'); if (f) f.removeAttribute('src');
-  }
-  // The resident pays inside the secure payment-link window, then taps "I've Completed
-  // Payment" to confirm. That advances their OWN booking to Confirmed and records the
-  // payment (the server verifies the booking belongs to them). Just CLOSING the dialog
-  // (✕ / tapping outside) never confirms - it only refreshes the view.
-  async function confirmCurrentPayment() {
-    const ctx = _payCtx;
-    _payCtx = null;
-    _stopPayPoll();
-    const btn  = $('payDoneBtn');
-    const orig = btn ? btn.textContent : '';
-    if (ctx && ctx.oppId) {
-      if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
-      try {
-        const body = {
-          pipeline:       ctx.payKey === 'move' ? 'move' : 'facility',
-          opportunity_id: ctx.oppId,
-          facility_key:   ctx.payKey || '',
-          description:    ctx.desc || '',
-        };
-        if (ctx.feeLabel) body.fee_label = ctx.feeLabel;
-        const r = await fetch('/api/payments/pay-deposit', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        });
-        const d = await r.json().catch(() => ({}));
-        // The mock call above only logs the payment record (Move-In deposits have
-        // no other real side effect); a facility booking's own status still needs
-        // its dedicated real endpoint to actually flip Deposit Pending -> Confirmed.
-        let bookingOk = true;
-        if (ctx.payKey && ctx.payKey !== 'move') {
-          const br = await fetch(`/api/booking/${encodeURIComponent(ctx.oppId)}/confirm-deposit`, { method: 'PATCH' });
-          const bd = await br.json().catch(() => ({}));
-          bookingOk = !!bd.success;
-          if (bookingOk) syncBookingStatuses();
-        }
-        if (d.success && bookingOk) toast('Payment confirmed - your booking is now confirmed.', 'ok');
-        else           toast(d.message || 'Could not confirm your payment. Please try again.', 'err');
-      } catch {
-        toast('Connection error confirming your payment. Please try again.', 'err');
-      }
-      if (btn) { btn.disabled = false; btn.textContent = orig; }
-    }
-    closePayModal();
-    loadPayments();
-  }
-  if ($('payModal')) {
-    $('payModalClose').addEventListener('click', () => { _stopPayPoll(); _payCtx = null; closePayModal(); loadPayments(); });
-    $('payModal').addEventListener('click', e => { if (e.target === $('payModal')) { _stopPayPoll(); _payCtx = null; closePayModal(); loadPayments(); } });
-    $('payDoneBtn').addEventListener('click', confirmCurrentPayment);
-  }
-
   // Real payment: create a Stripe Checkout Session for this booking's deposit
   // and hand the browser off to Stripe's own hosted page (full redirect, not
   // the local iframe modal) - Stripe verifies the card, then the webhook
   // (backend/controllers/stripe.controller.js) confirms the booking itself.
-  async function startStripeCheckout(btn, bookingId) {
-    if (!bookingId) return;
+  async function startStripeCheckout(btn, id, payKey) {
+    if (!id) return;
+    const base = payKey === 'move' ? '/api/move' : '/api/booking';
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Redirecting…';
     try {
-      const res  = await fetch(`/api/booking/${encodeURIComponent(bookingId)}/checkout-session`, { method: 'POST' });
+      const res  = await fetch(`${base}/${encodeURIComponent(id)}/checkout-session`, { method: 'POST' });
       const data = await res.json();
       // A prior click may have already been paid (Stripe confirmed it before
       // our webhook did) - that's good news, not a failure, so it gets its
@@ -2142,74 +2078,42 @@
     if (member.email)      qs.set('email', member.email);
     try {
       const [bRes, mRes] = await Promise.all([
-        // Facility bookings come from /api/booking/mine (appointment-based, resident-
-        // scoped, with the live opp stage + oppId). This is the same source My Bookings
-        // uses, so a booking that shows there/in the pipeline also shows here.
+        // Both are real backends now (booking.controller.js / move.controller.js) -
+        // resident-scoped, with the live status + id, so anything that shows in
+        // My Bookings/My Move Bookings also shows here.
         fetch(`/api/booking/mine?${qs.toString()}`).then(r => r.json()).catch(() => ({})),
-        fetch(`/api/opportunities?pipeline=move&${qs.toString()}`).then(r => r.json()).catch(() => ({})),
+        fetch('/api/move/mine').then(r => r.json()).catch(() => ({})),
       ]);
-      // Server is the source of truth (GHL/Mongo) - no localStorage. Deposit facilities
-      // with a linked opportunity, named so the card can detect the facility + show details.
       const facItems = (bRes.items || [])
         .filter(b => b.oppId)
         .map(b => ({ id: b.oppId, stage: b.stage, depositDueAt: b.depositDueAt || '', depositStatus: b.depositStatus || 'none', depositNote: b.depositNote || '', name: [b.facility || b.facilityKey, b.date, b.slot].filter(Boolean).join(' - ') }))
         .filter(o => _facKeyFromOppName(o.name));
-      const moveItems = mRes.items || [];
+      const moveItems = (mRes.items || [])
+        .map(m => ({ id: m.moveId, stage: m.status, depositDueAt: m.depositDueAt || '', depositStatus: m.depositStatus || 'none', depositNote: m.depositNote || '', name: [m.moveType, m.moveDate, m.moveTime].filter(Boolean).join(' - ') }));
 
-      const pendingRaw = [
+      const pending = [
         ...facItems.filter(o => DEPOSIT_STAGES.has(o.stage)).map(o => [o, 'facility']),
         ...moveItems.filter(o => DEPOSIT_STAGES.has(o.stage)).map(o => [o, 'move']),
       ];
-      // A facility deposit that's since been refunded/forfeited moves out of the
-      // plain "Confirmed" bucket into "resolved" below, even though the booking's
-      // own stage is still Confirmed/Completed - the two are tracked separately.
+      // A deposit that's since been refunded/forfeited moves out of the plain
+      // "Confirmed" bucket into "resolved" below, even though the booking/move's
+      // own status is still Confirmed/Completed - the two are tracked separately.
       const confirmed = [
         ...facItems.filter(o => (o.stage === 'Confirmed' || o.stage === 'Completed') && o.depositStatus !== 'refunded' && o.depositStatus !== 'forfeited').map(o => [o, 'facility']),
-        ...moveItems.filter(o => o.stage === 'Confirmed' || o.stage === 'Completed').map(o => [o, 'move']),
+        ...moveItems.filter(o => (o.stage === 'Confirmed' || o.stage === 'Completed') && o.depositStatus !== 'refunded' && o.depositStatus !== 'forfeited').map(o => [o, 'move']),
       ];
-      // Resolved deposits: move-in/out refunds (their own pipeline stage) plus
-      // facility deposits management has refunded or forfeited after the event.
       const refunded = [
         ...facItems.filter(o => o.depositStatus === 'refunded' || o.depositStatus === 'forfeited').map(o => [o, 'facility']),
-        ...moveItems.filter(o => o.stage === 'Deposit Refunded').map(o => [o, 'move']),
+        ...moveItems.filter(o => o.depositStatus === 'refunded' || o.depositStatus === 'forfeited').map(o => [o, 'move']),
       ];
-      // GHL's appointment workflow can spawn a DUPLICATE opportunity for the same
-      // booking. After paying, one is Confirmed but the duplicate lingers at Deposit
-      // Pending - drop any pending item whose booking (type + name) is already
-      // confirmed, and collapse duplicate pendings to one.
-      const bookingKey  = (o, t) => `${t}:${String(o.name || '').toLowerCase().replace(/\s+/g, ' ').trim()}`;
-      // A booking that's already confirmed OR refunded shouldn't also show as pending.
-      const historyKeys = new Set([...confirmed, ...refunded].map(([o, t]) => bookingKey(o, t)));
-      const seenPending   = new Set();
-      const pending = pendingRaw.filter(([o, t]) => {
-        const k = bookingKey(o, t);
-        if (historyKeys.has(k) || seenPending.has(k)) return false;
-        seenPending.add(k);
-        return true;
-      });
       el.innerHTML = _renderPayBlock(pending, confirmed, refunded);
+      // Every deposit facility + Move-In/Out now pays through a real Stripe
+      // Checkout Session - the webhook confirms it, not a self-reported "done" click.
       el.querySelectorAll('[data-pay-key]').forEach(btn => {
         btn.addEventListener('click', () => {
           const payKey = btn.dataset.payKey || '';
           const oppId  = btn.dataset.oppId  || '';
-          // Real facility bookings (everything except the still-mock Move-In/Out
-          // pipeline) pay through an actual Stripe Checkout Session - the webhook
-          // is what confirms the booking, not a self-reported "done" click.
-          if (payKey && payKey !== 'move') {
-            startStripeCheckout(btn, oppId);
-            return;
-          }
-          const amt   = btn.dataset.amount || '';
-          const fees  = PAY_LINKS[payKey] || [];
-          if (!fees.length) return;
-          let url = fees[0].url;
-          const title = 'Pay Deposit', payLabel = fees[0].label;
-          const q = new URLSearchParams();
-          if (amt)      q.set('amount', amt);
-          if (payLabel) q.set('label', payLabel);
-          const qs2 = q.toString();
-          if (qs2) url += (url.includes('?') ? '&' : '?') + qs2;
-          openPayModal(url, title, oppId, '', payKey, btn.dataset.desc || '');
+          startStripeCheckout(btn, oppId, payKey);
         });
       });
     } catch {
@@ -2494,22 +2398,13 @@
       const res = await fetch('/api/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          move_type, move_date, move_time, notes,
-          contact_id: member?.contact_id || '',
-          name:       member?.name  || '',
-          email:      member?.email || '',
-          unit:       member?.unit  || '',
-        }),
+        body: JSON.stringify({ moveType: move_type, moveDate: move_date, moveTime: move_time, notes }),
       });
       const data = await res.json();
       if (data.success) {
         setMsg('moveMsg', '');
-        // Full submission is persisted server-side in MongoDB by POST /api/move.
         $('moveNotes').value = '';
-        const mvPanel = $('myMovesList');
-        if (mvPanel) mvPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
-        setTimeout(() => loadMyMoves(), 3000);
+        loadMyMoves();
         // Move-in/out needs a deposit - prompt to visit Payments tab.
         if (window.Swal) {
           window.Swal.fire({

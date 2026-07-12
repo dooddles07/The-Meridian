@@ -100,17 +100,6 @@
     .pay-history-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; background:none; border:none; border-top:1px solid var(--border,rgba(49,46,129,.12)); padding:10px 0 0; margin-top:14px; font-size:0.78rem; font-weight:600; color:var(--text-2,#9a9088); cursor:pointer; font-family:inherit; }
     .pay-history-toggle:hover { color:var(--text,#14110f); }
     .pay-links { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-    /* ── Payment modal ── */
-    .pay-modal-box { max-width:620px; width:96vw; display:flex; flex-direction:column; max-height:92vh; }
-    .pay-frame-wrap { flex:1; min-height:0; background:var(--bg,#faf8f5); }
-    .pay-frame { width:100%; height:clamp(360px,56vh,540px); border:0; display:block; }
-    .pay-modal-foot { padding:12px 16px; border-top:1px solid var(--border,rgba(49,46,129,.15)); flex-shrink:0; }
-    .pay-modal-foot .btn-dark { width:100%; text-align:center; justify-content:center; }
-    @media (max-width:520px) {
-      #payModal { align-items:flex-end; padding:0; }
-      .pay-modal-box { width:100%; max-height:94vh; border-radius:20px 20px 0 0; }
-      .pay-modal-foot { padding:10px 14px 22px; }
-    }
   </style>
   <script>
     (function(){
@@ -889,21 +878,6 @@
   </div>
 </div>
 
-
-<div id="payModal" class="modal-overlay">
-  <div class="modal-box pay-modal-box">
-    <div class="modal-header">
-      <span class="modal-title" id="payModalTitle">Pay Deposit</span>
-      <button class="modal-close" id="payModalClose">✕</button>
-    </div>
-    <div class="pay-frame-wrap">
-      <iframe id="payFrame" class="pay-frame" title="Secure payment" allow="payment"></iframe>
-    </div>
-    <div class="pay-modal-foot">
-      <button class="btn-dark" id="payDoneBtn">I've Completed Payment</button>
-    </div>
-  </div>
-</div>
 
 <div id="toast"></div>
 <div id="loadingOverlay" class="hidden"><div class="loading-spinner"></div><div class="loading-text">Loading your data…</div></div>
