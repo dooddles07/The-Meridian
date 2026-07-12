@@ -3040,12 +3040,6 @@
     // Tells client-backend.js's auto-login not to re-seed the preview session on
     // the next load — an explicit logout should reach the real sign-in screen.
     try { localStorage.setItem('lumina_signed_out', '1'); } catch {}
-    // index.html auto-redirects to whichever portal has an active session -
-    // but localStorage is shared across every same-origin tab, so a management
-    // or guardhouse session logged in on a DIFFERENT tab would otherwise bounce
-    // this explicit logout straight into THEIR portal instead of the chooser.
-    // sessionStorage is per-tab, so this only suppresses the redirect here.
-    try { sessionStorage.setItem('lumina_just_logged_out', '1'); } catch {}
     _broadcastLogout();
     window.location.href = 'index.html';
   });
