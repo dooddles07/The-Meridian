@@ -145,7 +145,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   max-width: 680px;
   text-align: center;
-  margin: clamp(24px, 8vh, 72px) 0 clamp(28px, 5vh, 48px);
+  margin: clamp(8px, 2.5vh, 24px) 0 clamp(28px, 5vh, 48px);
   animation: rise .6s ease both;
   /* The photo backdrop now lives on .wrap (behind the hero, showing through),
      so the hero fixes its own light-on-dark text colors here rather than
@@ -390,6 +390,6 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 520px) {
   .theme-toggle { top: 12px; right: 12px; padding: 0 12px; }
   .theme-toggle .tt-label { display: none; }
-  .hero { margin-top: 56px; }
+  .hero { margin-top: 20px; }
   .foot { flex-direction: column; align-items: flex-start; text-align: left; }
 }
