@@ -1135,6 +1135,95 @@
   document.querySelectorAll('[data-view="contacts"]').forEach(el =>
     el.addEventListener('click', () => loadContacts().catch(e => console.error('[mgmt contacts]', e))));
 
+  // Activity Log - read-only view of the privileged-action audit trail.
+  // Turns the raw "METHOD /api/…" record into a plain-English action so the
+  // manager reads what happened, not how the API is shaped.
+  function auditAction(method, path) {
+    const p = String(path || '');
+    const rules = [
+      [/^\/api\/guest$/,                            { POST: 'Registered a guest' }],
+      [/^\/api\/guest\/[^/]+$/,                     { PUT: 'Edited a guest pass', DELETE: 'Cancelled a guest pass' }],
+      [/^\/api\/guardhouse\/checkin$/,              { POST: 'Guardhouse updated a guest' }],
+      [/^\/api\/management\/guest$/,                { POST: 'Registered a guest (front desk)' }],
+      [/^\/api\/management\/guests\/[^/]+\/stage$/, { PUT: 'Changed a guest stage' }],
+      [/^\/api\/booking$/,                          { POST: 'Booked a facility' }],
+      [/^\/api\/booking\/[^/]+$/,                   { PUT: 'Edited a booking', DELETE: 'Cancelled a booking' }],
+      [/^\/api\/booking\/[^/]+\/checkout-session$/, { POST: 'Started a deposit payment' }],
+      [/^\/api\/management\/bookings\/[^/]+\/stage$/,   { PUT: 'Changed a booking stage' }],
+      [/^\/api\/management\/bookings\/[^/]+\/deposit$/, { PUT: 'Resolved a booking deposit' }],
+      [/^\/api\/move$/,                             { POST: 'Requested a move in/out' }],
+      [/^\/api\/move\/[^/]+$/,                      { DELETE: 'Cancelled a move request' }],
+      [/^\/api\/move\/[^/]+\/checkout-session$/,    { POST: 'Started a move deposit payment' }],
+      [/^\/api\/management\/moves\/[^/]+\/stage$/,   { PUT: 'Changed a move stage' }],
+      [/^\/api\/management\/moves\/[^/]+\/deposit$/, { PUT: 'Resolved a move deposit' }],
+      [/^\/api\/management\/announcements$/,         { POST: 'Published an announcement' }],
+      [/^\/api\/management\/announcements\/[^/]+$/,  { PATCH: 'Edited an announcement', DELETE: 'Removed an announcement' }],
+      [/^\/api\/management\/resources$/,            { POST: 'Uploaded a document' }],
+      [/^\/api\/management\/resources\/[^/]+$/,     { PATCH: 'Edited a document', DELETE: 'Removed a document' }],
+      [/^\/api\/rsvp$/,                             { POST: 'Responded to an RSVP' }],
+    ];
+    for (const [re, map] of rules) { if (re.test(p) && map[method]) return map[method]; }
+    return `${method} ${p.replace(/^\/api\//, '')}`; // fallback: cleaned raw record
+  }
+  function auditWhen(iso) {
+    if (!iso) return '';
+    const d = new Date(iso), now = new Date();
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Singapore' });
+    const day  = d.toDateString() === now.toDateString()
+      ? 'Today'
+      : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'Asia/Singapore' });
+    return `${day}, ${time}`;
+  }
+  const auditRoleTag = { resident: 'Resident', management: 'Management', guardhouse: 'Guardhouse' };
+  async function loadAudit() {
+    const body = $('auditBody'); if (!body) return;
+    const role = $('auditRole') ? $('auditRole').value : '';
+    const res  = await fetch(`/api/management/audit${role ? `?role=${encodeURIComponent(role)}` : ''}`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!data.success) {
+      body.innerHTML = `<tr class="empty-row"><td colspan="4">${esc(data.message || 'Could not load the activity log.')}</td></tr>`;
+      throw new Error(data.message || 'Failed to load audit log.');
+    }
+    const list = data.items || [];
+    body.innerHTML = list.length
+      ? list.map(a => {
+          const failed = a.status >= 400;
+          const result = failed
+            ? `<span class="badge badge-closed">Failed (${a.status})</span>`
+            : `<span class="badge badge-confirmed">OK</span>`;
+          return `<tr>
+            <td style="white-space:nowrap">${esc(auditWhen(a.createdAt))}</td>
+            <td>${esc(a.actor || 'unknown')}<div style="font-size:0.7rem;color:var(--muted);margin-top:2px">${esc(auditRoleTag[a.role] || a.role || '')}</div></td>
+            <td>${esc(auditAction(a.method, a.path))}${a.target ? `<div style="font-size:0.7rem;color:var(--muted);margin-top:2px">ref ${esc(a.target)}</div>` : ''}</td>
+            <td>${result}</td>
+          </tr>`;
+        }).join('')
+      : `<tr class="empty-row"><td colspan="4">No recorded actions yet.</td></tr>`;
+    if ($('auditCount')) $('auditCount').textContent = `${list.length} action${list.length === 1 ? '' : 's'}`;
+
+    const auditSearch = $('auditSearch');
+    if (auditSearch && !auditSearch.dataset.wired) {
+      auditSearch.dataset.wired = '1';
+      auditSearch.addEventListener('input', () => {
+        const q = auditSearch.value.toLowerCase();
+        let n = 0;
+        body.querySelectorAll('tr:not(.empty-row)').forEach(tr => {
+          const match = !q || tr.textContent.toLowerCase().includes(q);
+          tr.style.display = match ? '' : 'none';
+          if (match) n++;
+        });
+        if ($('auditCount')) $('auditCount').textContent = `${n} action${n === 1 ? '' : 's'}`;
+      });
+    }
+    const auditRole = $('auditRole');
+    if (auditRole && !auditRole.dataset.wired) {
+      auditRole.dataset.wired = '1';
+      auditRole.addEventListener('change', () => loadAudit().catch(e => console.error('[mgmt audit]', e)));
+    }
+  }
+  document.querySelectorAll('[data-view="audit"]').forEach(el =>
+    el.addEventListener('click', () => loadAudit().catch(e => console.error('[mgmt audit]', e))));
+
   // Announcements (published to resident Notices)
   function annDate(iso) {
     return iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
@@ -1663,6 +1752,7 @@
   _livePanelMgmt('view-move',          loadMoves);
   _livePanelMgmt('view-feedback',      loadFeedback);
   _livePanelMgmt('view-announcements', loadAnnouncements);
+  _livePanelMgmt('view-audit',         loadAudit);
 
   // Resident messages - wired to the shared inbox design (inbox.css)
   let _mgmtConvoId = null, _mgmtConvoName = '', _mgmtConvoResolved = false;

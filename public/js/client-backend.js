@@ -399,6 +399,7 @@
         || s.indexOf('/api/guest') !== -1
         || s.indexOf('/api/management/guest') !== -1
         || s.indexOf('/api/management/contacts/search') !== -1
+        || s.indexOf('/api/management/audit') !== -1
         || s.indexOf('/api/guardhouse/lookup') !== -1
         || s.indexOf('/api/guardhouse/checkin') !== -1;
       if (s.indexOf('/api/') !== -1 && !isRealPath) {

@@ -134,6 +134,9 @@
     <div class="nav__item" data-view="resources">
       <span class="nav__icon material-symbols-outlined">folder_open</span> Resources
     </div>
+    <div class="nav__item" data-view="audit">
+      <span class="nav__icon material-symbols-outlined">receipt_long</span> Activity Log
+    </div>
 
     <div class="sidebar__footer">
       <div class="sidebar__refresh-note" id="refreshNote">Auto-refresh: 90s</div>
@@ -548,6 +551,29 @@
             <div id="resMgmtPrivateList" class="res-list"><div class="loading">Loading…</div></div>
           </div>
         </div>
+      </div>
+
+      <div id="view-audit" class="view">
+        <div class="page-title">Activity <em>Log</em></div>
+        <div class="filter-bar">
+          <input type="text" class="filter-input" id="auditSearch" placeholder="Search action, person or unit…">
+          <select class="filter-select" id="auditRole">
+            <option value="">All roles</option>
+            <option value="resident">Residents</option>
+            <option value="management">Management</option>
+            <option value="guardhouse">Guardhouse</option>
+          </select>
+        </div>
+        <div class="section-head">
+          <span class="section-title">Recorded Actions</span>
+          <span class="section-meta" id="auditCount"></span>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>When</th><th>Who</th><th>Action</th><th>Result</th>
+          </tr></thead>
+          <tbody id="auditBody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+        </table>
       </div>
 
       <div id="view-announcements" class="view">
