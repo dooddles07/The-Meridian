@@ -1414,6 +1414,11 @@
     opts = opts || {};
     if (cnt) cnt.textContent = (items ? items.length : 0) + ' Total';
     if (!items || !items.length) { el.innerHTML = `<div class="panel-empty">${emptyMsg}</div>`; return; }
+    // The live-poll re-renders this list wholesale every few seconds while the
+    // tab is open, which would otherwise snap a manually-opened <details> shut
+    // out from under the user mid-read. Remember which rows were open (by
+    // their name, which carries a unique ref/id) and restore it after rebuild.
+    const openKeys = new Set([...el.querySelectorAll('details.rec-item[open]')].map(d => d.dataset.key));
     // Defect opportunity names carry the reported issue (sometimes prefixed with an
     // [urgency] tag) - surface that as the title + a body row, not just the date.
     const cleanIssue = (s) => String(s || '').replace(/^\[(?:emergency|urgent|routine)\]\s*/i, '').trim();
@@ -1501,7 +1506,7 @@
         ? `<div class="rec-field"><span class="rec-label">Ref</span><span class="rec-ref">${esc(refCode)}</span></div>`
         : '';
 
-      return `<details class="rec-item">
+      return `<details class="rec-item" data-key="${esc(item.name)}"${openKeys.has(item.name) ? ' open' : ''}>
         <summary class="rec-summary">
           <div class="rec-main">
             <span class="rec-name">${esc(item.displayName || issue || item.name)}</span>
