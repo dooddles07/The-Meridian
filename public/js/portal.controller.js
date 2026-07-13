@@ -449,6 +449,7 @@
   const getBookings  = () => _bookings;
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
   let _myGuests = []; // latest /api/guest/mine items - used to count a booking's linked guests
+  let _editingGuestId = null; // set while the guest form is editing an existing pass (vs creating)
   // The full text a resident typed for defects/parcels/moves/feedback (GHL only keeps
   // a short opp name) is persisted in the live MongoDB on submit and read back here -
   // never in localStorage, so it's consistent across every device and both portals.
@@ -1309,6 +1310,43 @@
     }
   }
 
+  // Leave guest-edit mode: restore the form's Register button + hide the linked
+  // booking row (which the edit flow disables, since a pass's booking is fixed).
+  function exitGuestEditMode() {
+    _editingGuestId = null;
+    const btn = $('gRegisterBtn'); if (btn) btn.textContent = 'Register Visitor';
+    const lb = $('gLinkedBooking'); if (lb) { const grp = lb.closest('.form-group'); if (grp) grp.style.display = ''; }
+  }
+
+  // Enter guest-edit mode: pull the pass's current values into the same inline
+  // form used for creation, so a resident can correct a typo instead of having
+  // to cancel and re-register (the reference/QR stays the same). Only offered
+  // while the pass is still Registered - see the edit button in renderRecords.
+  async function startEditGuest(id) {
+    try {
+      const res  = await fetch(`/api/guest/${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!data.success) { toast(data.message || 'Could not open this pass for editing.', 'err'); return; }
+      const g = data.guest;
+      $('gVisitorType').value  = g.visitorType || '';
+      $('gVisitorName').value  = g.visitorName || '';
+      $('gVisitorEmail').value = g.visitorEmail || '';
+      $('gVisitorPhone').value = g.visitorPhone || '';
+      if ($('gVisitorIc')) $('gVisitorIc').value = g.visitorIc || '';
+      if ($('gVehicle'))   $('gVehicle').value   = g.visitorVehicle || '';
+      $('gDate').value     = g.visitDate || '';
+      $('gDuration').value = g.duration || 'Single Visit (Day)';
+      _editingGuestId = id;
+      // A pass's linked booking is fixed once created, so hide that control while
+      // editing and clear any capacity gate it may have placed on the button.
+      const lb = $('gLinkedBooking');
+      if (lb) { lb.value = ''; const grp = lb.closest('.form-group'); if (grp) grp.style.display = 'none'; updateGuestBookingStatus(); }
+      const btn = $('gRegisterBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+      setMsg('gMsg', 'Editing a registered pass — update the details and save. The reference stays the same.');
+      const form = $('gVisitorType'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch { toast('Connection error. Please try again.', 'err'); }
+  }
+
   // Hydrate the in-memory booking cache from the server (MongoDB - the source of
   // truth, with the live GHL pipeline stage overlaid). Replaces the booking list
   // wholesale, so cancellations / management stage moves are always reflected.
@@ -1507,8 +1545,12 @@
         ? `<button class="rec-qr-btn" type="button" data-qr-ref="${esc(refCode)}" title="Show guest pass QR" aria-label="Show guest pass QR"><span class="material-symbols-outlined">qr_code_2</span> QR</button>`
         : '';
       // Only while still Registered - once a visitor has actually checked in
-      // there's nothing left to cancel.
-      const cancelBtn = (refCode && item.stage === 'Registered' && item.id)
+      // there's nothing left to edit or cancel.
+      const editable = refCode && item.stage === 'Registered' && item.id;
+      const editBtn = editable
+        ? `<button class="rec-edit-btn" type="button" data-edit-id="${esc(item.id)}" title="Edit this guest pass" aria-label="Edit this guest pass"><span class="material-symbols-outlined">edit</span></button>`
+        : '';
+      const cancelBtn = editable
         ? `<button class="rec-cancel-btn" type="button" data-cancel-id="${esc(item.id)}" title="Cancel this guest pass" aria-label="Cancel this guest pass"><span class="material-symbols-outlined">close</span></button>`
         : '';
       const qrHtml = refCode ? `<div class="rec-qr">
@@ -1531,6 +1573,7 @@
             <span class="rec-meta">${subDate}</span>
           </div>
           ${qrBtn}
+          ${editBtn}
           ${cancelBtn}
           <span class="sbadge ${badge}">${esc(item.stage)}</span>
           <span class="rec-chevron">›</span>
@@ -1602,6 +1645,10 @@
     el.querySelectorAll('.rec-qr-btn[data-qr-ref], .qr-img[data-qr-ref]').forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       showGuestQr(btn.dataset.qrRef);
+    }));
+    el.querySelectorAll('[data-edit-id]').forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      startEditGuest(btn.dataset.editId);
     }));
     el.querySelectorAll('[data-cancel-id]').forEach(btn => btn.addEventListener('click', async e => {
       e.preventDefault(); e.stopPropagation();
@@ -2632,6 +2679,7 @@
       setMsg('gMsg', 'Please wait for your booking to be confirmed before registering guests for this event.', true);
       return;
     }
+    const editing = _editingGuestId;
     const reviewRows = [
       ['Visitor Type', visitorType],
       ['Name',         name],
@@ -2642,34 +2690,45 @@
       ['Visit Date',   fmtDate(date)],
       ['Duration',     duration],
     ];
-    if (linkedBooking) reviewRows.push(['Linked Booking', `${linkedBooking.emoji || ''} ${linkedBooking.facilityName} · ${fmtDate(linkedBooking.date)}`]);
-    const { isConfirmed: gOk } = await swalReview('Review Visitor Registration', reviewRows, null);
+    if (!editing && linkedBooking) reviewRows.push(['Linked Booking', `${linkedBooking.emoji || ''} ${linkedBooking.facilityName} · ${fmtDate(linkedBooking.date)}`]);
+    const { isConfirmed: gOk } = await swalReview(editing ? 'Review Changes' : 'Review Visitor Registration', reviewRows, null);
     if (!gOk) return;
     const btn = $('gRegisterBtn');
-    setMsg('gMsg', 'Registering…'); btn.disabled = true;
+    setMsg('gMsg', editing ? 'Saving…' : 'Registering…'); btn.disabled = true;
     try {
-      const res = await fetch('/api/guest', {
-        method: 'POST',
+      const res = await fetch(editing ? `/api/guest/${encodeURIComponent(editing)}` : '/api/guest', {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           visitor_type: visitorType, visitor_name: name, visitor_email: email, visitor_phone: phone,
           visitor_ic: ic, visitor_vehicle: vehicle,
           visit_date: date, duration,
-          linked_booking_id: linkedBookingId || undefined,
-          linked_facility:   linkedBooking ? linkedBooking.facilityName : undefined,
-          linked_date:       linkedBooking ? linkedBooking.date         : undefined,
+          // Linked booking is set once at registration and not editable here.
+          linked_booking_id: editing ? undefined : (linkedBookingId || undefined),
+          linked_facility:   editing ? undefined : (linkedBooking ? linkedBooking.facilityName : undefined),
+          linked_date:       editing ? undefined : (linkedBooking ? linkedBooking.date         : undefined),
           host_name: member.name, host_email: member.email, host_unit: member.unit, host_contact_id: member.contact_id,
         }),
       });
       const data = await res.json();
-      if (!data.success) { setMsg('gMsg', data.message || 'Registration failed.', true); return; }
+      if (!data.success) { setMsg('gMsg', data.message || (editing ? 'Could not save changes.' : 'Registration failed.'), true); return; }
       setMsg('gMsg', '');
-      swalDone('Visitor Registered', [
-        ['Visitor',    name],
-        ['Type',       visitorType],
-        ['Visit Date', fmtDate(date)],
-        ['Reference',  data.reference || ''],
-      ], 'The guardhouse has been notified.' + (data.reference ? ` Pass ref: ${data.reference}.` : ''));
+      if (editing) {
+        swalDone('Visitor Updated', [
+          ['Visitor',    name],
+          ['Type',       visitorType],
+          ['Visit Date', fmtDate(date)],
+          ['Reference',  data.reference || ''],
+        ], 'Your changes are saved. The pass reference is unchanged.');
+      } else {
+        swalDone('Visitor Registered', [
+          ['Visitor',    name],
+          ['Type',       visitorType],
+          ['Visit Date', fmtDate(date)],
+          ['Reference',  data.reference || ''],
+        ], 'The guardhouse has been notified.' + (data.reference ? ` Pass ref: ${data.reference}.` : ''));
+      }
+      exitGuestEditMode();
       $('gVisitorType').value = '';
       if ($('gLinkedBooking')) { $('gLinkedBooking').value = ''; updateGuestBookingStatus(); }
       clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone', 'gVisitorIc', 'gVehicle']);
@@ -2680,7 +2739,7 @@
       setMsg('gMsg', 'Something went wrong. Please try again.', true);
     } finally { btn.disabled = false; }
   });
-  bind('gResetBtn', () => { $('gVisitorType').value = ''; $('gLinkedBooking').value = ''; clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone', 'gVisitorIc', 'gVehicle']); setMsg('gMsg', ''); updateGuestBookingStatus(); });
+  bind('gResetBtn', () => { exitGuestEditMode(); $('gVisitorType').value = ''; $('gLinkedBooking').value = ''; clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone', 'gVisitorIc', 'gVehicle']); setMsg('gMsg', ''); updateGuestBookingStatus(); });
   if ($('gLinkedBooking')) $('gLinkedBooking').addEventListener('change', updateGuestBookingStatus);
   document.querySelectorAll('[data-view="guests"]').forEach(el => el.addEventListener('click', populateBookingSelector));
 

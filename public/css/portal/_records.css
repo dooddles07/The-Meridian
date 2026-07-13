@@ -124,6 +124,19 @@
 .rec-cancel-btn .material-symbols-outlined { font-size: 0.95rem; display: block; }
 .rec-cancel-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
 .rec-cancel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.rec-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 4px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill, 999px);
+  cursor: pointer;
+}
+.rec-edit-btn .material-symbols-outlined { font-size: 0.95rem; display: block; }
+.rec-edit-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
 .rec-chevron {
   font-size: 0.6875rem;
   color: var(--muted);

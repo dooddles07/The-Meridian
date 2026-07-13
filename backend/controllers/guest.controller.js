@@ -134,6 +134,52 @@ async function cancel(req, res) {
   return res.json({ success: true });
 }
 
+// GET /api/guest/:id - the resident's own pass, full editable fields (backs the
+// edit form). Scoped to the caller so one resident can't read another's pass.
+async function getOneMine(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const g = await Guest.findOne({ _id: req.params.id, contact_id: req.resident.contact_id }).lean();
+  if (!g) return res.status(404).json({ success: false, message: 'Guest pass not found.' });
+  return res.json({ success: true, guest: {
+    id: String(g._id), stage: g.stage, reference: g.reference,
+    visitorType: g.visitorType, visitorName: g.visitorName, visitorEmail: g.visitorEmail,
+    visitorPhone: g.visitorPhone, visitorIc: g.visitorIc, visitorVehicle: g.visitorVehicle,
+    visitDate: g.visitDate, duration: g.duration,
+  } });
+}
+
+// PUT /api/guest/:id - edit a pass while it's still Registered. The reference
+// (and any QR already shared) is deliberately NOT regenerated even if the visit
+// date changes - the guard gates on the stored visitDate field, not the date
+// embedded in the reference string, so the pass stays stable. Linked booking is
+// intentionally not editable here (changing it would re-open the capacity gate).
+async function edit(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const existing = await Guest.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
+  if (!existing) return res.status(404).json({ success: false, message: 'Guest pass not found.' });
+  if (existing.stage !== 'Registered') {
+    return res.status(400).json({ success: false, message: 'This guest pass can no longer be edited.' });
+  }
+  const { visitor_type, visitor_name, visitor_email, visitor_phone, visitor_ic, visitor_vehicle, visit_date, duration } = req.body || {};
+  if (!VISITOR_TYPES.includes(visitor_type)) return res.status(400).json({ success: false, message: 'Please select a valid visitor type.' });
+  const name = String(visitor_name || '').trim();
+  if (!name) return res.status(400).json({ success: false, message: 'Visitor name is required.' });
+  const email = String(visitor_email || '').trim();
+  if (!email || !EMAIL_RE.test(email)) return res.status(400).json({ success: false, message: 'A valid visitor email is required.' });
+  if (!visit_date || visit_date < todaySGT()) return res.status(400).json({ success: false, message: 'Visit date must be today or later.' });
+
+  existing.visitorType    = visitor_type;
+  existing.visitorName    = name;
+  existing.visitorEmail   = email;
+  existing.visitorPhone   = String(visitor_phone || '').trim();
+  existing.visitorIc      = String(visitor_ic || '').trim();
+  existing.visitorVehicle = String(visitor_vehicle || '').trim();
+  existing.visitDate      = visit_date;
+  existing.duration       = duration || existing.duration;
+  await existing.save();
+  return res.json({ success: true, reference: existing.reference });
+}
+
 // GET /api/management/contacts/search?q= - resident (host) typeahead for the
 // management guest desk.
 async function searchContacts(req, res) {
@@ -176,6 +222,7 @@ async function listForManagement(req, res) {
     items: items.map(g => ({
       oppId: String(g._id), visitor: g.visitorName, host: g.host_name, unit: g.host_unit,
       phone: g.visitorPhone, stage: g.stage, visitDate: g.visitDate, createdAt: g.createdAt,
+      ic: g.visitorIc || '', vehicle: g.visitorVehicle || '', visitorType: g.visitorType || '',
     })),
     stages: STAGES,
   });
@@ -247,6 +294,6 @@ async function guardCheckin(req, res) {
 }
 
 module.exports = {
-  create, listMine, cancel, searchContacts, createByManagement, listForManagement, updateStage,
+  create, listMine, getOneMine, edit, cancel, searchContacts, createByManagement, listForManagement, updateStage,
   guardLookup, guardCheckin,
 };

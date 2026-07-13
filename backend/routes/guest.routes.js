@@ -12,7 +12,9 @@ const mutateLimiter = rateLimit({
 router.use(requireResident);
 
 router.get('/mine', controller.listMine);
+router.get('/:id',  controller.getOneMine);
 router.post('/',    mutateLimiter, auditLog, controller.create);
+router.put('/:id',  mutateLimiter, auditLog, controller.edit);
 router.delete('/:id', mutateLimiter, auditLog, controller.cancel);
 
 module.exports = router;

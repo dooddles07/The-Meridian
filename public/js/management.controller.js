@@ -509,15 +509,18 @@
     const stages = data.stages || ['Registered', 'Checked In', 'Checked Out', 'Departed', 'Closed'];
     if (body) {
       body.innerHTML = items.length
-        ? items.map(g => `<tr>
-            <td>${esc(g.visitor)}</td>
+        ? items.map(g => {
+            const sub = [g.ic ? 'IC ' + esc(g.ic) : '', g.vehicle ? esc(g.vehicle) : ''].filter(Boolean).join(' · ');
+            return `<tr>
+            <td>${esc(g.visitor)}${sub ? `<div style="font-size:0.7rem;color:var(--muted);margin-top:2px">${sub}</div>` : ''}</td>
             <td>${esc(g.host)}</td>
             <td>${g.unit ? '#' + esc(g.unit) : ''}</td>
             <td>${esc(g.phone || '')}</td>
             <td>${gBadge(g.stage)}</td>
             <td style="white-space:nowrap">${g.visitDate ? esc(bkDateLabel(g.visitDate)) : ''}</td>
             <td>${gStageSelect(g, stages)}</td>
-          </tr>`).join('')
+          </tr>`;
+          }).join('')
         : `<tr class="empty-row"><td colspan="7">No registered guests.</td></tr>`;
       body.querySelectorAll('.g-stage-select').forEach(sel => {
         sel.dataset.prev = sel.value;
@@ -1449,7 +1452,7 @@
                 <div style="color:#a5a3f5;font-family:'Courier New',monospace;font-size:0.8rem;font-weight:600">${esc(data.reference || '')}</div>
               </div>
             </div>
-            <div style="background:#faf7f2;border-radius:6px;padding:10px 12px;font-size:0.82rem;color:#5a514a">QR pass sent to resident.</div>
+            <div style="background:#faf7f2;border-radius:6px;padding:10px 12px;font-size:0.82rem;color:#5a514a">Pass is active. Share the reference with the resident or visitor — the guardhouse can verify it on arrival.</div>
           </div>`,
           confirmButtonText:  'Done',
           confirmButtonColor: '#a5a3f5',
