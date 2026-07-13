@@ -13,5 +13,6 @@ router.use(requireResident);
 
 router.get('/mine', controller.listMine);
 router.post('/',    mutateLimiter, auditLog, controller.create);
+router.delete('/:id', mutateLimiter, auditLog, controller.cancel);
 
 module.exports = router;

@@ -1483,6 +1483,11 @@
       const qrBtn = refCode
         ? `<button class="rec-qr-btn" type="button" data-qr-ref="${esc(refCode)}" title="Show guest pass QR" aria-label="Show guest pass QR"><span class="material-symbols-outlined">qr_code_2</span> QR</button>`
         : '';
+      // Only while still Registered - once a visitor has actually checked in
+      // there's nothing left to cancel.
+      const cancelBtn = (refCode && item.stage === 'Registered' && item.id)
+        ? `<button class="rec-cancel-btn" type="button" data-cancel-id="${esc(item.id)}" title="Cancel this guest pass" aria-label="Cancel this guest pass"><span class="material-symbols-outlined">close</span></button>`
+        : '';
       const qrHtml = refCode ? `<div class="rec-qr">
           <div class="qr-img" data-qr-ref="${esc(refCode)}"></div>
           <a class="qr-dl-btn qr-dl-pending" data-qr-dl="${esc(refCode)}" href="#">
@@ -1503,6 +1508,7 @@
             <span class="rec-meta">${subDate}</span>
           </div>
           ${qrBtn}
+          ${cancelBtn}
           <span class="sbadge ${badge}">${esc(item.stage)}</span>
           <span class="rec-chevron">›</span>
         </summary>
@@ -1573,6 +1579,30 @@
     el.querySelectorAll('.rec-qr-btn[data-qr-ref], .qr-img[data-qr-ref]').forEach(btn => btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       showGuestQr(btn.dataset.qrRef);
+    }));
+    el.querySelectorAll('[data-cancel-id]').forEach(btn => btn.addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = btn.dataset.cancelId;
+      const proceed = window.Swal
+        ? (await window.Swal.fire({
+            title: 'Cancel this guest pass?',
+            text:  'The visitor will no longer be able to enter using this pass.',
+            showCancelButton: true, confirmButtonText: 'Cancel Pass', cancelButtonText: 'Keep It',
+            confirmButtonColor: '#c0392b', reverseButtons: true,
+          })).isConfirmed
+        : confirm('Cancel this guest pass?');
+      if (!proceed) return;
+      btn.disabled = true;
+      try {
+        const res  = await fetch(`/api/guest/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) { toast(data.message || 'Could not cancel.', 'err'); btn.disabled = false; return; }
+        toast('Guest pass cancelled.');
+        loadMyGuests();
+      } catch {
+        toast('Connection error. Please try again.', 'err');
+        btn.disabled = false;
+      }
     }));
     fillQrImages(el);
   }

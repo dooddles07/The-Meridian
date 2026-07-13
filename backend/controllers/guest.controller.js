@@ -103,6 +103,20 @@ async function listMine(req, res) {
   });
 }
 
+// DELETE /api/guest/:id - resident cancels their own pass, only while it's
+// still Registered (nothing to "cancel" once the visitor has actually arrived).
+async function cancel(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const existing = await Guest.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
+  if (!existing) return res.status(404).json({ success: false, message: 'Guest pass not found.' });
+  if (existing.stage !== 'Registered') {
+    return res.status(400).json({ success: false, message: 'This guest pass can no longer be cancelled.' });
+  }
+  existing.stage = 'Closed';
+  await existing.save();
+  return res.json({ success: true });
+}
+
 // GET /api/management/contacts/search?q= - resident (host) typeahead for the
 // management guest desk.
 async function searchContacts(req, res) {
@@ -206,6 +220,6 @@ async function guardCheckin(req, res) {
 }
 
 module.exports = {
-  create, listMine, searchContacts, createByManagement, listForManagement, updateStage,
+  create, listMine, cancel, searchContacts, createByManagement, listForManagement, updateStage,
   guardLookup, guardCheckin,
 };

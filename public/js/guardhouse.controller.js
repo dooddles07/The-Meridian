@@ -2,7 +2,8 @@
   'use strict';
 
   // verify.controller.js - Guardhouse Portal
-  // Auth: POST /api/auth/guardhouse/login (username: guardhouse, password: guard123)
+  // Auth: POST /api/auth/guardhouse/login - see backend/.env.example for the
+  // LUMINA_GUARDHOUSE account(s), there's no fixed default credential.
   // QR decode: jsQR library (loaded by the page)
   // Log: stored in sessionStorage (clears when tab closes - intentional for shift changes)
 
@@ -179,7 +180,7 @@
     return (refLine ? refLine.replace('Ref:', '').trim() : txt);
   }
 
-  // Verify a reference: look it up in GHL, then gate by the scheduled visit date.
+  // Verify a reference: look it up, then gate by the scheduled visit date.
   async function verifyReference(raw) {
     const reference = extractReference(raw);
     _currentPass = null;
@@ -219,12 +220,36 @@
       return;
     }
 
+    // What's actionable next depends on where the pass already is in its
+    // lifecycle - a guard re-scanning a Checked-In guest is checking them out,
+    // not admitting them again.
+    const STAGE_UI = {
+      'Registered':  { title: 'VALID - Admit Visitor',       verb: 'checkin',  label: 'Admitted',    icon: 'check_circle' },
+      'Checked In':  { title: 'ON SITE - Check Out?',        verb: 'checkout', label: 'Checked Out', icon: 'logout' },
+      'Checked Out': { title: 'CHECKED OUT - Mark Departed?',verb: 'depart',   label: 'Departed',    icon: 'directions_walk' },
+    };
+    const ui = STAGE_UI[data.stage];
     _currentPass = { ref: data.reference, hostId: data.hostContactId, oppId: data.opportunityId, visitor: data.visitor, hostUnit: data.hostUnit };
-    showResult('VALID - Admit Visitor', 'green', { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '', 'Visit Date': data.visitDate || ' - ', 'Verified At': nowSGT() });
-    addLog({ key: `guest:${data.reference}`, type: 'green', label: 'Admitted', name: data.visitor || data.reference, meta: `${data.reference} · Unit ${data.hostUnit}` });
+
+    if (!ui) {
+      // Departed / Closed - nothing left to action at the gate.
+      const closed = data.stage === 'Closed';
+      showResult(closed ? 'PASS CLOSED - Deny Entry' : 'VISIT ALREADY COMPLETE', closed ? 'red' : 'grey',
+        { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '', 'Status': data.stage },
+        [{ cls: 'log', verb: 'noted', icon: 'note_add', label: 'Note Only' }]);
+      return;
+    }
+
+    showResult(ui.title, 'green',
+      { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '', 'Visit Date': data.visitDate || ' - ', 'Verified At': nowSGT() },
+      [{ cls: 'admit', verb: ui.verb, icon: ui.icon, label: ui.label },
+       { cls: 'log',   verb: 'noted', icon: 'note_add', label: 'Note Only' }]);
   }
 
-  function showResult(title, color, fields) {
+  // `actions` (when given) is the button set for this result - lets callers
+  // offer checkout/depart instead of always admit/deny. Omitted only by the
+  // plain invalid/expired/error paths below, which always just deny + note.
+  function showResult(title, color, fields, actions) {
     $('ghStatusDot').className   = `gh-result-status ${color}`;
     $('ghStatusTitle').className = `gh-result-title ${color}`;
     $('ghStatusTitle').textContent = title;
@@ -234,50 +259,56 @@
     ).join('');
 
     const icon = n => `<span class="material-symbols-outlined" aria-hidden="true">${n}</span>`;
-    const admitBtns = color === 'green'
-      ? `<div class="gh-result-actions">
-           <button class="gh-action admit" onclick="logAction('admitted')">${icon('check_circle')} Admitted</button>
-           <button class="gh-action deny"  onclick="logAction('denied')">${icon('cancel')} Denied</button>
-           <button class="gh-action log"   onclick="logAction('noted')">${icon('note_add')} Note Only</button>
-         </div>`
-      : `<div class="gh-result-actions">
-           <button class="gh-action deny" onclick="logAction('denied')">${icon('cancel')} Deny Entry</button>
-           <button class="gh-action log"  onclick="logAction('noted')">${icon('warning')} Note &amp; Escalate</button>
-         </div>`;
+    const list = actions || [
+      { cls: 'deny', verb: 'denied', icon: 'cancel',  label: 'Deny Entry' },
+      { cls: 'log',  verb: 'noted',  icon: 'warning', label: 'Note & Escalate' },
+    ];
+    const admitBtns = `<div class="gh-result-actions">${list.map(a =>
+      `<button class="gh-action ${a.cls}" onclick="logAction('${a.verb}')">${icon(a.icon)} ${esc(a.label)}</button>`
+    ).join('')}</div>`;
 
     $('ghResultBody').innerHTML = `<div>${rows}</div>${admitBtns}`;
   }
 
-  window.logAction = function (action) {
-    const type = action === 'admitted' ? 'green' : action === 'denied' ? 'red' : 'orange';
-    const text = action === 'admitted' ? 'Entry Admitted' : action === 'denied' ? 'Entry Denied' : 'Noted';
+  // Every verb the gate can act on - what it logs as, whether it calls the
+  // real check-in/out/depart endpoint, and how the toast reads.
+  const VERB_META = {
+    checkin:  { logType: 'green',  text: 'Entry Admitted',  backendAction: 'checkin',  toast: 'ok'  },
+    checkout: { logType: 'green',  text: 'Checked Out',     backendAction: 'checkout', toast: 'ok'  },
+    depart:   { logType: 'green',  text: 'Marked Departed', backendAction: 'depart',   toast: 'ok'  },
+    denied:   { logType: 'red',    text: 'Entry Denied',    backendAction: null,       toast: 'err' },
+    noted:    { logType: 'orange', text: 'Noted',           backendAction: null,       toast: 'err' },
+  };
+
+  window.logAction = function (verb) {
+    const meta = VERB_META[verb] || VERB_META.noted;
     // Update the scanned guest's shared log row (keyed by its reference) across stations.
     if (_currentPass && _currentPass.ref) {
-      addLog({ key: `guest:${_currentPass.ref}`, type, label: text,
+      addLog({ key: `guest:${_currentPass.ref}`, type: meta.logType, label: meta.text,
                name: _currentPass.visitor || _currentPass.ref,
                meta: `${_currentPass.ref}${_currentPass.hostUnit ? ' · Unit ' + _currentPass.hostUnit : ''}` });
     }
 
-    // On admit, move the guest's pipeline opportunity to "Checked In" (and tag the
-    // host) so the resident + management portals reflect the check-in immediately.
-    if (action === 'admitted' && _currentPass && (_currentPass.oppId || _currentPass.hostId || _currentPass.ref)) {
+    // checkin/checkout/depart move the guest's real stage (and its timestamp)
+    // so the resident + management portals reflect it immediately; denied/noted
+    // are gate-only decisions with nothing to persist on the guest record.
+    if (meta.backendAction && _currentPass && (_currentPass.oppId || _currentPass.ref)) {
       const token = (session && session.token) || '';
       fetch('/api/guardhouse/checkin', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body:    JSON.stringify({
-          contact_id:     _currentPass.hostId || '',
-          opportunity_id: _currentPass.oppId  || '',
-          reference:      _currentPass.ref    || '',
-          action:         'checkin',
+          opportunity_id: _currentPass.oppId || '',
+          reference:      _currentPass.ref   || '',
+          action:         meta.backendAction,
         }),
       }).then(r => r.json())
-        .then(d => { if (!d.success) console.warn('[guardhouse] check-in failed:', d.message); })
-        .catch(() => console.warn('[guardhouse] check-in request failed'));
+        .then(d => { if (!d.success) console.warn('[guardhouse] ' + meta.backendAction + ' failed:', d.message); })
+        .catch(() => console.warn('[guardhouse] ' + meta.backendAction + ' request failed'));
     }
 
     _currentPass = null;
-    toast(text, action === 'admitted' ? 'ok' : 'err');
+    toast(meta.text, meta.toast);
     resetResult();
   };
 
