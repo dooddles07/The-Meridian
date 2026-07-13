@@ -248,8 +248,15 @@
       return;
     }
 
-    showResult(ui.title, 'green',
-      { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '', 'Visit Date': data.visitDate || ' - ', 'Verified At': nowSGT() },
+    // Only show identity/vehicle/contact rows the pass actually carries - a
+    // blank "IC: -" row is noise the guard has to read past.
+    const fields = { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '' };
+    if (data.visitorIc)      fields['IC / Passport'] = data.visitorIc;
+    if (data.visitorVehicle) fields['Vehicle'] = data.visitorVehicle;
+    if (data.visitorPhone)   fields['Phone'] = data.visitorPhone;
+    fields['Visit Date'] = data.visitDate || ' - ';
+    fields['Verified At'] = nowSGT();
+    showResult(ui.title, 'green', fields,
       [{ cls: 'admit', verb: ui.verb, icon: ui.icon, label: ui.label },
        { cls: 'log',   verb: 'noted', icon: 'note_add', label: 'Note Only' }]);
   }

@@ -2598,6 +2598,8 @@
     const name           = $('gVisitorName').value.trim();
     const email          = $('gVisitorEmail').value.trim();
     const phone          = $('gVisitorPhone').value.trim();
+    const ic             = $('gVisitorIc') ? $('gVisitorIc').value.trim() : '';
+    const vehicle        = $('gVehicle')   ? $('gVehicle').value.trim()   : '';
     const date           = $('gDate').value;
     const duration       = $('gDuration').value;
     const linkedBookingId = $('gLinkedBooking') ? $('gLinkedBooking').value : '';
@@ -2615,6 +2617,8 @@
       ['Name',         name],
       ['Email',        email],
       ['Phone',        phone || ''],
+      ['IC / Passport', ic || ''],
+      ['Vehicle',      vehicle || ''],
       ['Visit Date',   fmtDate(date)],
       ['Duration',     duration],
     ];
@@ -2629,6 +2633,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           visitor_type: visitorType, visitor_name: name, visitor_email: email, visitor_phone: phone,
+          visitor_ic: ic, visitor_vehicle: vehicle,
           visit_date: date, duration,
           linked_booking_id: linkedBookingId || undefined,
           linked_facility:   linkedBooking ? linkedBooking.facilityName : undefined,
@@ -2647,7 +2652,7 @@
       ], 'The guardhouse has been notified.' + (data.reference ? ` Pass ref: ${data.reference}.` : ''));
       $('gVisitorType').value = '';
       if ($('gLinkedBooking')) { $('gLinkedBooking').value = ''; updateGuestBookingStatus(); }
-      clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone']);
+      clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone', 'gVisitorIc', 'gVehicle']);
       const gPanel = $('myGuestsList');
       if (gPanel) gPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
       setTimeout(() => loadMyGuests(), 3000);
@@ -2655,7 +2660,7 @@
       setMsg('gMsg', 'Something went wrong. Please try again.', true);
     } finally { btn.disabled = false; }
   });
-  bind('gResetBtn', () => { $('gVisitorType').value = ''; $('gLinkedBooking').value = ''; clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone']); setMsg('gMsg', ''); updateGuestBookingStatus(); });
+  bind('gResetBtn', () => { $('gVisitorType').value = ''; $('gLinkedBooking').value = ''; clr(['gVisitorName', 'gVisitorEmail', 'gVisitorPhone', 'gVisitorIc', 'gVehicle']); setMsg('gMsg', ''); updateGuestBookingStatus(); });
   if ($('gLinkedBooking')) $('gLinkedBooking').addEventListener('change', updateGuestBookingStatus);
   document.querySelectorAll('[data-view="guests"]').forEach(el => el.addEventListener('click', populateBookingSelector));
 

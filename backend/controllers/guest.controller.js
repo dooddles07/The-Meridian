@@ -81,6 +81,7 @@ async function create(req, res) {
   const doc = await createUniqueGuest({
     visitorName: name, visitorEmail: email, visitorPhone: String(visitor_phone || '').trim(),
     visitorType: visitor_type, visitDate: visit_date, duration: duration || 'Single Visit (Day)',
+    visitorIc: String(req.body.visitor_ic || '').trim(), visitorVehicle: String(req.body.visitor_vehicle || '').trim(),
     linkedBookingId: linked_booking_id || '', linkedFacility, linkedDate,
     contact_id: req.resident.contact_id, host_name: req.resident.name, host_email: req.resident.email, host_unit: req.resident.unit,
     createdVia: 'resident', stage: 'Registered',
@@ -200,6 +201,9 @@ async function guardLookup(req, res) {
     success: true, found: true, reference: g.reference, visitor: g.visitorName,
     hostUnit: g.host_unit, hostContactId: g.contact_id, opportunityId: String(g._id),
     visitDate: g.visitDate, stage: g.stage,
+    // Surfaced so the guard can verify identity/vehicle at the gate - captured
+    // by both the resident and management registration forms.
+    visitorPhone: g.visitorPhone || '', visitorIc: g.visitorIc || '', visitorVehicle: g.visitorVehicle || '',
   });
 }
 
