@@ -30,12 +30,24 @@ function applyStageTimestamp(doc, stage) {
   if (stage === 'Departed')    doc.departedAt   = new Date();
 }
 
-// 4-digit random suffix on the visit date - retries on the (rare) collision
-// instead of trusting Math.random() to never repeat within the same day.
+// Crockford base32 - digits + uppercase, minus I/L/O/U (avoids look-alike
+// confusion when a guard types a reference by hand). 6 chars gives ~1e9 values
+// per day, so a valid pass can't be brute-force-guessed through the rate-limited
+// guardhouse lookup (the old 4-digit suffix was only 10k). Lookups are exact
+// string matches, so this needs no signature - a guessed ref simply won't exist.
+const REF_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function refToken(len) {
+  let s = '';
+  for (let i = 0; i < len; i++) s += REF_ALPHABET[crypto.randomInt(0, REF_ALPHABET.length)];
+  return s;
+}
+
+// Random token on the visit date - retries on the (astronomically rare)
+// collision rather than trusting the RNG to never repeat within the same day.
 async function createUniqueGuest(data) {
   const datePart = String(data.visitDate || todaySGT()).replace(/-/g, '');
   for (let attempt = 0; attempt < 5; attempt++) {
-    const reference = `GST-${datePart}-${crypto.randomInt(1000, 10000)}`;
+    const reference = `GST-${datePart}-${refToken(6)}`;
     try {
       return await Guest.create({ ...data, reference });
     } catch (err) {

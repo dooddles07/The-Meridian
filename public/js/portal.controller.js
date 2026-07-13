@@ -1412,7 +1412,9 @@
     return map[stage] || 'sbadge-default';
   }
 
-  const REF_RE = /GST-\d{8}-\d{4}/;
+  // Matches both the legacy 4-digit suffix and the current base32 token, so
+  // passes issued before/after the format change both surface a QR button.
+  const REF_RE = /GST-\d{8}-[0-9A-Z]{4,}/;
 
   // Guest pass QR - generated locally with qrcodejs (loaded in <head>, already
   // CSP-allowed) instead of round-tripping the visitor's reference through a
