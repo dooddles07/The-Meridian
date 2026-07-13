@@ -368,6 +368,7 @@ a { color: inherit; text-decoration: none; }
 .foot__note { display: inline-flex; align-items: center; gap: 7px; max-width: 60ch; }
 .foot__note .material-symbols-outlined { font-size: 17px; color: var(--gold); flex-shrink: 0; }
 .foot__by em { font-style: italic; color: var(--gold); }
+.foot__logo { height: 13px; width: auto; vertical-align: -1px; }
 
 /* Motion */
 @keyframes rise {

@@ -334,4 +334,4 @@ the-lumina/
 
 ---
 
-<p align="center"><em>Built by Brixsonn Romero · Portfolio project</em></p>
+<p align="center"><em>Built by QUAN7UM · Portfolio project</em></p>
