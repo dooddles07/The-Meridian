@@ -223,10 +223,14 @@
     // What's actionable next depends on where the pass already is in its
     // lifecycle - a guard re-scanning a Checked-In guest is checking them out,
     // not admitting them again.
+    // Titles read as a status + the imperative for what to do about it, same
+    // pattern as the invalid/expired cases above; button labels stay
+    // imperative too (Admit, not Admitted) - the past-tense version is what
+    // the toast/log say once it's done.
     const STAGE_UI = {
-      'Registered':  { title: 'VALID - Admit Visitor',       verb: 'checkin',  label: 'Admitted',    icon: 'check_circle' },
-      'Checked In':  { title: 'ON SITE - Check Out?',        verb: 'checkout', label: 'Checked Out', icon: 'logout' },
-      'Checked Out': { title: 'CHECKED OUT - Mark Departed?',verb: 'depart',   label: 'Departed',    icon: 'directions_walk' },
+      'Registered':  { title: 'VALID - Admit Visitor',        verb: 'checkin',  label: 'Admit',        icon: 'check_circle' },
+      'Checked In':  { title: 'ON SITE - Check Guest Out',     verb: 'checkout', label: 'Check Out',    icon: 'logout' },
+      'Checked Out': { title: 'CHECKED OUT - Confirm Departure', verb: 'depart', label: 'Mark Departed',icon: 'directions_walk' },
     };
     const ui = STAGE_UI[data.stage];
     _currentPass = { ref: data.reference, hostId: data.hostContactId, oppId: data.opportunityId, visitor: data.visitor, hostUnit: data.hostUnit };
@@ -234,7 +238,7 @@
     if (!ui) {
       // Departed / Closed - nothing left to action at the gate.
       const closed = data.stage === 'Closed';
-      showResult(closed ? 'PASS CLOSED - Deny Entry' : 'VISIT ALREADY COMPLETE', closed ? 'red' : 'grey',
+      showResult(closed ? 'PASS CLOSED - Deny Entry' : 'DEPARTED - Visit Complete', closed ? 'red' : 'grey',
         { 'Reference': data.reference, 'Visitor': data.visitor || '', 'Host Unit': data.hostUnit || '', 'Status': data.stage },
         [{ cls: 'log', verb: 'noted', icon: 'note_add', label: 'Note Only' }]);
       return;
