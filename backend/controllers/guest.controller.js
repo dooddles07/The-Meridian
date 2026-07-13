@@ -66,14 +66,17 @@ async function create(req, res) {
     if (booking.status !== 'Confirmed') {
       return res.status(400).json({ success: false, message: 'Please wait for the linked booking to be confirmed before registering guests for it.' });
     }
-    // Enforce the facility's own headcount (booking.pax, set against the
-    // facility's maxPax at booking time) - otherwise "Guest Rules" (max 4 pool
-    // guests, etc.) is just text with nothing behind it. Cancelled passes don't
-    // count against the cap.
+    // Enforce the facility's own headcount - otherwise "Guest Rules" (max 4
+    // pool guests, etc.) is just text with nothing behind it. booking.pax is
+    // TOTAL occupants including the resident host (who must accompany their
+    // guests per the house rules), so the guest allowance is pax - 1. Cancelled
+    // passes (Closed) don't count against the cap.
+    const cap = Math.max(0, (booking.pax || 1) - 1);
     const linkedCount = await Guest.countDocuments({ linkedBookingId: linked_booking_id, stage: { $ne: 'Closed' } });
-    const cap = booking.pax || 1;
     if (linkedCount >= cap) {
-      return res.status(400).json({ success: false, message: `This booking's guest limit (${cap}) has already been reached.` });
+      return res.status(400).json({ success: false, message: cap === 0
+        ? 'This booking was made for the resident only, so no guests can be added to it.'
+        : `This booking already has its maximum of ${cap} guest${cap === 1 ? '' : 's'}.` });
     }
     linkedFacility = booking.facilityName; linkedDate = booking.date;
   }
@@ -102,6 +105,10 @@ async function listMine(req, res) {
       name: `${g.reference} - ${g.visitorName} (#${g.host_unit})`,
       stage: g.stage,
       createdAt: g.createdAt,
+      // Surfaced so the guest form can show a live "N of M slots used" hint for
+      // a linked booking without a separate count endpoint (the same resident
+      // owns both the booking and every guest linked to it).
+      linkedBookingId: g.linkedBookingId || '',
       customFields: [
         { label: 'Visitor Type', fieldValueString: g.visitorType },
         { label: 'Email',        fieldValueString: g.visitorEmail },

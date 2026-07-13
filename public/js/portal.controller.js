@@ -448,6 +448,7 @@
   let _bookings = [];
   const getBookings  = () => _bookings;
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
+  let _myGuests = []; // latest /api/guest/mine items - used to count a booking's linked guests
   // The full text a resident typed for defects/parcels/moves/feedback (GHL only keeps
   // a short opp name) is persisted in the live MongoDB on submit and read back here -
   // never in localStorage, so it's consistent across every device and both portals.
@@ -1280,14 +1281,31 @@
     const booking = getBookings().find(b => b.id === id);
     if (!booking) { statusEl.style.display = 'none'; return; }
     statusEl.style.display = '';
-    if (booking.status === 'Confirmed') {
-      statusEl.style.cssText = 'display:block;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5;background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3)';
-      statusEl.textContent = '✓ Booking confirmed - your visitors can be registered.';
-      if (btn) btn.disabled = false;
-    } else {
-      statusEl.style.cssText = 'display:block;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5;background:rgba(192,57,43,.08);color:#c0392b;border:1px solid rgba(192,57,43,.25)';
+    const OK_CSS   = 'display:block;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5;background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3)';
+    const WARN_CSS = 'display:block;margin-top:6px;font-size:0.8rem;padding:8px 12px;border-radius:6px;line-height:1.5;background:rgba(192,57,43,.08);color:#c0392b;border:1px solid rgba(192,57,43,.25)';
+    if (booking.status !== 'Confirmed') {
+      statusEl.style.cssText = WARN_CSS;
       statusEl.textContent = `This booking is still ${booking.status.toLowerCase()}. Please wait for it to be confirmed before registering guests for this event.`;
       if (btn) btn.disabled = true;
+      return;
+    }
+    // Confirmed: show how many of the booking's guest slots are used. pax is
+    // TOTAL occupants incl. the resident host, so guests allowed = pax - 1
+    // (mirrors the server-side cap). Closed/cancelled passes don't count.
+    const cap  = Math.max(0, (booking.pax || 1) - 1);
+    const used = _myGuests.filter(g => g.linkedBookingId === id && g.stage !== 'Closed').length;
+    if (cap === 0) {
+      statusEl.style.cssText = WARN_CSS;
+      statusEl.textContent = 'This booking was made for you only, so it has no guest slots. Book with more pax to add guests.';
+      if (btn) btn.disabled = true;
+    } else if (used >= cap) {
+      statusEl.style.cssText = WARN_CSS;
+      statusEl.textContent = `All ${cap} guest slot${cap === 1 ? '' : 's'} for this booking are used.`;
+      if (btn) btn.disabled = true;
+    } else {
+      statusEl.style.cssText = OK_CSS;
+      statusEl.textContent = `✓ Booking confirmed - ${used} of ${cap} guest slot${cap === 1 ? '' : 's'} used.`;
+      if (btn) btn.disabled = false;
     }
   }
 
@@ -1638,6 +1656,8 @@
         const m = GUEST_VISITOR_RE.exec(item.name || '');
         if (m) item.displayName = m[1].trim();
       });
+      _myGuests = data.items || []; // cached so the linked-booking slot hint can count locally
+      updateGuestBookingStatus();
       renderRecords(el, cnt, data.items, 'No registered guests on record.');
     } catch (e) { console.error('[guests]', e); el.innerHTML = '<div class="panel-empty">Connection error loading guests.</div>'; }
   }
