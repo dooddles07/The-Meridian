@@ -66,6 +66,15 @@ async function create(req, res) {
     if (booking.status !== 'Confirmed') {
       return res.status(400).json({ success: false, message: 'Please wait for the linked booking to be confirmed before registering guests for it.' });
     }
+    // Enforce the facility's own headcount (booking.pax, set against the
+    // facility's maxPax at booking time) - otherwise "Guest Rules" (max 4 pool
+    // guests, etc.) is just text with nothing behind it. Cancelled passes don't
+    // count against the cap.
+    const linkedCount = await Guest.countDocuments({ linkedBookingId: linked_booking_id, stage: { $ne: 'Closed' } });
+    const cap = booking.pax || 1;
+    if (linkedCount >= cap) {
+      return res.status(400).json({ success: false, message: `This booking's guest limit (${cap}) has already been reached.` });
+    }
     linkedFacility = booking.facilityName; linkedDate = booking.date;
   }
 
