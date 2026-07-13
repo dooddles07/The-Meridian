@@ -222,6 +222,13 @@ async function guardCheckin(req, res) {
   if (!(LEGAL_TRANSITIONS[existing.stage] || []).includes(stage)) {
     return res.status(400).json({ success: false, message: `Cannot ${action} a ${existing.stage} guest.` });
   }
+  // Date only gates ADMISSION - the guardhouse UI already enforces this, but a
+  // direct API call must too, or the client-side gate is decorative. Once
+  // checked in, later actions (checkout/depart) are never date-gated, so a
+  // Multi-Day/Long-Term guest can still be checked out on a later day.
+  if (action === 'checkin' && existing.visitDate && existing.visitDate !== todaySGT()) {
+    return res.status(400).json({ success: false, message: `This pass is scheduled for ${existing.visitDate}, not today.` });
+  }
   applyStageTimestamp(existing, stage);
   existing.stage = stage;
   await existing.save();

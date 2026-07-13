@@ -209,9 +209,13 @@
       return;
     }
 
-    // Date gate: valid only on the scheduled visit day.
+    // Date gate: only guards ADMISSION (still Registered, hasn't arrived yet).
+    // Once a pass has actually been checked in, the stage itself is proof the
+    // visit is legitimate - a Multi-Day/Long-Term guest must still be able to
+    // check out or be marked departed on a later calendar day, so the gate
+    // must not re-apply to those lookups.
     const today = todaySGT();
-    if (data.visitDate && data.visitDate !== today) {
+    if (data.stage === 'Registered' && data.visitDate && data.visitDate !== today) {
       const future = data.visitDate > today;
       const title  = future ? 'NOT VALID YET - Deny Entry' : 'EXPIRED - Deny Entry';
       const reason = future ? `Scheduled for ${data.visitDate} - not valid until then` : `Pass was for ${data.visitDate} and has expired`;
