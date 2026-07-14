@@ -3132,17 +3132,6 @@
   if ($('gLinkedBooking')) $('gLinkedBooking').addEventListener('change', updateGuestBookingStatus);
   document.querySelectorAll('[data-view="guests"]').forEach(el => el.addEventListener('click', populateBookingSelector));
 
-  // Fill the (previously empty) defect stage legend so residents can see the
-  // lifecycle their report moves through.
-  (function fillDefectStages() {
-    const el = $('defectStages');
-    if (!el) return;
-    const stages = ['Reported', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'];
-    el.innerHTML = stages
-      .map(s => `<span class="stage-pill">${esc(s)}</span>`)
-      .join('<span class="stage-pill-sep">›</span>');
-  })();
-
   if (document.querySelectorAll('input[name="dUrgency"]').length > 0) {
     document.querySelectorAll('input[name="dUrgency"]').forEach(radio => {
       radio.addEventListener('change', () => {

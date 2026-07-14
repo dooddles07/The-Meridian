@@ -20,27 +20,6 @@
 .sbadge-cancelled   { background: #f9dcdc; color: #b3261e; }
 .sbadge-default     { background: var(--surface-2); color: var(--muted); }
 
-/* Defect stage legend (#defectStages) */
-.stage-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 1rem;
-}
-.stage-pill {
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--muted);
-  white-space: nowrap;
-}
-.stage-pill-sep { color: var(--muted); font-size: 0.75rem; }
-
 /* Management response shown on a feedback submission */
 .rec-response {
   margin-top: 10px;
