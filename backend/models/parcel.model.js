@@ -11,6 +11,7 @@ const schema = new mongoose.Schema({
   description:         { type: String, default: '' },
   authorizedCollector: { type: String, default: '' },
   status:              { type: String, enum: ['Notified', 'Received', 'Collected', 'Uncollected / Returned'], default: 'Notified' },
+  receivedAt:          { type: Date, default: null }, // when the guardhouse took it in — starts the 7-day collection clock
   contact_id:          { type: String, required: true, index: true },
   resident_name:       { type: String, default: '' },
   resident_email:      { type: String, default: '' },

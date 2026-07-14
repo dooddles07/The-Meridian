@@ -8,6 +8,17 @@ const ALL_STAGES = ['Notified', 'Received', 'Collected', 'Uncollected / Returned
 // separate "hold" — a received parcel is held until collected.
 const STATUS_MAP = { received: 'Received', collected: 'Collected', uncollected: 'Uncollected / Returned' };
 
+const COLLECTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+// A parcel held (Received) but not collected within 7 days is auto-returned —
+// honouring the resident-facing "collect within 7 days or it's returned" copy.
+// Lazy sweep on read (same pattern as move.controller's expireStaleDeposits).
+async function autoReturnStale() {
+  await Parcel.updateMany(
+    { status: 'Received', receivedAt: { $ne: null, $lt: new Date(Date.now() - COLLECTION_WINDOW_MS) } },
+    { $set: { status: 'Uncollected / Returned' } },
+  );
+}
+
 // ---- Resident ----
 
 // POST /api/parcel — pre-register an expected parcel (dedup by reference).
@@ -41,6 +52,7 @@ function toResidentRow(p) {
 // GET /api/parcel/mine
 async function listMine(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  await autoReturnStale();
   const items = await Parcel.find({ contact_id: req.resident.contact_id }).sort({ createdAt: -1 }).lean();
   return res.json({ success: true, items: items.map(toResidentRow) });
 }
@@ -93,6 +105,7 @@ async function remove(req, res) {
 // GET /api/management/parcels
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  await autoReturnStale();
   const items = await Parcel.find({}).sort({ createdAt: -1 }).lean();
   return res.json({
     success: true,
@@ -121,6 +134,7 @@ async function updateStage(req, res) {
 // GET /api/guardhouse/parcel?reference=
 async function guardLookup(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  await autoReturnStale();
   const reference = String(req.query.reference || req.query.ref || '').trim();
   if (!reference) return res.status(400).json({ success: false, message: 'Enter a parcel reference.' });
   const p = await Parcel.findOne({ reference: new RegExp(`^${reference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }).lean();
@@ -142,6 +156,9 @@ async function guardUpdateStatus(req, res) {
     : (ref ? await Parcel.findOne({ reference: new RegExp(`^${ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }) : null);
   if (!p) return res.status(404).json({ success: false, message: 'Parcel not found.' });
   p.status = stage;
+  // Stamp arrival time the first time it's marked Received — starts the 7-day
+  // collection clock the auto-return sweep reads.
+  if (stage === 'Received' && !p.receivedAt) p.receivedAt = new Date();
   await p.save();
   return res.json({ success: true, stage, tag: 'parcel-' + req.body.status });
 }
