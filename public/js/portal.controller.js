@@ -2393,7 +2393,7 @@
       }
     }
 
-    // Dashboard cards: Upcoming Event (Event category) + Maintenance Alert (Maintenance category)
+    // Dashboard cards: Upcoming Event (Event category) + Maintenance Notice (Maintenance category)
     const now = new Date();
     // Soonest announcement of a category whose window hasn't ended yet (upcoming or in progress).
     // Returns the soonest active match plus how many OTHER active matches
