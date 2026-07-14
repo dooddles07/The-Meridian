@@ -6,14 +6,12 @@ feedback, move-in/out scheduling, deposits & payments, announcements with RSVP,
 two-way messaging, and a shared document library.
 
 **🔗 Live:** https://the-lumina-production.up.railway.app/
-*(Every portal opens straight into a furnished account - or sign in with the test
-credentials below to see the real, persisted sign-in flow.)*
+*(Sign in with the test credentials below, or register your own resident account.)*
 
 ### Test credentials
 
-Each portal has its own real, Mongo-backed login. Feel free to
-sign out and sign back in with these, or register your own resident account from the
-sign-up screen and use that instead:
+Each portal has its own real, Mongo-backed login — sign in with these, or register
+your own resident account from the sign-up screen and use that instead:
 
 | Portal | Login | Password |
 | --- | --- | --- |
@@ -24,14 +22,11 @@ sign-up screen and use that instead:
 Residents aren't limited to the test account - the **Register** tab on the resident
 sign-in screen creates a genuine new account (Mongo-backed, same as the test one).
 
-> **About this build.** This is a **hybrid** portfolio project. Sign-in (resident,
-> management, guardhouse), the resident directory, resources, announcements/RSVP,
-> **facility booking**, and **Move-In/Out** are genuinely real - backed by MongoDB,
-> JWT sessions, and real Stripe Checkout (test mode) for every deposit. Everything
-> else (guests, parcels, defects, feedback, messages) runs on a client-side mock so
-> reviewers can click through the full product with zero setup. A **preview session
-> is seeded on first visit**, so anyone can explore without credentials. See
-> [How it works](#how-it-works).
+> **About this build.** This is a **fully live** portfolio project — every feature is
+> backed by a real Node/Express + MongoDB API with JWT sessions and real Stripe
+> Checkout (test mode) for deposits. There is no mock layer and no demo shortcut:
+> each portal requires a real sign-in (use the [test credentials](#test-credentials)
+> above, or register your own resident account). See [How it works](#how-it-works).
 
 ---
 
@@ -54,11 +49,11 @@ sign-in screen creates a genuine new account (Mongo-backed, same as the test one
 The Lumina digitises the operations of a residential condominium into one connected
 system with **three portals** that talk to each other in real time:
 
-| Portal | Who uses it | Opens as |
+| Portal | Who uses it | Sign in as |
 | --- | --- | --- |
-| **Resident** (`/portal.html`) | Home owners & tenants | Furnished resident account |
-| **Management** (`/management.html`) | Building management office | Furnished management console |
-| **Guardhouse** (`/guardhouse-portal.html`) | Security / front desk | Furnished guard station |
+| **Resident** (`/portal.html`) | Home owners & tenants | Resident account |
+| **Management** (`/management.html`) | Building management office | Management console |
+| **Guardhouse** (`/guardhouse-portal.html`) | Security / front desk | Guard station |
 
 The whole point is the **hand-offs between roles**: a resident books a facility or
 registers a guest, management reviews and advances it, the guardhouse verifies people
@@ -81,7 +76,7 @@ the resident directory and document library.
 ### 🛡️ Guardhouse station
 The gate. Scan or type a guest-pass QR / reference to verify a visitor and check them
 **in → out → departed**; look up parcels and update their status; all activity lands in a
-shared daily log.
+shared activity log.
 
 ---
 
@@ -91,7 +86,7 @@ shared daily log.
 <summary><strong>Resident portal</strong></summary>
 
 - **Dashboard** - upcoming bookings, latest notices, parcel-waiting banner.
-- **Facility booking** *(real backend)* - pick a facility (pool, tennis, squash,
+- **Facility booking** - pick a facility (pool, tennis, squash,
   basketball, gym, fitness, BBQ, verandah), see live slot availability, book, edit, or
   cancel. Deposit facilities route through payment before confirming, with a 24-hour
   payment window that auto-cancels and releases the slot if missed.
@@ -100,38 +95,38 @@ shared daily log.
 - **Parcels** - notify the guardhouse of an incoming parcel and track its status.
 - **Defects** - report a maintenance issue (with photo + urgency) and track progress.
 - **Feedback** - complaints, feedback, and suggestions with categories.
-- **Move in / out** *(real backend)* - schedule a move (service lift); a $200
+- **Move in / out** - schedule a move (service lift); a $200
   non-refundable admin fee + $2,000 refundable deposit, same 24-hour payment window
   and lifecycle as a facility deposit.
 - **Payments** *(real Stripe Checkout)* - every facility and Move-In/Out deposit pays
   through an actual Stripe Checkout Session (test mode - no card is ever really
   charged) instead of a simulated form; a webhook confirms the booking the instant
   payment completes.
-- **Announcements & RSVP** *(real backend)* - read management notices; RSVP to events
+- **Announcements & RSVP** - read management notices; RSVP to events
   with a head count.
 - **Messages** - two-way thread with management.
-- **Resources** *(real backend)* - download house rules, guides, and safety documents.
+- **Resources** - download house rules, guides, and safety documents.
 </details>
 
 <details>
 <summary><strong>Management console</strong></summary>
 
-- **Bookings board** *(real backend)* - every facility booking with stage controls,
+- **Bookings board** - every facility booking with stage controls,
   enforced legal stage transitions, and deposit refund/forfeit resolution (real Stripe
   refunds when a real charge is on file).
-- **Move-In/Out board** *(real backend)* - same stage controls + deposit refund/forfeit
+- **Move-In/Out board** - same stage controls + deposit refund/forfeit
   as the Bookings board, scoped to Move-In/Out requests.
 - **Pipelines** - guests, parcels, defects, and feedback as manageable stage cards.
 - **Guest desk** - register guests on a resident's behalf (with QR).
 - **Residents** - directory of units, contacts, and types.
-- **Announcements** *(real backend)* - publish general notices, events (with RSVP), or
+- **Announcements** - publish general notices, events (with RSVP), or
   maintenance windows that can block a facility for a time range; track RSVP responses
   and head counts.
-- **Payments** *(real backend)* - cross-pipeline pending-deposit + history overview,
+- **Payments** - cross-pipeline pending-deposit + history overview,
   sourced directly from real booking/move records (no separate payment ledger to
   drift out of sync).
 - **Inbox** - resident conversations; reply, resolve, or start a new thread.
-- **Resources** *(real backend)* - upload/manage documents shown to residents.
+- **Resources** - upload/manage documents shown to residents.
 </details>
 
 <details>
@@ -139,8 +134,9 @@ shared daily log.
 
 - **Guest verification** - QR scan or reference lookup → check-in / check-out / depart.
 - **Parcel desk** - look up a parcel by reference and set its status
-  (received/notified → collected → returned).
-- **Activity log** - shared, resets daily; every action is recorded.
+  (notified → received → collected → returned).
+- **Activity log** - a shared feed (visitor + parcel), persisted in MongoDB and live
+  across every guard station; entries can be cleared per category.
 </details>
 
 ---
@@ -153,18 +149,20 @@ How the roles connect. Everything below is a real, clickable path in the app.
 
 ```mermaid
 flowchart TB
-    subgraph Browser["🌐 One browser - three portals, one shared store"]
+    subgraph Portals["🌐 Three portals"]
         R["🏠 Resident portal"]
         M["🗂️ Management console"]
         G["🛡️ Guardhouse station"]
     end
-    API["client-backend.js<br/>(intercepts every /api/* call)"]
-    DB[("🗄️ In-browser store<br/>(localStorage)")]
+    API["Node/Express API<br/>(/api/*, JWT sessions)"]
+    DB[("🗄️ MongoDB")]
+    Stripe["💳 Stripe Checkout<br/>(test mode)"]
 
     R <--> API
     M <--> API
     G <--> API
     API <--> DB
+    API <--> Stripe
 ```
 
 ### Facility booking lifecycle
@@ -203,10 +201,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    A["🏠 Resident notifies<br/>incoming parcel"] --> B["🛡️ Guardhouse receives<br/>→ Notified"]
-    B --> C{"Collected?"}
+    A["🏠 Resident notifies<br/>incoming parcel → Notified"] --> B["🛡️ Guardhouse receives<br/>→ Received"]
+    B --> C{"Collected in 7 days?"}
     C -->|Yes| D["✅ Collected"]
-    C -->|No| E["↩️ Returned"]
+    C -->|No| E["↩️ Uncollected / Returned"]
     D --> F["🏠 Resident sees<br/>status in My Parcels"]
     E --> F
 ```
@@ -222,13 +220,12 @@ resident and management in both directions.
 
 ## How it works
 
-This build is a genuine hybrid: some features hit a real Node/Express + MongoDB API,
-the rest run on a client-side mock so the whole product is still explorable with zero
-setup and zero credentials.
+Every feature runs on a real Node/Express + MongoDB API
+([`backend/`](backend/), mounted at `/api/*` by `server.js`). There is no client-side
+mock — each portal signs in against the real backend and reads/writes live data.
 
-**Real backend** ([`backend/`](backend/), mounted at `/api/*` by `server.js`):
-- **Auth** - resident/management/guardhouse sign-in are genuinely JWT-backed, each with
-  its own httpOnly session cookie; residents can also self-register.
+- **Auth** - resident/management/guardhouse sign-in are JWT-backed, each with its own
+  httpOnly session cookie; residents can also self-register.
 - **Facility booking** and **Move-In/Out** - availability/conflicts (facility only),
   deposit lifecycle (pending → held → refunded/forfeited), legal stage transitions, and
   the 24-hour deposit-expiry sweep are all enforced server-side against MongoDB - both
@@ -240,21 +237,15 @@ setup and zero credentials.
   completes, reusing an in-flight session (or reconciling an already-completed one)
   instead of ever risking a double charge. Refunds go back through Stripe for real,
   scoped to only the refundable portion.
-- **Resources** and **Announcements/RSVP** - documents and notices are stored and served
-  from MongoDB, shared live across the resident and management portals.
-
-**Client-side mock** ([`public/js/client-backend.js`](public/js/client-backend.js)) -
-overrides `window.fetch` for everything not listed above (guests, parcels, defects,
-feedback, messages) and serves it from an in-browser store (`localStorage`) seeded with
-realistic sample data, so the full product is still click-through-able without a
-database. All three portals share this store, so a mocked action still shows up across
-portals.
-
-Reset all local (mocked) data anytime from the browser console:
-
-```js
-window.__luminaReset()
-```
+- **Guests, parcels, defects, feedback** - each is its own Mongo-backed pipeline:
+  residents submit (and can edit/withdraw while still open), the guardhouse verifies
+  guests + parcels at the gate, and management advances every card through its stages.
+  Parcels auto-return if uncollected 7 days after arrival.
+- **Messages** - one conversation per resident, persisted in MongoDB, with real
+  clear-on-read and read receipts on both sides.
+- **Resources**, **Announcements/RSVP**, the **resident directory**, and the shared
+  **guardhouse activity log** are all stored and served from MongoDB, live across every
+  portal.
 
 All real credentials, domains, and tenant identifiers have been removed from this copy -
 see [`backend/.env.example`](backend/.env.example) for the environment variables a real
@@ -268,8 +259,7 @@ deployment needs.
 | --- | --- |
 | Front-end | Vanilla JavaScript (no framework), component-style modular CSS design system, responsive layouts, light/dark theme |
 | UI libraries | SweetAlert2 (dialogs), QRCode.js (guest-pass QR), jsQR (QR scanning) |
-| Mock layer | Client-side `fetch` mock + `localStorage` store, for the features not yet on the real backend |
-| Back end | Node.js, Express, Helmet, JWT, Mongoose/MongoDB - live for auth, resources, announcements, facility booking, and Move-In/Out |
+| Back end | Node.js, Express, Helmet, JWT, Mongoose/MongoDB - the single source of truth for every feature |
 | Payments | [Stripe](https://stripe.com) Checkout + webhooks (test mode) - real deposit charges and refunds |
 | Hosting | Railway (`node backend/server.js` serves the API and the static `public/` folder together) |
 
@@ -283,14 +273,12 @@ npm install
 npm start
 ```
 
-Open **http://localhost:3000** and pick a portal from the landing page - no credentials
-needed to look around (a preview session auto-seeds), or sign in with the
-[test credentials](#test-credentials) above.
+Open **http://localhost:3000**, pick a portal from the landing page, and sign in with the
+[test credentials](#test-credentials) above (or register a new resident account).
 
-Real data (auth, bookings, moves, resources, announcements) needs a `backend/.env` -
-copy [`backend/.env.example`](backend/.env.example) and fill in a `MONGO_URL` and
-`JWT_SECRET` at minimum. Without it, those routes respond "Database not connected"
-and the app quietly falls back to the client-side mock for everything else. Add
+The app needs a `backend/.env` to run - copy [`backend/.env.example`](backend/.env.example)
+and fill in a `MONGO_URL` and `JWT_SECRET` at minimum; without a database connection every
+`/api/*` route responds "Database not connected". Add
 `STRIPE_SECRET_KEY`/`STRIPE_PUBLISHABLE_KEY`/`STRIPE_WEBHOOK_SECRET` (test-mode keys
 from [dashboard.stripe.com/test/apikeys](https://dashboard.stripe.com/test/apikeys))
 to also test real deposit payments end to end.
@@ -310,13 +298,12 @@ the-lumina/
 │   ├── js/
 │   │   ├── portal.controller.js
 │   │   ├── management.controller.js
-│   │   ├── guardhouse.controller.js
-│   │   └── client-backend.js   # ← client-side mock API + seed data
+│   │   └── guardhouse.controller.js
 │   └── asset/                  # facility imagery, logo
-├── backend/                    # real Node/Express + MongoDB API (auth, booking, move, resources, announcements, Stripe)
-│   ├── server.js               # local dev entry: serves public/ + mounts the API at /api/*
+├── backend/                    # Node/Express + MongoDB API — every feature (auth, bookings, moves, guests, parcels, defects, feedback, messages, resources, announcements, Stripe)
+│   ├── server.js               # entry: serves public/ + mounts the API at /api/*
 │   ├── controllers/  models/  routes/  services/  config/  middleware/
-│   └── .env.example            # required env vars for a real deployment (Mongo, JWT secret, ...)
+│   └── .env.example            # required env vars for deployment (Mongo, JWT secret, ...)
 └── package.json
 ```
 
@@ -325,10 +312,9 @@ the-lumina/
 ## Notes
 
 - This is a **live, deployed portfolio project** on Railway with a real MongoDB
-  database behind it - not a static mockup. The features marked *(real backend)*
-  above genuinely persist, including real Stripe test-mode payments; the rest
-  (guests, parcels, defects, feedback, messages) run on the client-side mock and
-  reset when your browser storage is cleared.
+  database behind it - not a static mockup. Every feature genuinely persists, including
+  real Stripe test-mode payments; sign in, submit a request, and it's still there on
+  your next visit (and reflected across the other portals).
 - All real credentials, tenant data, and identifying details have been scrubbed from
   this copy - the test accounts above are seeded specifically for this portfolio build.
 
