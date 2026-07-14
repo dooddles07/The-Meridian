@@ -216,7 +216,8 @@
       return ok({ items: items, total: items.length });
     }
 
-    // RSVP / MESSAGES (resident) — announcements themselves are real (see isRealPath)
+    // RSVP is real now (rsvp.controller.js, in isRealPath) — the branches below
+    // are dead. MESSAGES (resident) are still mocked; announcements are real.
     if (p === '/api/rsvp' && method === 'POST') {
       var aId = body.announcement_id, cId = body.contact_id || MEMBER.contact_id;
       db.rsvps[aId] = db.rsvps[aId] || {};
@@ -417,6 +418,8 @@
         || s.indexOf('/api/management/moves') !== -1
         || s.indexOf('/api/defect') !== -1
         || s.indexOf('/api/management/defects') !== -1
+        || s.indexOf('/api/rsvp') !== -1
+        || s.indexOf('/api/management/rsvp') !== -1
         || s.indexOf('/api/guest') !== -1
         || s.indexOf('/api/management/guest') !== -1
         || s.indexOf('/api/management/contacts/search') !== -1
