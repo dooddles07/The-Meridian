@@ -289,21 +289,26 @@ to also test real deposit payments end to end.
 
 ```
 the-lumina/
-├── public/                     # the entire app (this is what gets deployed)
+├── public/                     # the entire front end (this is what gets deployed)
 │   ├── index.html              # landing page → 3 portals
 │   ├── portal.html             # resident portal
 │   ├── management.html         # management console
+│   ├── management-login.html   # management sign-in (separate from the console shell)
 │   ├── guardhouse-portal.html  # guardhouse station
 │   ├── css/                    # modular design system (portal / management / shared)
 │   ├── js/
+│   │   ├── shared.js            # helpers shared by all 3 controllers (toast, fmtDate, esc)
 │   │   ├── portal.controller.js
 │   │   ├── management.controller.js
 │   │   └── guardhouse.controller.js
-│   └── asset/                  # facility imagery, logo
+│   └── assets/images/          # facility imagery, logo
 ├── backend/                    # Node/Express + MongoDB API — every feature (auth, bookings, moves, guests, parcels, defects, feedback, messages, resources, announcements, Stripe)
-│   ├── server.js               # entry: serves public/ + mounts the API at /api/*
-│   ├── controllers/  models/  routes/  services/  config/  middleware/
+│   ├── server.js               # local dev entry: serves public/ + mounts app.js at /api/*
+│   ├── app.js                  # the actual Express API (auth, CSP-free — server.js adds that)
+│   ├── controllers/  models/  routes/  services/  config/  middleware/  utils/
+│   ├── data/resources/         # uploaded document storage (Resources feature)
 │   └── .env.example            # required env vars for deployment (Mongo, JWT secret, ...)
+├── vercel.json                 # static-hosting config for the front end (public/ only)
 └── package.json
 ```
 
