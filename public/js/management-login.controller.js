@@ -42,7 +42,6 @@ async function doLogin() {
 
     // The session cookie is already set by the server on this same response -
     // nothing to store client-side beyond the (non-secret) display info below.
-    try { localStorage.removeItem('lumina_mgmt_signed_out'); } catch {}
     sessionStorage.setItem('mgmtUser', JSON.stringify(data.user));
     localStorage.setItem('mgmtUser',  JSON.stringify(data.user));
     window.location.href = 'management.html';

@@ -3,10 +3,8 @@
 
   // portal.controller.js  (served at /js/portal.controller.js)
   // Client-side controller for portal.html.
-  // Login authenticates against POST /api/auth/resident/login. Facility bookings,
-  // Move-In/Out, and payments are all real (Mongo/Stripe-backed) - see
-  // client-backend.js's isRealPath allowlist for exactly what's still mock
-  // (guests/parcels/defects/feedback/messages).
+  // Login authenticates against POST /api/auth/resident/login. Every feature is
+  // real (Mongo/Stripe-backed).
 
   const SESS = 'lumina_member';
   const $ = id => document.getElementById(id);
@@ -25,13 +23,7 @@
   function fetch(url, opts = {}) {
     return _rawFetch(url, opts).then(res => {
       // A 401 on a non-login API call means the session is gone/expired - bounce to login.
-      // Skip this for the zero-click preview session (lumina_token is only ever set by
-      // client-backend.js's mock identity): its real cookie is established in the
-      // background and may not have landed yet on the very first call, but that's not
-      // a real "your session expired" event - the panel's own error state handles it,
-      // and the 7s live-panel poll retries on its own once the cookie lands.
-      const isPreview = (localStorage.getItem('lumina_token') || sessionStorage.getItem('lumina_token')) === 'local-token';
-      if (res.status === 401 && !isPreview && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
+      if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
         handleAuthExpired();
       }
       return res;
@@ -453,21 +445,6 @@
   let _editingDefectId = null; // set while the defect form is editing an existing report
   let _editingFeedbackId = null; // set while the feedback form is editing an existing submission
   let _editingParcelId = null; // set while the parcel form is editing an existing notification
-  // The full text a resident typed for defects/parcels/moves/feedback (the opp
-  // name only keeps a short summary) is read back here from /api/<type>/mine.
-  // In this demo build those endpoints are served by the in-browser mock
-  // (client-backend.js, backed by localStorage); a live deployment would back
-  // them with the real datastore instead. Returns newest-first rows in the
-  // shape renderRecords expects as `saved`.
-  const fetchMine = async (type) => {
-    if (!member || (!member.contact_id && !member.email)) return [];
-    try {
-      const r = await fetch(`/api/${type}/mine`);
-      const d = await r.json();
-      return (d && d.items) || [];
-    } catch { return []; }
-  };
-
   // Read an image File, downscale to <=1920px, and return a compressed JPEG data
   // URL. Rejects on a read/decode failure so callers can show a photo-specific
   // error instead of a generic network one.
@@ -571,7 +548,6 @@
       // The session cookie is already set by the server on this same response -
       // nothing to store client-side beyond the (non-secret) display info below.
       _authExpiredHandled = false;
-      try { localStorage.removeItem('lumina_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
       bootPortal();
@@ -632,7 +608,6 @@
       // The session cookie is already set by the server on this same response -
       // nothing to store client-side beyond the (non-secret) display info below.
       _authExpiredHandled = false;
-      try { localStorage.removeItem('lumina_signed_out'); } catch {}
       sessionStorage.setItem(SESS, JSON.stringify(member));
       localStorage.setItem(SESS, JSON.stringify(member));
       bootPortal();
@@ -1960,16 +1935,6 @@
       }
     }));
     fillQrImages(el);
-  }
-
-  // Build the opportunities URL for a pipeline, passing BOTH the session contact id
-  // and the email so the server can resolve the canonical contact (robust to a
-  // stale/empty session contact_id).
-  function oppUrl(pipeline) {
-    const qs = new URLSearchParams({ pipeline });
-    if (member && member.contact_id) qs.set('contact_id', member.contact_id);
-    if (member && member.email)      qs.set('email', member.email);
-    return `/api/opportunities?${qs.toString()}`;
   }
 
   async function loadMyGuests(silent) {
@@ -3608,9 +3573,6 @@
   bind('logoutBtn', () => {
     _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'resident' }) }).catch(() => {}); // clear the cookie server-side
     [SESS, 'portalLastView'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
-    // Tells client-backend.js's auto-login not to re-seed the preview session on
-    // the next load — an explicit logout should reach the real sign-in screen.
-    try { localStorage.setItem('lumina_signed_out', '1'); } catch {}
     _broadcastLogout();
     window.location.href = 'index.html';
   });
