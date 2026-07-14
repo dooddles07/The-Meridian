@@ -654,10 +654,11 @@
     return `<select class="bk-stage-select" data-opp="${esc(it.oppId)}" data-pipeline="${esc(pipeline)}">${opts}</select>`;
   }
   // Loads a pipeline into a table body (cols: Reference · Stage · Contact · Unit · Date · Actions).
+  // Both callers (defect, feedback) are real dedicated Mongo-backed endpoints -
+  // pass opts.listUrl/stageUrl/stageBody explicitly.
   async function loadPipelinePanel(pipeline, bodyId, countId, opts = {}) {
     const body = $(bodyId); if (!body) return;
-    const listUrl = opts.listUrl || `/api/management/opportunities?pipeline=${encodeURIComponent(pipeline)}`;
-    const res  = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
+    const res  = await fetch(opts.listUrl, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!data.success) {
       body.innerHTML = `<tr class="empty-row"><td colspan="${pipeline === 'defect' ? 8 : 6}">${esc(data.message || 'Could not load.')}</td></tr>`;
@@ -713,11 +714,11 @@
     body.querySelectorAll('.bk-stage-select').forEach(sel => {
       sel.dataset.prev = sel.value;
       sel.addEventListener('change', async () => {
-        const oppId = sel.dataset.opp, stage = sel.value, pl = sel.dataset.pipeline;
+        const oppId = sel.dataset.opp, stage = sel.value;
         sel.disabled = true;
         try {
-          const stageUrl = opts.stageUrl ? opts.stageUrl(oppId) : `/api/management/opportunities/${encodeURIComponent(oppId)}/stage`;
-          const stageBody = opts.stageBody ? opts.stageBody(stage) : { pipeline: pl, stage };
+          const stageUrl = opts.stageUrl(oppId);
+          const stageBody = opts.stageBody(stage);
           const r = await fetch(stageUrl, {
             method:  'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -859,8 +860,7 @@
   }
 
   async function loadDefects() {
-    // Defects are real (Mongo-backed) — dedicated management endpoints rather
-    // than the generic mocked opportunities pipeline.
+    // Defects are real (Mongo-backed) — dedicated management endpoints.
     const result = await loadPipelinePanel('defect', 'defectsBody', 'defectCount', {
       listUrl:   '/api/management/defects',
       stageUrl:  id => `/api/management/defects/${encodeURIComponent(id)}/stage`,
@@ -1132,8 +1132,7 @@
     el.addEventListener('click', () => loadMoves().catch(e => console.error('[mgmt moves]', e))));
 
   async function loadFeedback() {
-    // Feedback is real (Mongo-backed) — dedicated management endpoints rather
-    // than the generic mocked opportunities pipeline.
+    // Feedback is real (Mongo-backed) — dedicated management endpoints.
     const result = await loadPipelinePanel('feedback', 'feedbackBody', 'feedbackCount', {
       listUrl:   '/api/management/feedback',
       stageUrl:  id => `/api/management/feedback/${encodeURIComponent(id)}/stage`,

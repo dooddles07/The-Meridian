@@ -28,6 +28,7 @@
     .rsvp-unit { color:var(--muted,#9a9088); font-size:0.7rem; }
     .rsvp-resp-yes { color:#27ae60; font-weight:600; }
     .rsvp-resp-no  { color:#c0392b; }
+    .ann-block-checkbox { display:flex; align-items:center; gap:4px; font-size:0.72rem; color:var(--muted); cursor:pointer; }
   </style>
   <script>
     (function(){
@@ -139,7 +140,7 @@
     </div>
 
     <div class="sidebar__footer">
-      <div class="sidebar__refresh-note" id="refreshNote">Auto-refresh: 90s</div>
+      <div class="sidebar__refresh-note" id="refreshNote">Loading…</div>
     </div>
   </aside>
 
@@ -646,15 +647,15 @@
             <div id="annBlockRow" style="display:none;margin-bottom:0.9rem">
               <div id="annBlockRowLabel" style="font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;font-weight:500">Block these facilities during maintenance</div>
               <div id="annBlockGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="pool" /> Swimming Pool</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="tennis" /> Tennis Court</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="squash" /> Squash Court</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="basketball" /> Basketball Court</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="gym" /> Gymnasium</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="fitness" /> Fitness Studio</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="bbq" /> BBQ Pit</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" name="annBlock" value="verandah" /> Verandah</label>
-                <label id="annBlockOtherLabel" style="display:none;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);cursor:pointer"><input type="checkbox" id="annBlockOther" /> Other</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="pool" /> Swimming Pool</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="tennis" /> Tennis Court</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="squash" /> Squash Court</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="basketball" /> Basketball Court</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="gym" /> Gymnasium</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="fitness" /> Fitness Studio</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="bbq" /> BBQ Pit</label>
+                <label class="ann-block-checkbox"><input type="checkbox" name="annBlock" value="verandah" /> Verandah</label>
+                <label id="annBlockOtherLabel" class="ann-block-checkbox" style="display:none"><input type="checkbox" id="annBlockOther" /> Other</label>
               </div>
               <input type="text" id="annVenueOther" placeholder="Enter venue name…" maxlength="200"
                 style="display:none;margin-top:8px;width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text);font-size:0.75rem;outline:none;box-sizing:border-box" />
