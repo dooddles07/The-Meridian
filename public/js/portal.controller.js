@@ -1257,14 +1257,20 @@
     if (up.length) {
       if ($('nextBookingTitle')) $('nextBookingTitle').textContent = `${up[0].emoji} ${up[0].facilityName}`;
       if ($('nextBookingTime'))  $('nextBookingTime').textContent  = `${fmtDate(up[0].date)} · ${up[0].slot}`;
-      // The soonest booking can be Deposit Pending - surface that here too, not
-      // just in the full My Bookings list, since this hero card is the first
-      // thing a resident sees and would otherwise look identical either way.
+      // The deposit clock runs on its own 24h timer, independent of visit-date
+      // order - the booking about to expire isn't necessarily the soonest-dated
+      // one (up[0]). Check every upcoming booking, not just up[0], and take
+      // whichever has the nearest deadline so a resident never misses one just
+      // because a later, unrelated booking happens to be showing above it.
+      const pending = up.filter(b => b.status === 'Deposit Pending')
+        .sort((a, b) => new Date(a.depositDueAt) - new Date(b.depositDueAt))[0];
       if (statusEl) {
-        if (up[0].status === 'Deposit Pending') {
+        if (pending) {
           statusEl.hidden = false;
           statusEl.className = 'matters-status matters-status--warn';
-          statusEl.textContent = `⚠ ${_depositCountdown(up[0].depositDueAt)} to confirm`;
+          statusEl.textContent = pending === up[0]
+            ? `⚠ ${_depositCountdown(pending.depositDueAt)} to confirm`
+            : `⚠ ${pending.facilityName} needs payment - ${_depositCountdown(pending.depositDueAt)}`;
         } else {
           statusEl.hidden = true;
         }
