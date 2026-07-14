@@ -699,7 +699,23 @@
     if (view === 'payments')  loadPayments();
     if (view === 'resources') loadResources();
   }
-  document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.view)));
+  // Every [data-view] nav trigger (sidebar items, dashboard cards, quick-strip,
+  // "→" panel links) is a plain <div> or href-less <a> - neither is focusable
+  // or keyboard-activatable by default, so without this a keyboard-only or
+  // screen-reader user can't navigate the app at all beyond the one they land
+  // on. Skip anything already natively interactive (a real <button>, or an
+  // <a> that already has an href) so we don't stomp on working behavior.
+  document.querySelectorAll('[data-view]').forEach(el => {
+    const activate = () => navigate(el.dataset.view);
+    el.addEventListener('click', activate);
+    const isNativelyInteractive = (el.tagName === 'A' && el.hasAttribute('href')) || el.tagName === 'BUTTON';
+    if (isNativelyInteractive) return;
+    if (!el.hasAttribute('tabindex')) el.tabIndex = 0;
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+  });
 
   // Facility chooser
   function renderFacilities() {
