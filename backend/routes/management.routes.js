@@ -6,6 +6,7 @@ const announcements = require('../controllers/announcement.controller');
 const bookings     = require('../controllers/booking.controller');
 const moves        = require('../controllers/move.controller');
 const guests       = require('../controllers/guest.controller');
+const defects      = require('../controllers/defect.controller');
 const audit        = require('../controllers/audit.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
 
@@ -41,6 +42,9 @@ router.put('/bookings/:id/deposit',    mutateLimiter, auditLog, bookings.manageD
 router.get('/moves',                   moves.listForManagement);
 router.put('/moves/:id/stage',         mutateLimiter, auditLog, moves.updateStage);
 router.put('/moves/:id/deposit',       mutateLimiter, auditLog, moves.manageDeposit);
+
+router.get('/defects',                 defects.listForManagement);
+router.put('/defects/:id/stage',       mutateLimiter, auditLog, defects.updateStage);
 
 router.get('/audit',                   audit.list);
 

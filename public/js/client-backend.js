@@ -392,10 +392,12 @@
   // deployed on Railway), so those paths pass through untouched (logout MUST
   // reach the real network - it's what actually clears the httpOnly session
   // cookie server-side; the mock can't do that).
-  // Everything else stays mocked: parcels, defects, feedback, messages, and
-  // the guardhouse's shared activity log were built against a real CRM
+  // Everything else stays mocked: parcels, feedback, messages, and the
+  // guardhouse's shared activity log were built against a real CRM
   // (GoHighLevel) that isn't configured here, so they'd just 503 against the
-  // real backend — the mock keeps them working.
+  // real backend — the mock keeps them working. (Defects are now real too — see
+  // /api/defect above — so the defect branches in this router are dead code
+  // kept only as a reference for how the others could be migrated.)
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -413,6 +415,8 @@
         || s.indexOf('/api/management/bookings') !== -1
         || s.indexOf('/api/move') !== -1
         || s.indexOf('/api/management/moves') !== -1
+        || s.indexOf('/api/defect') !== -1
+        || s.indexOf('/api/management/defects') !== -1
         || s.indexOf('/api/guest') !== -1
         || s.indexOf('/api/management/guest') !== -1
         || s.indexOf('/api/management/contacts/search') !== -1
@@ -429,5 +433,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, and guest passes are live (Mongo-backed); parcels/defects/feedback still run on a local mock.', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, guest passes, and defect reports are live (Mongo-backed); parcels/feedback still run on a local mock.', 'color:#312e81;font-weight:bold');
 })();

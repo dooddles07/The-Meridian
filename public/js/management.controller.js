@@ -597,9 +597,10 @@
     return `<select class="bk-stage-select" data-opp="${esc(it.oppId)}" data-pipeline="${esc(pipeline)}">${opts}</select>`;
   }
   // Loads a pipeline into a table body (cols: Reference · Stage · Contact · Unit · Date · Actions).
-  async function loadPipelinePanel(pipeline, bodyId, countId) {
+  async function loadPipelinePanel(pipeline, bodyId, countId, opts = {}) {
     const body = $(bodyId); if (!body) return;
-    const res  = await fetch(`/api/management/opportunities?pipeline=${encodeURIComponent(pipeline)}`, { headers: { Authorization: `Bearer ${token}` } });
+    const listUrl = opts.listUrl || `/api/management/opportunities?pipeline=${encodeURIComponent(pipeline)}`;
+    const res  = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!data.success) {
       body.innerHTML = `<tr class="empty-row"><td colspan="${pipeline === 'defect' ? 8 : 6}">${esc(data.message || 'Could not load.')}</td></tr>`;
@@ -658,10 +659,12 @@
         const oppId = sel.dataset.opp, stage = sel.value, pl = sel.dataset.pipeline;
         sel.disabled = true;
         try {
-          const r = await fetch(`/api/management/opportunities/${encodeURIComponent(oppId)}/stage`, {
+          const stageUrl = opts.stageUrl ? opts.stageUrl(oppId) : `/api/management/opportunities/${encodeURIComponent(oppId)}/stage`;
+          const stageBody = opts.stageBody ? opts.stageBody(stage) : { pipeline: pl, stage };
+          const r = await fetch(stageUrl, {
             method:  'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body:    JSON.stringify({ pipeline: pl, stage }),
+            body:    JSON.stringify(stageBody),
           });
           const d = await r.json();
           if (!d.success) throw new Error(d.message || 'Update failed.');
@@ -796,7 +799,13 @@
   }
 
   async function loadDefects() {
-    const result = await loadPipelinePanel('defect', 'defectsBody', 'defectCount');
+    // Defects are real (Mongo-backed) — dedicated management endpoints rather
+    // than the generic mocked opportunities pipeline.
+    const result = await loadPipelinePanel('defect', 'defectsBody', 'defectCount', {
+      listUrl:   '/api/management/defects',
+      stageUrl:  id => `/api/management/defects/${encodeURIComponent(id)}/stage`,
+      stageBody: stage => ({ stage }),
+    });
     if (!result) return;
     _pipeSnap.defect = result;
     _refreshDashKpis();

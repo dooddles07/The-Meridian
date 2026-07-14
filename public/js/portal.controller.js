@@ -1723,10 +1723,18 @@
     if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
-      const [res, saved] = await Promise.all([fetch(oppUrl('defect')), fetchMine('defect')]);
+      // Defects are a real Mongo-backed endpoint — /api/defect/mine returns the
+      // full report (stage included), so build the record rows from it directly
+      // rather than the generic /api/opportunities + local-history pairing the
+      // still-mocked pipelines use.
+      const res  = await fetch('/api/defect/mine');
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load reports.')}</div>`; return; }
-      renderRecords(el, cnt, data.items, 'No defect reports on record.', { kind: 'defect', saved });
+      const items = (data.items || []).map(x => ({
+        id: x.id, stage: x.stage, createdAt: x.createdAt, customFields: [],
+        name: (x.category ? x.category + ': ' : '') + (x.desc || ''),
+      }));
+      renderRecords(el, cnt, items, 'No defect reports on record.', { kind: 'defect', saved: data.items });
     } catch (e) { console.error('[defects]', e); el.innerHTML = '<div class="panel-empty">Connection error loading reports.</div>'; }
   }
 
@@ -2787,29 +2795,36 @@
     if (photoInput && photoInput.files[0]) {
       const file = photoInput.files[0];
       setMsg('dMsg', 'Compressing photo…');
-      defect_file = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = reject;
-        reader.onload = e => {
-          const img = new Image();
-          img.onerror = reject;
-          img.onload = () => {
-            const MAX = 1920;
-            let { width, height } = img;
-            if (width > MAX || height > MAX) {
-              if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
-              else                { width = Math.round(width * MAX / height); height = MAX; }
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = width; canvas.height = height;
-            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.82));
+      try {
+        defect_file = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error('read'));
+          reader.onload = e => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('decode'));
+            img.onload = () => {
+              const MAX = 1920;
+              let { width, height } = img;
+              if (width > MAX || height > MAX) {
+                if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+                else                { width = Math.round(width * MAX / height); height = MAX; }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = width; canvas.height = height;
+              canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', 0.82));
+            };
+            img.src = e.target.result;
           };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-      setMsg('dMsg', '');
+          reader.readAsDataURL(file);
+        });
+        setMsg('dMsg', '');
+      } catch {
+        // Distinguish an unreadable image from a network failure — the outer
+        // submit catch would otherwise mislabel this as "Connection error".
+        setMsg('dMsg', "Couldn't read that image. Try a different photo, or submit without one.", true);
+        return;
+      }
     }
     const catDisplay = secondaryCategory ? `${category} + ${secondaryCategory}` : category;
     const { isConfirmed: dOk } = await swalReview('Review Defect Report', [
