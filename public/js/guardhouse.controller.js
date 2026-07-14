@@ -325,34 +325,53 @@
     noted:    { logType: 'orange', text: 'Noted',           backendAction: null,       toast: 'err' },
   };
 
-  window.logAction = function (verb) {
+  window.logAction = async function (verb) {
     const meta = VERB_META[verb] || VERB_META.noted;
-    // Update the scanned guest's shared log row (keyed by its reference) across stations.
-    if (_currentPass && _currentPass.ref) {
-      addLog({ key: `guest:${_currentPass.ref}`, type: meta.logType, label: meta.text,
-               name: _currentPass.visitor || _currentPass.ref,
-               meta: `${_currentPass.ref}${_currentPass.hostUnit ? ' · Unit ' + _currentPass.hostUnit : ''}` });
-    }
+    // Capture the pass this click is acting on - if a new QR gets scanned while
+    // this action's request is still in flight, _currentPass will point at
+    // THAT one instead, and we must not act on or clear the wrong pass.
+    const pass = _currentPass;
+    const btns = document.querySelectorAll('.gh-result-actions .gh-action');
+    btns.forEach(b => b.disabled = true);
 
-    // checkin/checkout/depart move the guest's real stage (and its timestamp)
-    // so the resident + management portals reflect it immediately; denied/noted
-    // are gate-only decisions with nothing to persist on the guest record.
-    if (meta.backendAction && _currentPass && (_currentPass.oppId || _currentPass.ref)) {
+    // checkin/checkout/depart move the guest's real stage - this must be
+    // CONFIRMED by the backend before telling the guard it worked. This used
+    // to be fire-and-forget: the success toast fired immediately regardless of
+    // the outcome, so a failed check-in looked identical to a successful one -
+    // the only failure signal was a devtools console.warn no guard would ever
+    // see, meaning a resident's guest could be silently left un-admitted in
+    // the system while the guard believed the gate had let them through.
+    if (meta.backendAction && pass && (pass.oppId || pass.ref)) {
       const token = (session && session.token) || '';
-      fetch('/api/guardhouse/checkin', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body:    JSON.stringify({
-          opportunity_id: _currentPass.oppId || '',
-          reference:      _currentPass.ref   || '',
-          action:         meta.backendAction,
-        }),
-      }).then(r => r.json())
-        .then(d => { if (!d.success) console.warn('[guardhouse] ' + meta.backendAction + ' failed:', d.message); })
-        .catch(() => console.warn('[guardhouse] ' + meta.backendAction + ' request failed'));
+      try {
+        const res = await fetch('/api/guardhouse/checkin', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body:    JSON.stringify({
+            opportunity_id: pass.oppId || '',
+            reference:      pass.ref   || '',
+            action:         meta.backendAction,
+          }),
+        });
+        const d = await res.json();
+        if (!d.success) throw new Error(d.message || '');
+      } catch (err) {
+        toast(err.message || `Could not confirm - please try again.`, 'err');
+        btns.forEach(b => b.disabled = false);
+        return; // keep the result panel + pass so the guard can retry
+      }
     }
 
-    _currentPass = null;
+    // Shared activity log - recorded only once the action is actually
+    // confirmed (or immediately for gate-only denied/noted decisions, which
+    // have no backend action to confirm).
+    if (pass && pass.ref) {
+      addLog({ key: `guest:${pass.ref}`, type: meta.logType, label: meta.text,
+               name: pass.visitor || pass.ref,
+               meta: `${pass.ref}${pass.hostUnit ? ' · Unit ' + pass.hostUnit : ''}` });
+    }
+
+    if (_currentPass === pass) _currentPass = null;
     toast(meta.text, meta.toast);
     resetResult();
   };
