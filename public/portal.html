@@ -254,27 +254,28 @@
       <div class="content">
 
         <div id="view-dashboard" class="view active">
+          <div class="page-title">Welcome back, <em id="dashGreetName">Resident</em></div>
           <div id="noticeBanner" style="display:none"></div>
-          <div id="parcelNoticeBanner" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;background:rgba(49,46,129,0.08);border-left:3px solid var(--gold,#312e81);display:flex;align-items:center;gap:10px;font-size:0.875rem;cursor:pointer" data-view="parcels">
-            <span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--gold,#312e81);flex-shrink:0">inventory_2</span>
+          <div id="parcelNoticeBanner" class="dash-parcel-notice" style="display:none" data-view="parcels">
+            <span class="material-symbols-outlined">inventory_2</span>
             <span id="parcelNoticeText"></span>
-            <span style="margin-left:auto;color:var(--gold,#312e81);font-weight:600;white-space:nowrap">View →</span>
+            <span class="dash-parcel-notice__cta">View →</span>
           </div>
 
           <div class="matters-row">
-            <div class="matters-card gold-top" data-view="booking" style="cursor:pointer">
+            <div class="matters-card gold-top" data-view="booking">
               <div class="matters-eyebrow">Your Next Booking</div>
               <div class="matters-value" id="nextBookingTitle">No upcoming bookings</div>
               <div class="matters-sub"  id="nextBookingTime"></div>
               <div class="matters-status" id="nextBookingStatus" hidden></div>
               <span class="matters-link">Book a facility →</span>
             </div>
-            <div class="matters-card blue-top" data-view="notices" style="cursor:pointer">
+            <div class="matters-card blue-top" data-view="notices">
               <div class="matters-eyebrow">Upcoming Event</div>
               <div class="matters-value" id="upcomingEventTitle">No upcoming events</div>
               <div class="matters-sub"  id="upcomingEventSub"></div>
             </div>
-            <div class="matters-card cyan-top" data-view="notices" style="cursor:pointer">
+            <div class="matters-card cyan-top" data-view="notices">
               <div class="matters-eyebrow">Maintenance Alert</div>
               <div class="matters-value" id="alertTitle">No active alerts</div>
               <div class="matters-sub"  id="alertSub"></div>
@@ -290,9 +291,17 @@
               <div class="quick-icon"><span class="material-symbols-outlined">supervisor_account</span></div>
               <div class="quick-label-text">Register Guest</div>
             </div>
+            <div class="quick-card" data-view="parcels">
+              <div class="quick-icon"><span class="material-symbols-outlined">inventory_2</span></div>
+              <div class="quick-label-text">Track Parcel</div>
+            </div>
             <div class="quick-card" data-view="defects">
               <div class="quick-icon"><span class="material-symbols-outlined">build</span></div>
               <div class="quick-label-text">Report Defect</div>
+            </div>
+            <div class="quick-card" data-view="messages">
+              <div class="quick-icon"><span class="material-symbols-outlined">forum</span></div>
+              <div class="quick-label-text">Messages</div>
             </div>
             <div class="quick-card" data-view="payments">
               <div class="quick-icon"><span class="material-symbols-outlined">credit_card</span></div>
@@ -307,7 +316,7 @@
                 <span class="panel-meta" id="bookingCountBadge">0 Active</span>
               </div>
               <div id="dashBookings"><div class="panel-empty">No bookings on record.</div></div>
-              <a class="panel-link" style="padding:0.6rem 1rem;border-top:1px solid var(--border)" data-view="booking">Book a facility →</a>
+              <a class="panel-link" data-view="booking">Book a facility →</a>
             </div>
             <div class="panel dash-notices">
               <div class="panel-head">

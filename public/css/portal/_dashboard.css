@@ -14,6 +14,7 @@
   border-top: 2px solid var(--border);
   border-right: 1px solid var(--border);
   transition: background 0.18s;
+  cursor: pointer;
 }
 .matters-card:last-child { border-right: none; }
 .matters-card:hover { background: var(--surface-2); }
@@ -54,7 +55,7 @@
 /* Quick Action Strip */
 .quick-strip {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -114,4 +115,29 @@
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 14px;
+}
+
+/* Parcel-awaiting-collection banner (#parcelNoticeBanner) */
+.dash-parcel-notice {
+  margin-bottom: 1rem;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(49, 46, 129, 0.08);
+  border-left: 3px solid var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.dash-parcel-notice .material-symbols-outlined {
+  font-size: 1.1rem;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.dash-parcel-notice__cta {
+  margin-left: auto;
+  color: var(--gold);
+  font-weight: 600;
+  white-space: nowrap;
 }

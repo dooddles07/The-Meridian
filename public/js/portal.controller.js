@@ -438,6 +438,12 @@
   // cancel hit the API (which writes Mongo) and then refresh this cache.
   const FAC_EMOJI = Object.fromEntries(FACILITIES.map(f => [f.key, f.emoji]));
   let _bookings = [];
+  // False until the first real /api/booking/mine fetch resolves - lets the
+  // dashboard tell "haven't loaded yet" apart from "genuinely no bookings",
+  // so it shows a Loading state instead of a false "No upcoming bookings" for
+  // however long the initial fetch takes (worse on a cold Railway start).
+  let _bookingsLoaded = false;
+  let _noticesLoaded  = false;
   const getBookings  = () => _bookings;
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
   let _myGuests = []; // latest /api/guest/mine items - used to count a booking's linked guests
@@ -625,6 +631,7 @@
     $('sbAvatar').textContent = (member.initials || 'R').toUpperCase();
     $('sbName').textContent   = member.name || 'Resident';
     $('sbUnit').textContent   = `Unit ${member.unit || ' - '}`;
+    if ($('dashGreetName')) $('dashGreetName').textContent = (member.name || '').trim().split(/\s+/)[0] || 'Resident';
     const rType = (member.type || '').trim();
     $('sbBadge').textContent  = (rType === 'Owner' || rType === 'Tenant') ? `Resident (${rType})` : 'Resident';
 
@@ -1245,7 +1252,7 @@
   function renderDashboardBookings() {
     const today = todaySGT();
     const up = getBookings().filter(b => b.date >= today && !isFinished(b.status)).sort((a, b) => a.date.localeCompare(b.date));
-    if ($('bookingCountBadge')) $('bookingCountBadge').textContent = up.length + ' Active';
+    if ($('bookingCountBadge')) $('bookingCountBadge').textContent = _bookingsLoaded ? up.length + ' Active' : '…';
     const statusEl = $('nextBookingStatus');
     if (up.length) {
       if ($('nextBookingTitle')) $('nextBookingTitle').textContent = `${up[0].emoji} ${up[0].facilityName}`;
@@ -1263,13 +1270,17 @@
         }
       }
     } else {
-      if ($('nextBookingTitle')) $('nextBookingTitle').textContent = 'No upcoming bookings';
+      // Distinguish "haven't fetched yet" from "genuinely no bookings" so the
+      // resident doesn't see a false-negative flash while the first sync is
+      // still in flight.
+      if ($('nextBookingTitle')) $('nextBookingTitle').textContent = _bookingsLoaded ? 'No upcoming bookings' : 'Loading…';
       if ($('nextBookingTime'))  $('nextBookingTime').textContent  = '';
       if (statusEl) statusEl.hidden = true;
     }
     const db = $('dashBookings');
-    if (db) db.innerHTML = !up.length ? '<div class="panel-empty">No bookings on record.</div>'
-      : up.slice(0, 5).map(b => `<div class="booking-row"><div><div class="booking-facility">${b.emoji} ${esc(b.facilityName)}</div><div class="booking-time">${fmtDate(b.date)} · ${esc(b.slot)}</div></div><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></div>`).join('');
+    if (db) db.innerHTML = up.length
+      ? up.slice(0, 5).map(b => `<div class="booking-row"><div><div class="booking-facility">${b.emoji} ${esc(b.facilityName)}</div><div class="booking-time">${fmtDate(b.date)} · ${esc(b.slot)}</div></div><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></div>`).join('')
+      : `<div class="panel-empty">${_bookingsLoaded ? 'No bookings on record.' : 'Loading…'}</div>`;
   }
 
   // Populate the "linked booking" dropdown in the guest form with upcoming bookings.
@@ -1507,6 +1518,7 @@
         depositNote:   it.depositNote || '',
       }));
     } catch { return; }
+    _bookingsLoaded = true;
     renderMyBookings(); renderDashboardBookings(); populateBookingSelector();
   }
 
@@ -2226,6 +2238,7 @@
       const data = await res.json();
       if (data && data.success) items = data.announcements || [];
     } catch { return; }
+    _noticesLoaded = true;
 
     function catSlug(cat) {
       const c = (cat || '').toLowerCase();
@@ -2349,7 +2362,7 @@
     if (dash) {
       dash.innerHTML = items.length
         ? items.slice(0, 4).map(a => `<div class="booking-row"><div><div class="booking-facility">${a.pinned ? '<span class="material-symbols-outlined" style="font-size:0.875rem;vertical-align:-2px;color:var(--gold);font-variation-settings:\'FILL\' 1,\'wght\' 400,\'opsz\' 20">push_pin</span> ' : ''}${esc(a.title)}</div><div class="booking-time">${esc(a.category)} · ${a.eventAt ? esc(annWhen(a)) : esc(annDate(a.createdAt))}</div></div></div>`).join('')
-        : '<div class="panel-empty">No notices.</div>';
+        : `<div class="panel-empty">${_noticesLoaded ? 'No notices.' : 'Loading…'}</div>`;
     }
 
     const banner = $('noticeBanner');
@@ -2367,22 +2380,28 @@
     // Dashboard cards: Upcoming Event (Event category) + Maintenance Alert (Maintenance category)
     const now = new Date();
     // Soonest announcement of a category whose window hasn't ended yet (upcoming or in progress).
+    // Returns the soonest active match plus how many OTHER active matches
+    // exist, so the single-slot hero card can still hint "+N more" instead of
+    // silently hiding every match past the first (see the "+N more" additions
+    // below).
     function nextOf(slug) {
-      return items
+      const matches = items
         .filter(a => a.eventAt && catSlug(a.category) === slug)
         .filter(a => new Date(a.eventEndAt || a.eventAt) >= now)
-        .sort((x, y) => new Date(x.eventAt) - new Date(y.eventAt))[0] || null;
+        .sort((x, y) => new Date(x.eventAt) - new Date(y.eventAt));
+      return matches.length ? { item: matches[0], extra: matches.length - 1 } : null;
     }
+    const loadingOr = fallback => _noticesLoaded ? fallback : 'Loading…';
 
     const ev = nextOf('event');
-    if ($('upcomingEventTitle')) $('upcomingEventTitle').textContent = ev ? ev.title : 'No upcoming events';
-    if ($('upcomingEventSub'))   $('upcomingEventSub').textContent   = ev ? annWhen(ev) : '';
+    if ($('upcomingEventTitle')) $('upcomingEventTitle').textContent = ev ? ev.item.title : loadingOr('No upcoming events');
+    if ($('upcomingEventSub'))   $('upcomingEventSub').textContent   = ev ? annWhen(ev.item) + (ev.extra > 0 ? ` · +${ev.extra} more` : '') : '';
 
     const mt = nextOf('maintenance');
-    if ($('alertTitle')) $('alertTitle').textContent = mt ? mt.title : 'No active alerts';
+    if ($('alertTitle')) $('alertTitle').textContent = mt ? mt.item.title : loadingOr('No active alerts');
     if ($('alertSub')) {
-      const inProgress = mt && new Date(mt.eventAt) <= now;
-      $('alertSub').textContent = mt ? (inProgress ? 'In progress · ' : '') + annWhen(mt) : '';
+      const inProgress = mt && new Date(mt.item.eventAt) <= now;
+      $('alertSub').textContent = mt ? (inProgress ? 'In progress · ' : '') + annWhen(mt.item) + (mt.extra > 0 ? ` · +${mt.extra} more` : '') : '';
     }
   }
 
