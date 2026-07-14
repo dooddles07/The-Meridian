@@ -2771,7 +2771,9 @@
       if (!msgs.length) {
         msgsEl.innerHTML = '<div class="inbox__empty-state" style="margin:auto;text-align:center;padding:2rem;color:var(--text-2,#9a9088)">No messages yet.<br>Send your first message to the management office below.</div>';
       } else {
-        const unreadMgmt = (data.conversation && data.conversation.unread_management) || 0;
+        // Real read receipt: a resident message is "read" once management's
+        // last-read timestamp is at/after it (or they've since replied).
+        const mgmtReadAt = (data.conversation && data.conversation.management_last_read_at) ? new Date(data.conversation.management_last_read_at).getTime() : 0;
         let html = '', lastDay = '';
         msgs.forEach((m, i) => {
           const day = msgDayLabel(m.createdAt);
@@ -2780,7 +2782,7 @@
           let statusIcon = '';
           if (out) {
             const hasReplyAfter = msgs.slice(i + 1).some(m2 => m2.sender !== 'resident');
-            const isRead = hasReplyAfter || unreadMgmt === 0;
+            const isRead = hasReplyAfter || (mgmtReadAt && mgmtReadAt >= new Date(m.createdAt).getTime());
             statusIcon = isRead
               ? '<span class="msg-status msg-status--read material-symbols-outlined" title="Read">done_all</span>'
               : '<span class="msg-status msg-status--sent material-symbols-outlined" title="Sent">done</span>';

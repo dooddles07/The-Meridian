@@ -1951,7 +1951,9 @@
         if (!msgs.length) {
           msgsEl.innerHTML = '<div class="inbox__empty-state" style="margin:auto;text-align:center;padding:2rem;color:var(--muted,#9a9088)">No messages yet.</div>';
         } else {
-          const unreadRes = c.unread_resident || 0;
+          // Real read receipt: a management message is "read" once the resident's
+          // last-read timestamp is at/after it (or they've since replied).
+          const resReadAt = c.resident_last_read_at ? new Date(c.resident_last_read_at).getTime() : 0;
           let html = '', lastDay = '';
           msgs.forEach((m, i) => {
             const day = mgmtDayLabel(m.createdAt);
@@ -1960,7 +1962,7 @@
             let statusIcon = '';
             if (out) {
               const hasReplyAfter = msgs.slice(i + 1).some(m2 => m2.sender !== 'management');
-              const isRead = hasReplyAfter || unreadRes === 0;
+              const isRead = hasReplyAfter || (resReadAt && resReadAt >= new Date(m.createdAt).getTime());
               statusIcon = isRead
                 ? '<span class="msg-status msg-status--read material-symbols-outlined" title="Read">done_all</span>'
                 : '<span class="msg-status msg-status--sent material-symbols-outlined" title="Sent">done</span>';

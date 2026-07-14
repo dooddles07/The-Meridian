@@ -20,6 +20,10 @@ const schema = new mongoose.Schema({
   // opened; unread_resident = management messages the resident hasn't read.
   unread_management:    { type: Number, default: 0 },
   unread_resident:      { type: Number, default: 0 },
+  // Last time each side opened the thread — drives real read receipts (a sent
+  // message is "read" once the other party's last-read is at/after it).
+  resident_last_read_at:   { type: Date, default: null },
+  management_last_read_at: { type: Date, default: null },
   resolved:             { type: Boolean, default: false },
   last_message_at:      { type: Date, default: null },
   last_message_preview: { type: String, default: '' },

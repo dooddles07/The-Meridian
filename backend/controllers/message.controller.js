@@ -11,6 +11,7 @@ function convoMeta(c) {
     last_message_at: c.last_message_at, last_message_preview: c.last_message_preview,
     last_sender: c.last_sender, unread_management: c.unread_management,
     unread_resident: c.unread_resident, resolved: c.resolved,
+    resident_last_read_at: c.resident_last_read_at, management_last_read_at: c.management_last_read_at,
   };
 }
 function pushMessage(c, sender, sender_name, body) {
@@ -30,7 +31,10 @@ async function mine(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
   const c = await Conversation.findOne({ contact_id: req.resident.contact_id });
   if (!c) return res.json({ success: true, conversation: null, messages: [], unread: 0 });
-  if (c.unread_resident !== 0) { c.unread_resident = 0; await c.save(); }
+  // Opening the thread marks all of management's messages read.
+  c.unread_resident = 0;
+  c.resident_last_read_at = new Date();
+  await c.save();
   return res.json({ success: true, conversation: convoMeta(c), messages: c.messages, unread: 0 });
 }
 
@@ -84,7 +88,10 @@ async function getOne(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
   const c = await Conversation.findById(req.params.id);
   if (!c) return res.status(404).json({ success: false, message: 'Conversation not found.' });
-  if (c.unread_management !== 0) { c.unread_management = 0; await c.save(); }
+  // Opening the thread marks all of the resident's messages read.
+  c.unread_management = 0;
+  c.management_last_read_at = new Date();
+  await c.save();
   return res.json({ success: true, conversation: convoMeta(c), messages: c.messages });
 }
 
