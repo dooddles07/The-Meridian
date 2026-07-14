@@ -117,6 +117,27 @@ a { color: inherit; text-decoration: none; }
   background-repeat: no-repeat;
 }
 
+/* Skip link - hidden until keyboard-focused, then jumps past the theme
+   toggle straight to the portal choices. */
+.skip-link {
+  position: fixed;
+  top: -60px;
+  left: 16px;
+  z-index: 10;
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  font-family: var(--sans);
+  font-size: .8rem;
+  box-shadow: var(--shadow-hi);
+  transition: top .18s ease;
+}
+.skip-link:focus {
+  top: 16px;
+}
+
 /* Theme toggle (top-right) */
 .theme-toggle {
   position: fixed;
