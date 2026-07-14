@@ -1450,10 +1450,18 @@
     } catch { toast('Connection error. Please try again.', 'err'); }
   }
 
+  // Mark the parcel card currently open in the edit form (survives poll re-renders).
+  function highlightParcelEditing() {
+    const wrap = $('parcelList'); if (!wrap) return;
+    wrap.querySelectorAll('details.rec-item.rec-editing').forEach(d => d.classList.remove('rec-editing'));
+    if (_editingParcelId) wrap.querySelector(`[data-pc-edit-id="${CSS.escape(_editingParcelId)}"]`)?.closest('details')?.classList.add('rec-editing');
+  }
+
   // Leave parcel-edit mode: restore the form's Notify button.
   function exitParcelEditMode() {
     _editingParcelId = null;
     const btn = $('pcSubmitBtn'); if (btn) btn.textContent = 'Notify Guardhouse';
+    if (typeof highlightParcelEditing === 'function') highlightParcelEditing();
   }
 
   // Enter parcel-edit mode: pull the notification's values into the form. Only
@@ -1469,6 +1477,7 @@
       if ($('pcDesc'))      $('pcDesc').value = p.description || '';
       if ($('pcCollector')) $('pcCollector').value = p.authorizedCollector || '';
       _editingParcelId = id;
+      highlightParcelEditing();
       const btn = $('pcSubmitBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
       setMsg('pcMsg', 'Editing your parcel notification — update the details and save.');
       const form = $('pcRef'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1766,13 +1775,25 @@
             const courier   = (sv && sv.courier) || cf(/courier|sender/i);
             const descTxt   = (sv && sv.desc) || cf(/description|item|content/i);
             const collector = (sv && sv.collector && sv.collector.trim()) || cf(/collector|authoriz/i);
+            // Once received, show arrival + the 7-day collection deadline (the
+            // point at which it's auto-returned) so the resident knows the clock.
+            const fmtD = iso => { try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }); } catch { return ''; } };
+            let collectRows = '';
+            if (sv && sv.receivedAt && item.stage === 'Received') {
+              const arrived  = fmtD(sv.receivedAt);
+              const deadline = fmtD(new Date(new Date(sv.receivedAt).getTime() + 7 * 86400000));
+              collectRows = `
+              <div class="rec-field"><span class="rec-label">Arrived</span>${esc(arrived)}</div>
+              <div class="rec-field"><span class="rec-label">Collect By</span><strong>${esc(deadline)}</strong></div>`;
+            }
             return `
               <div class="rec-field"><span class="rec-label">Date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Parcel Reference</span>${esc(ref)}</div>
               <div class="rec-field"><span class="rec-label">Courier / Sender</span>${esc(courier || '')}</div>
               <div class="rec-field"><span class="rec-label">Description</span>${esc(descTxt || '')}</div>
-              ${collector ? `<div class="rec-field"><span class="rec-label">Authorized Collector</span>${esc(collector)}</div>` : ''}`;
+              ${collector ? `<div class="rec-field"><span class="rec-label">Authorized Collector</span>${esc(collector)}</div>` : ''}
+              ${collectRows}`;
           })() : opts.kind === 'move' ? (() => {
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
             const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
@@ -2175,6 +2196,7 @@
         id: x.id, stage: x.stage, createdAt: x.createdAt, customFields: [], name: x.ref || '',
       }));
       renderRecords(el, cnt, items, 'No parcels on record.', { kind: 'parcel', saved: data.items });
+      highlightParcelEditing();
     } catch (e) { console.error('[parcels]', e); el.innerHTML = '<div class="panel-empty">Connection error loading parcels.</div>'; }
   }
 

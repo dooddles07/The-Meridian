@@ -45,7 +45,8 @@ async function create(req, res) {
 function toResidentRow(p) {
   return {
     id: String(p._id), ref: p.reference, courier: p.courier || '', desc: p.description || '',
-    collector: p.authorizedCollector || '', stage: p.status, createdAt: p.createdAt, ts: p.createdAt,
+    collector: p.authorizedCollector || '', stage: p.status, receivedAt: p.receivedAt || null,
+    createdAt: p.createdAt, ts: p.createdAt,
   };
 }
 
