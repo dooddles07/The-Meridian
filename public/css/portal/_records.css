@@ -129,6 +129,12 @@
 .rec-summary::-webkit-details-marker { display: none; }
 .rec-summary:hover { background: var(--bg); }
 .rec-main { flex: 1; min-width: 0; }
+/* Card currently open in the edit form */
+.rec-item.rec-editing {
+  border-color: var(--accent, #312e81);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #312e81) 22%, transparent);
+}
+.rec-item.rec-editing > .rec-summary { background: color-mix(in srgb, var(--accent, #312e81) 7%, transparent); }
 .rec-name {
   font-size: 0.875rem;
   color: var(--text);

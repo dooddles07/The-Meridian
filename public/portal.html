@@ -669,7 +669,7 @@
             <div class="form-section">
               <div class="form-section-title">Submit Feedback or Complaint</div>
               <div class="form-group">
-                <label>Type</label>
+                <label for="fbType">Type</label>
                 <select id="fbType">
                   <option>Complaint</option>
                   <option>Feedback</option>
@@ -677,7 +677,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Category</label>
+                <label for="fbCategory">Category</label>
                 <select id="fbCategory">
                   <option>Noise</option>
                   <option>Cleanliness</option>
@@ -690,20 +690,21 @@
                 </select>
               </div>
               <div class="form-group" id="fbCategoryOtherGroup" style="display:none">
-                <label>Please specify</label>
+                <label for="fbCategoryOther">Please specify</label>
                 <input type="text" id="fbCategoryOther" maxlength="60" placeholder="Tell us the category…" />
               </div>
               <div class="form-group">
-                <label>What Happened?</label>
+                <label for="fbDesc">What Happened?</label>
                 <textarea id="fbDesc" rows="5" maxlength="2000" placeholder="Describe the incident in detail…"></textarea>
+                <div class="char-count" id="fbDescCount">0 / 2000</div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Date of Incident</label>
+                  <label for="fbDate">Date of Incident</label>
                   <input type="date" id="fbDate" />
                 </div>
                 <div class="form-group">
-                  <label>Time of Incident <span class="opt">(optional)</span></label>
+                  <label for="fbTime">Time of Incident <span class="opt">(optional)</span></label>
                   <select id="fbTime">
                     <option value="">Select approximate time</option>
                     <option value="12:00 AM">12:00 AM (Midnight)</option>
@@ -754,6 +755,12 @@
               <div class="panel-head">
                 <span class="panel-title">My Submissions</span>
                 <div style="display:flex;align-items:center;gap:0.5rem">
+                  <select id="fbMineFilter" class="panel-filter" aria-label="Filter submissions by type">
+                    <option value="">All types</option>
+                    <option value="Complaint">Complaints</option>
+                    <option value="Feedback">Feedback</option>
+                    <option value="Suggestion">Suggestions</option>
+                  </select>
                   <button class="panel-refresh" id="refreshFeedback" title="Refresh"><span class="material-symbols-outlined">refresh</span></button>
                   <span class="panel-meta" id="myFeedbackCount">0 Total</span>
                 </div>

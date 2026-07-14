@@ -1414,6 +1414,7 @@
   function exitFeedbackEditMode() {
     _editingFeedbackId = null;
     const btn = $('fbSubmitBtn'); if (btn) btn.textContent = 'Submit';
+    if (typeof highlightFbEditing === 'function') highlightFbEditing();
   }
 
   // Enter feedback-edit mode: pull the submission's values into the form. Only
@@ -1435,12 +1436,13 @@
         else { sel.value = f.category || ''; }
       }
       toggleFbOther();
-      if ($('fbDesc'))     $('fbDesc').value = f.description || '';
+      if ($('fbDesc'))     { $('fbDesc').value = f.description || ''; updateFbDescCount(); }
       if ($('fbDate'))     $('fbDate').value = f.incident_date || '';
       if ($('fbTime'))     $('fbTime').value = f.incident_time || '';
       // A new photo replaces the old one; leaving it empty keeps the existing one.
       if ($('fbPhoto')) { $('fbPhoto').value = ''; const n = $('fbPhotoName'); if (n) { n.textContent = f.photo ? 'Keep current photo (or choose a new one)…' : 'Choose a photo…'; n.classList.remove('has-file'); } }
       _editingFeedbackId = id;
+      highlightFbEditing();
       const btn = $('fbSubmitBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
       setMsg('fbMsg', 'Editing your submission — update the details and save.');
       const form = $('fbType'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1983,8 +1985,19 @@
   const fbTypeEl = $('fbType');
   if (fbTypeEl) fbTypeEl.addEventListener('change', updateFbCategories);
   if ($('fbCategory')) $('fbCategory').addEventListener('change', toggleFbOther);
-  // An incident can only have happened in the past — cap the picker at today (SGT).
-  if ($('fbDate')) $('fbDate').max = todaySGT();
+  // Live character counter for the description.
+  function updateFbDescCount() {
+    const el = $('fbDesc'), c = $('fbDescCount');
+    if (el && c) c.textContent = `${el.value.length} / ${el.maxLength}`;
+  }
+  if ($('fbDesc')) $('fbDesc').addEventListener('input', updateFbDescCount);
+  updateFbDescCount();
+  // An incident can only have happened in the past — cap the picker at today
+  // (SGT), with a sane 2-year floor so absurd dates can't be entered.
+  if ($('fbDate')) {
+    $('fbDate').max = todaySGT();
+    $('fbDate').min = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return d.toISOString().slice(0, 10); })();
+  }
   // Photo file-name label + optional-photo picker.
   if ($('fbPhoto')) {
     $('fbPhoto').addEventListener('change', () => {
@@ -1994,6 +2007,27 @@
     });
   }
   updateFbCategories(); // sync categories/labels/incident-row to the default type on load
+
+  let _fbItems = []; // latest /api/feedback/mine rows, for client-side type filtering
+  function renderFbFiltered() {
+    const el = $('myFeedback'), cnt = $('myFeedbackCount');
+    if (!el) return;
+    const filter = $('fbMineFilter') ? $('fbMineFilter').value : '';
+    const rows = (filter ? _fbItems.filter(x => x.type === filter) : _fbItems);
+    const items = rows.map(x => ({
+      id: x.id, stage: x.stage, createdAt: x.createdAt, customFields: [],
+      name: (x.type ? x.type + ' - ' : '') + (x.desc || ''),
+    }));
+    const emptyMsg = filter ? `No ${filter.toLowerCase()} submissions.` : 'No submissions on record.';
+    renderRecords(el, cnt, items, emptyMsg, { kind: 'feedback', saved: rows });
+    highlightFbEditing();
+  }
+  // Mark the card currently open in the edit form (survives poll re-renders).
+  function highlightFbEditing() {
+    const wrap = $('myFeedback'); if (!wrap) return;
+    wrap.querySelectorAll('details.rec-item.rec-editing').forEach(d => d.classList.remove('rec-editing'));
+    if (_editingFeedbackId) wrap.querySelector(`[data-fb-edit-id="${CSS.escape(_editingFeedbackId)}"]`)?.closest('details')?.classList.add('rec-editing');
+  }
 
   async function loadMyFeedback(silent) {
     const el  = $('myFeedback');
@@ -2007,13 +2041,11 @@
       const res  = await fetch('/api/feedback/mine');
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load submissions.')}</div>`; return; }
-      const items = (data.items || []).map(x => ({
-        id: x.id, stage: x.stage, createdAt: x.createdAt, customFields: [],
-        name: (x.type ? x.type + ' - ' : '') + (x.desc || ''),
-      }));
-      renderRecords(el, cnt, items, 'No submissions on record.', { kind: 'feedback', saved: data.items });
+      _fbItems = data.items || [];
+      renderFbFiltered();
     } catch (e) { console.error('[feedback]', e); el.innerHTML = '<div class="panel-empty">Connection error loading submissions.</div>'; }
   }
+  if ($('fbMineFilter')) $('fbMineFilter').addEventListener('change', renderFbFiltered);
 
   // Real backend now (see backend/controllers/move.controller.js) - /api/move/mine
   // already returns complete, correct fields directly, so unlike the other
@@ -3211,6 +3243,7 @@
         ['Unit',     member?.unit || ' - '],
       ], editing ? 'Your changes are saved.' : `Thank you. Management will review your submission and respond shortly.${data.reference ? ` Your reference is ${data.reference}.` : ''}`);
       clr(['fbDesc', 'fbDate', 'fbTime']);
+      updateFbDescCount();
       if ($('fbCategoryOther')) $('fbCategoryOther').value = '';
       if ($('fbCategory')) $('fbCategory').selectedIndex = 0;
       toggleFbOther();
@@ -3225,6 +3258,7 @@
   bind('fbCancelBtn', () => {
     exitFeedbackEditMode();
     clr(['fbDesc', 'fbDate', 'fbTime']);
+    updateFbDescCount();
     if ($('fbCategoryOther')) $('fbCategoryOther').value = '';
     toggleFbOther();
     if ($('fbPhoto')) { $('fbPhoto').value = ''; const n = $('fbPhotoName'); if (n) { n.textContent = 'Choose a photo…'; n.classList.remove('has-file'); } }

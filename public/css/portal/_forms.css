@@ -332,3 +332,23 @@
   display: flex;
   gap: 6px;
 }
+
+/* Live character counter under a textarea */
+.char-count {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Compact filter dropdown in a panel head (e.g. My Submissions) */
+.panel-filter {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
