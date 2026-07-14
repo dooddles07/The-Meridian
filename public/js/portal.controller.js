@@ -1714,13 +1714,19 @@
             const type  = (sv && sv.type) || '';
             const descLabel = type === 'Complaint' ? 'What Happened?' : type === 'Suggestion' ? 'Your Suggestion' : type === 'Feedback' ? 'Your Feedback' : 'Details';
             const incDate = (sv && sv.incident_date) ? fmtDate(sv.incident_date) : '';
+            const ref = (sv && sv.reference) || '';
+            // Incident date/time only apply to a Complaint — omit the rows otherwise.
+            const incidentRows = type === 'Complaint'
+              ? `<div class="rec-field"><span class="rec-label">Date of Incident</span>${esc(incDate)}</div>
+              <div class="rec-field"><span class="rec-label">Time of Incident</span>${esc((sv && sv.incident_time) || '')}</div>`
+              : '';
             return `
+              ${ref ? `<div class="rec-field"><span class="rec-label">Reference</span><span class="rec-ref">${esc(ref)}</span></div>` : ''}
               <div class="rec-field"><span class="rec-label">Submitted Date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Type</span>${esc(type)}</div>
               <div class="rec-field"><span class="rec-label">Category</span>${esc((sv && sv.category) || '')}</div>
-              <div class="rec-field"><span class="rec-label">Date of Incident</span>${esc(incDate)}</div>
-              <div class="rec-field"><span class="rec-label">Time of Incident</span>${esc((sv && sv.incident_time) || '')}</div>
+              ${incidentRows}
               <div class="rec-field"><span class="rec-label">${esc(descLabel)}</span>${esc((sv && sv.desc) || '')}</div>`;
           })() : `
           ${refRow}${fields}${qrHtml}
