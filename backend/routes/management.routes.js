@@ -7,6 +7,7 @@ const bookings     = require('../controllers/booking.controller');
 const moves        = require('../controllers/move.controller');
 const guests       = require('../controllers/guest.controller');
 const defects      = require('../controllers/defect.controller');
+const feedback     = require('../controllers/feedback.controller');
 const rsvp         = require('../controllers/rsvp.controller');
 const audit        = require('../controllers/audit.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
@@ -46,6 +47,9 @@ router.put('/moves/:id/deposit',       mutateLimiter, auditLog, moves.manageDepo
 
 router.get('/defects',                 defects.listForManagement);
 router.put('/defects/:id/stage',       mutateLimiter, auditLog, defects.updateStage);
+
+router.get('/feedback',                feedback.listForManagement);
+router.put('/feedback/:id/stage',      mutateLimiter, auditLog, feedback.updateStage);
 
 // Read-only attendance summary for an event announcement (no audit — a read).
 router.get('/rsvp/:announcement_id',   rsvp.rsvpSummary);

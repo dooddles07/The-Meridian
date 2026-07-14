@@ -762,9 +762,12 @@
       if ($('kpiParcels')) $('kpiParcels').textContent = n;
     }
 
-    // Feedback: open items created in period
+    // Open Complaints: only type=Complaint (the KPI is labelled "Open
+    // Complaints", so Feedback/Suggestions must not inflate it). Type comes from
+    // the item field, falling back to the CMP- reference prefix.
     if (_pipeSnap.feedback) {
-      const n = _pipeSnap.feedback.items.filter(it => !PIPE_DONE.has(it.stage) && inRange((it.createdAt || '').slice(0,10))).length;
+      const isComplaint = it => (it.type || (it.reference || '').split('-')[0]) === 'Complaint' || (it.reference || '').startsWith('CMP');
+      const n = _pipeSnap.feedback.items.filter(it => isComplaint(it) && !PIPE_DONE.has(it.stage) && inRange((it.createdAt || '').slice(0,10))).length;
       if ($('kpiFeedback')) $('kpiFeedback').textContent = n;
     }
   }
@@ -1066,11 +1069,26 @@
     el.addEventListener('click', () => loadMoves().catch(e => console.error('[mgmt moves]', e))));
 
   async function loadFeedback() {
-    const result = await loadPipelinePanel('feedback', 'feedbackBody', 'feedbackCount');
+    // Feedback is real (Mongo-backed) — dedicated management endpoints rather
+    // than the generic mocked opportunities pipeline.
+    const result = await loadPipelinePanel('feedback', 'feedbackBody', 'feedbackCount', {
+      listUrl:   '/api/management/feedback',
+      stageUrl:  id => `/api/management/feedback/${encodeURIComponent(id)}/stage`,
+      stageBody: stage => ({ stage }),
+    });
     if (result) {
       _pipeSnap.feedback = result;
       _refreshDashKpis();
       _renderPipelinesSummary();
+      // Open-case counts by type (the reference is prefixed CMP-/FBK-/SUG-).
+      const sumEl = $('feedbackSummary');
+      if (sumEl) {
+        const typeOf = it => it.type || ((it.reference || '').startsWith('CMP') ? 'Complaint' : (it.reference || '').startsWith('SUG') ? 'Suggestion' : 'Feedback');
+        const c = { Complaint: 0, Feedback: 0, Suggestion: 0 };
+        result.items.filter(it => !PIPE_DONE.has(it.stage)).forEach(it => { c[typeOf(it)] = (c[typeOf(it)] || 0) + 1; });
+        sumEl.innerHTML = [['Complaint', 'Open Complaints'], ['Feedback', 'Open Feedback'], ['Suggestion', 'Open Suggestions']]
+          .map(([k, label]) => `<div class="summary-cell"><div class="summary-count">${c[k]}</div><div class="summary-label">${label}</div></div>`).join('');
+      }
     }
     const { stages } = result || {};
     const fbStaSel = $('fbFilterStage');

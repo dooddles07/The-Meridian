@@ -88,11 +88,9 @@
     facility: ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'],
     guest:    ['Registered', 'Checked In', 'Checked Out', 'Departed', 'Closed'],
     parcel:   ['Received', 'Notified', 'Collected', 'Uncollected / Returned'],
-    feedback: ['Submitted', 'Under Review', 'Resolved', 'Closed'],
   };
   var PIPELINE_IDS = {
     facility: 'local-pipeline-facility', guest: 'local-pipeline-guest', parcel: 'local-pipeline-parcel',
-    feedback: 'local-pipeline-feedback',
   };
 
   // Store
@@ -126,10 +124,6 @@
         parcel('SF-88213004', 'SingPost', 'Small box', '', 'Notified', me),
         parcel('LZ-40021199', 'Ninja Van', 'Documents envelope', 'Priya Nair', 'Received', me),
       ],
-      feedback: [
-        feedback('Complaint', 'Noise', 'Renovation noise past permitted hours on level 11.', daysFromNow(-3), '21:30', 'Under Review', me),
-        feedback('Suggestion', 'Community Events', 'Please organise a weekend farmers market at the verandah.', '', '', 'Submitted', me),
-      ],
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
         convo(me, [
@@ -146,9 +140,6 @@
     }
     function parcel(ref, courier, desc, collector, stage, m) {
       return { id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: m.contact_id, ref: ref, courier: courier, desc: desc, collector: collector, resident: m.name, unit: m.unit, stage: stage, ts: nowISO() };
-    }
-    function feedback(type, category, desc, idate, itime, stage, m) {
-      return { id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: m.contact_id, type: type, category: category, desc: desc, incident_date: idate, incident_time: itime, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function convo(m, msgs, resolved) {
       var messages = msgs.map(function (x) {
@@ -170,7 +161,6 @@
   function oppName(kind, it) {
     if (kind === 'guest')   return it.reference + ' - ' + it.visitor + ' (#' + it.unit + ')';
     if (kind === 'parcel')  return it.ref + ' - ' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
-    if (kind === 'feedback')return (it.type ? it.type + ' - ' : '') + it.desc;
     if (kind === 'move')    return it.move_type + ' - ' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
     return it.desc || it.name || '';
   }
@@ -178,7 +168,7 @@
     return { id: it.oppId || it.opportunityId || it.id, name: oppName(kind, it), stage: it.stage, pipelineId: PIPELINE_IDS[kind], createdAt: it.ts || it.createdAt || nowISO(), customFields: [] };
   }
   function collectionFor(kind) {
-    return { guest: db.guests, parcel: db.parcels, feedback: db.feedback }[kind] || [];
+    return { guest: db.guests, parcel: db.parcels }[kind] || [];
   }
   function setStageById(list, id, stage) {
     var hit = list.find(function (x) { return (x.oppId || x.opportunityId || x.id) === id; });
@@ -248,12 +238,6 @@
     // Guest registration/lookup (/api/guest, /api/guardhouse/lookup+checkin,
     // /api/management/guest(s), /api/management/contacts/search) is now real -
     // see isRealPath below - so those mock branches are gone from here.
-    if (p === '/api/feedback' && method === 'POST') {
-      var fref = 'FB-' + Date.now().toString().slice(-8);
-      db.feedback.unshift({ id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, type: body.type || 'Feedback', category: body.category || 'General', desc: body.description, incident_date: body.incident_date || '', incident_time: body.incident_time || '', stage: 'Submitted', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
-      persist();
-      return ok({ message: 'Submission received.', reference: fref });
-    }
     if (p === '/api/parcel' && method === 'POST') {
       var pref = body.parcel_reference;
       var dup = db.parcels.find(function (x) { return x.ref.toLowerCase() === String(pref).toLowerCase(); });
@@ -262,7 +246,6 @@
       persist();
       return ok({ message: 'Guardhouse notified.', reference: pref });
     }
-    if (p === '/api/feedback/mine') return ok({ items: db.feedback.map(function (x) { return { type: x.type, category: x.category, desc: x.desc, incident_date: x.incident_date, incident_time: x.incident_time, ts: x.ts }; }) });
     if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
 
     // GUARDHOUSE - lookup/checkin are real now (see isRealPath); parcel + the
@@ -298,7 +281,7 @@
 
     // MANAGEMENT - guest desk (contacts/search, guest, guests, guests/:id/stage)
     // is real now (see isRealPath); the generic opportunities pipeline below
-    // still covers parcel/feedback.
+    // still covers parcel.
     if (p === '/api/management/opportunities' && method === 'GET') {
       var pk = qs.get('pipeline');
       var list = collectionFor(pk).map(function (it) {
@@ -369,11 +352,11 @@
   // deployed on Railway), so those paths pass through untouched (logout MUST
   // reach the real network - it's what actually clears the httpOnly session
   // cookie server-side; the mock can't do that).
-  // Everything else stays mocked: parcels, feedback, messages, and the
-  // guardhouse's shared activity log were built against a real CRM
-  // (GoHighLevel) that isn't configured here, so they'd just 503 against the
-  // real backend — the mock keeps them working. (Auth, RSVP, and defect reports
-  // are real now, so their paths are in isRealPath and pass straight through.)
+  // Everything else stays mocked: parcels, messages, and the guardhouse's
+  // shared activity log were built against a real CRM (GoHighLevel) that isn't
+  // configured here, so they'd just 503 against the real backend — the mock
+  // keeps them working. (Auth, RSVP, defect reports, and feedback are real now,
+  // so their paths are in isRealPath and pass straight through.)
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -395,6 +378,8 @@
         || s.indexOf('/api/management/defects') !== -1
         || s.indexOf('/api/rsvp') !== -1
         || s.indexOf('/api/management/rsvp') !== -1
+        || s.indexOf('/api/feedback') !== -1
+        || s.indexOf('/api/management/feedback') !== -1
         || s.indexOf('/api/guest') !== -1
         || s.indexOf('/api/management/guest') !== -1
         || s.indexOf('/api/management/contacts/search') !== -1
@@ -419,5 +404,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, guest passes, and defect reports are live (Mongo-backed); parcels/feedback still run on a local mock.', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, guest passes, defect reports, and feedback are live (Mongo-backed); parcels still run on a local mock.', 'color:#312e81;font-weight:bold');
 })();

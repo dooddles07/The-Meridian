@@ -451,6 +451,7 @@
   let _myGuests = []; // latest /api/guest/mine items - used to count a booking's linked guests
   let _editingGuestId = null; // set while the guest form is editing an existing pass (vs creating)
   let _editingDefectId = null; // set while the defect form is editing an existing report
+  let _editingFeedbackId = null; // set while the feedback form is editing an existing submission
   // The full text a resident typed for defects/parcels/moves/feedback (the opp
   // name only keeps a short summary) is read back here from /api/<type>/mine.
   // In this demo build those endpoints are served by the in-browser mock
@@ -1381,6 +1382,33 @@
     } catch { toast('Connection error. Please try again.', 'err'); }
   }
 
+  // Leave feedback-edit mode: restore the form's Submit button.
+  function exitFeedbackEditMode() {
+    _editingFeedbackId = null;
+    const btn = $('fbSubmitBtn'); if (btn) btn.textContent = 'Submit';
+  }
+
+  // Enter feedback-edit mode: pull the submission's values into the form. Only
+  // offered while still 'Submitted' (before management reviews it).
+  async function startEditFeedback(id) {
+    try {
+      const res  = await fetch(`/api/feedback/${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!data.success) { toast(data.message || 'Could not open this submission for editing.', 'err'); return; }
+      const f = data.feedback;
+      if ($('fbType')) { $('fbType').value = f.type || 'Complaint'; }
+      updateFbCategories(); // rebuild category list + labels for the type
+      if ($('fbCategory')) $('fbCategory').value = f.category || '';
+      if ($('fbDesc'))     $('fbDesc').value = f.description || '';
+      if ($('fbDate'))     $('fbDate').value = f.incident_date || '';
+      if ($('fbTime'))     $('fbTime').value = f.incident_time || '';
+      _editingFeedbackId = id;
+      const btn = $('fbSubmitBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+      setMsg('fbMsg', 'Editing your submission — update the details and save.');
+      const form = $('fbType'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch { toast('Connection error. Please try again.', 'err'); }
+  }
+
   // Hydrate the in-memory booking cache from the server (MongoDB - the source of
   // truth, with the live GHL pipeline stage overlaid). Replaces the booking list
   // wholesale, so cancellations / management stage moves are always reflected.
@@ -1598,6 +1626,15 @@
       const defectCancelBtn = defectEditable
         ? `<button class="rec-cancel-btn" type="button" data-defect-cancel-id="${esc(item.id)}" title="Withdraw this report" aria-label="Withdraw this report"><span class="material-symbols-outlined">close</span></button>`
         : '';
+      // Feedback can be edited/withdrawn by the resident only while still
+      // 'Submitted' (before management reviews it).
+      const fbEditable = opts.kind === 'feedback' && item.stage === 'Submitted' && item.id;
+      const fbEditBtn = fbEditable
+        ? `<button class="rec-edit-btn" type="button" data-fb-edit-id="${esc(item.id)}" title="Edit this submission" aria-label="Edit this submission"><span class="material-symbols-outlined">edit</span></button>`
+        : '';
+      const fbCancelBtn = fbEditable
+        ? `<button class="rec-cancel-btn" type="button" data-fb-cancel-id="${esc(item.id)}" title="Withdraw this submission" aria-label="Withdraw this submission"><span class="material-symbols-outlined">close</span></button>`
+        : '';
       const qrHtml = refCode ? `<div class="rec-qr">
           <div class="qr-img" data-qr-ref="${esc(refCode)}"></div>
           <a class="qr-dl-btn qr-dl-pending" data-qr-dl="${esc(refCode)}" href="#">
@@ -1622,6 +1659,8 @@
           ${cancelBtn}
           ${defectEditBtn}
           ${defectCancelBtn}
+          ${fbEditBtn}
+          ${fbCancelBtn}
           <span class="sbadge ${badge}">${esc(item.stage)}</span>
           <span class="rec-chevron">›</span>
         </summary>
@@ -1753,6 +1792,35 @@
         btn.disabled = false;
       }
     }));
+    el.querySelectorAll('[data-fb-edit-id]').forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      startEditFeedback(btn.dataset.fbEditId);
+    }));
+    el.querySelectorAll('[data-fb-cancel-id]').forEach(btn => btn.addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = btn.dataset.fbCancelId;
+      const proceed = window.Swal
+        ? (await window.Swal.fire({
+            title: 'Withdraw this submission?',
+            text:  'It will be removed and no longer sent to management.',
+            showCancelButton: true, confirmButtonText: 'Withdraw', cancelButtonText: 'Keep It',
+            confirmButtonColor: '#c0392b', reverseButtons: true,
+          })).isConfirmed
+        : confirm('Withdraw this submission?');
+      if (!proceed) return;
+      btn.disabled = true;
+      try {
+        const res  = await fetch(`/api/feedback/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) { toast(data.message || 'Could not withdraw.', 'err'); btn.disabled = false; return; }
+        if (_editingFeedbackId === id) { exitFeedbackEditMode(); clr(['fbDesc', 'fbDate', 'fbTime']); setMsg('fbMsg', ''); }
+        toast('Submission withdrawn.');
+        loadMyFeedback();
+      } catch {
+        toast('Connection error. Please try again.', 'err');
+        btn.disabled = false;
+      }
+    }));
     fillQrImages(el);
   }
 
@@ -1838,9 +1906,20 @@
       const label = $('fbDesc').closest('.form-group')?.querySelector('label');
       if (label) label.textContent = FB_DESC_LABELS[type] || 'Description';
     }
+    // Incident date/time only make sense for a Complaint — hide the row (and
+    // clear it) for Feedback/Suggestion so an "incident date" isn't asked for.
+    const dateRow = $('fbDate')?.closest('.form-row');
+    if (dateRow) {
+      const showIncident = type === 'Complaint';
+      dateRow.style.display = showIncident ? '' : 'none';
+      if (!showIncident) { if ($('fbDate')) $('fbDate').value = ''; if ($('fbTime')) $('fbTime').value = ''; }
+    }
   }
   const fbTypeEl = $('fbType');
   if (fbTypeEl) fbTypeEl.addEventListener('change', updateFbCategories);
+  // An incident can only have happened in the past — cap the picker at today (SGT).
+  if ($('fbDate')) $('fbDate').max = todaySGT();
+  updateFbCategories(); // sync categories/labels/incident-row to the default type on load
 
   async function loadMyFeedback(silent) {
     const el  = $('myFeedback');
@@ -1849,10 +1928,16 @@
     if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
-      const [res, saved] = await Promise.all([fetch(oppUrl('feedback')), fetchMine('feedback')]);
+      // Feedback is a real Mongo-backed endpoint — /api/feedback/mine returns the
+      // full submission (stage included), so build rows from it directly.
+      const res  = await fetch('/api/feedback/mine');
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load submissions.')}</div>`; return; }
-      renderRecords(el, cnt, data.items, 'No submissions on record.', { kind: 'feedback', saved });
+      const items = (data.items || []).map(x => ({
+        id: x.id, stage: x.stage, createdAt: x.createdAt, customFields: [],
+        name: (x.type ? x.type + ' - ' : '') + (x.desc || ''),
+      }));
+      renderRecords(el, cnt, items, 'No submissions on record.', { kind: 'feedback', saved: data.items });
     } catch (e) { console.error('[feedback]', e); el.innerHTML = '<div class="panel-empty">Connection error loading submissions.</div>'; }
   }
 
@@ -3009,10 +3094,13 @@
     const type     = $('fbType')     ? $('fbType').value     : '';
     const category = $('fbCategory') ? $('fbCategory').value : '';
     const desc     = $('fbDesc').value.trim();
-    const fbDate   = $('fbDate') ? $('fbDate').value : '';
-    const fbTime   = $('fbTime') ? $('fbTime').value : '';
-    if (!desc) { setMsg('fbMsg', 'Please describe the incident.', true); return; }
-    const { isConfirmed: fbOk } = await swalReview(`Review ${type || 'Submission'}`, [
+    // Incident date/time only apply to a Complaint (the form hides them otherwise).
+    const fbDate   = (type === 'Complaint' && $('fbDate')) ? $('fbDate').value : '';
+    const fbTime   = (type === 'Complaint' && $('fbTime')) ? $('fbTime').value : '';
+    if (!desc) { setMsg('fbMsg', 'Please describe your submission.', true); return; }
+    if (fbDate && fbDate > todaySGT()) { setMsg('fbMsg', 'The incident date cannot be in the future.', true); return; }
+    const editing = _editingFeedbackId;
+    const { isConfirmed: fbOk } = await swalReview(editing ? 'Review Changes' : `Review ${type || 'Submission'}`, [
       ['Type',     type     || ''],
       ['Category', category || ''],
       ['Date',     fbDate ? fmtDate(fbDate) : ''],
@@ -3020,32 +3108,35 @@
     ], desc);
     if (!fbOk) return;
     const btn = $('fbSubmitBtn');
-    setMsg('fbMsg', 'Submitting…'); btn.disabled = true;
+    setMsg('fbMsg', editing ? 'Saving…' : 'Submitting…'); btn.disabled = true;
     try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
+      // Feedback is a real Mongo-backed endpoint — create (POST) or, while still
+      // 'Submitted', edit in place (PUT /api/feedback/:id).
+      const res = await fetch(editing ? `/api/feedback/${encodeURIComponent(editing)}` : '/api/feedback', {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, category, description: desc, incident_date: fbDate, incident_time: fbTime, resident_name: member.name, resident_email: member.email, resident_unit: member.unit, resident_contact_id: member.contact_id }),
       });
       const data = await res.json();
-      if (!data.success) { setMsg('fbMsg', data.message || 'Submission failed.', true); return; }
+      if (!data.success) { setMsg('fbMsg', data.message || (editing ? 'Could not save changes.' : 'Submission failed.'), true); return; }
       setMsg('fbMsg', '');
-      // Full submission is persisted server-side in MongoDB by POST /api/feedback.
-      swalDone(`${type || 'Submission'} Received`, [
+      exitFeedbackEditMode();
+      swalDone(editing ? 'Submission Updated' : `${type || 'Submission'} Received`, [
+        ['Reference', data.reference || ''],
         ['Type',     type     || ''],
         ['Category', category || ''],
         ['Date',     fbDate ? fmtDate(fbDate) : ''],
         ['Unit',     member?.unit || ' - '],
-      ], 'Thank you. Management will review your submission and respond shortly.');
+      ], editing ? 'Your changes are saved.' : `Thank you. Management will review your submission and respond shortly.${data.reference ? ` Your reference is ${data.reference}.` : ''}`);
       clr(['fbDesc', 'fbDate', 'fbTime']);
       const fbPanel = $('myFeedback');
       if (fbPanel) fbPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
-      setTimeout(() => loadMyFeedback(), 3000);
+      setTimeout(() => loadMyFeedback(), 300);
     } catch {
       setMsg('fbMsg', 'Connection error. Please try again.', true);
     } finally { btn.disabled = false; }
   });
-  bind('fbCancelBtn', () => { clr(['fbDesc', 'fbDate', 'fbTime']); setMsg('fbMsg', ''); });
+  bind('fbCancelBtn', () => { exitFeedbackEditMode(); clr(['fbDesc', 'fbDate', 'fbTime']); setMsg('fbMsg', ''); });
 
   // Panel refresh buttons
   async function refreshPanel(btnId, loadFn) {
