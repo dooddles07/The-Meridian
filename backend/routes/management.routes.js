@@ -9,7 +9,9 @@ const guests       = require('../controllers/guest.controller');
 const defects      = require('../controllers/defect.controller');
 const feedback     = require('../controllers/feedback.controller');
 const parcels      = require('../controllers/parcel.controller');
+const messages     = require('../controllers/message.controller');
 const rsvp         = require('../controllers/rsvp.controller');
+const residentsSvc = require('../services/residents.service');
 const audit        = require('../controllers/audit.controller');
 const { requireManagement, auditLog } = require('../middleware/auth.middleware');
 
@@ -56,8 +58,28 @@ router.put('/feedback/:id/response',   mutateLimiter, auditLog, feedback.respond
 router.get('/parcels',                 parcels.listForManagement);
 router.put('/parcels/:id/stage',       mutateLimiter, auditLog, parcels.updateStage);
 
+router.get('/messages',                messages.listForManagement);
+router.get('/messages-residents',      messages.residentDirectory);
+router.post('/messages/start',         mutateLimiter, auditLog, messages.start);
+router.get('/messages/:id',            messages.getOne);
+router.post('/messages/:id/reply',     mutateLimiter, auditLog, messages.reply);
+router.post('/messages/:id/resolve',   mutateLimiter, auditLog, messages.resolve);
+
 // Read-only attendance summary for an event announcement (no audit — a read).
 router.get('/rsvp/:announcement_id',   rsvp.rsvpSummary);
+
+// Resident account directory (read-only).
+router.get('/residents', async (req, res) => {
+  const rows = await residentsSvc.listResidents();
+  res.json({
+    success: true,
+    total: (rows || []).length,
+    residents: (rows || []).map(r => ({
+      name: r.name || '', unit: r.unit || '', email: r.email || '', phone: r.phone || '',
+      type: r.residentType || 'Resident', ghlLinked: false,
+    })),
+  });
+});
 
 router.get('/audit',                   audit.list);
 

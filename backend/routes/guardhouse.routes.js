@@ -3,6 +3,7 @@ const router     = express.Router();
 const rateLimit  = require('express-rate-limit');
 const controller = require('../controllers/guest.controller');
 const parcels    = require('../controllers/parcel.controller');
+const guardlog   = require('../controllers/guardlog.controller');
 const { requireGuardhouse, auditLog } = require('../middleware/auth.middleware');
 
 // Wider window than a normal mutation cap - a guard station scans many visitors
@@ -24,5 +25,10 @@ router.post('/checkin', mutateLimiter, auditLog, controller.guardCheckin);
 
 router.get('/parcel',        lookupLimiter, parcels.guardLookup);
 router.post('/parcel/status', mutateLimiter, auditLog, parcels.guardUpdateStatus);
+
+// Shared activity log (visitor + parcel feed across all stations).
+router.get('/log',    lookupLimiter, guardlog.list);
+router.post('/log',   mutateLimiter, guardlog.upsert);
+router.delete('/log', mutateLimiter, guardlog.clear);
 
 module.exports = router;
