@@ -53,6 +53,7 @@
 .matters-link:hover { opacity: 0.7; }
 
 /* Quick Action Strip */
+.dash-quick-label { margin-bottom: 10px; }
 .quick-strip {
   display: grid;
   grid-template-columns: repeat(6, 1fr);

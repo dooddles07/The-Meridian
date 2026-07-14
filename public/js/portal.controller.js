@@ -1286,7 +1286,7 @@
     const db = $('dashBookings');
     if (db) db.innerHTML = up.length
       ? up.slice(0, 5).map(b => `<div class="booking-row"><div><div class="booking-facility">${b.emoji} ${esc(b.facilityName)}</div><div class="booking-time">${fmtDate(b.date)} · ${esc(b.slot)}</div></div><span class="sbadge ${stageBadge(b.status)}">${esc(b.status)}</span></div>`).join('')
-      : `<div class="panel-empty">${_bookingsLoaded ? 'No bookings on record.' : 'Loading…'}</div>`;
+      : `<div class="panel-empty">${_bookingsLoaded ? 'No bookings yet - book a facility to get started.' : 'Loading…'}</div>`;
     // The footer link doubles as "create" (empty state) and "view everything"
     // (once bookings exist) - static "Book a facility →" text was wrong once a
     // booking was already showing above it, and gave no hint that there were
