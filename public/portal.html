@@ -841,7 +841,7 @@
               <div class="inbox__compose">
                 <div class="inbox__compose-inner">
                   <textarea class="inbox__compose-input" id="inboxCompose"
-                    placeholder="Write a message…" rows="1"
+                    placeholder="Write a message…" rows="1" maxlength="2000"
                     aria-label="Message"></textarea>
                   <button class="inbox__send-btn" id="inboxSendBtn" aria-label="Send message">
                     <span class="material-symbols-outlined">send</span>
@@ -853,11 +853,11 @@
           </div><!-- /.inbox -->
         </div><!-- /#view-messages -->
 
-        <div class="inbox-modal" id="inboxNewModal" style="display:none" role="dialog" aria-modal="true" aria-label="New conversation">
+        <div class="inbox-modal" id="inboxNewModal" style="display:none" role="dialog" aria-modal="true" aria-label="New message to management">
           <div class="inbox-modal__backdrop" id="inboxModalBackdrop"></div>
           <div class="inbox-modal__box">
             <div class="inbox-modal__head">
-              <h3>New Conversation</h3>
+              <h3>New Message</h3>
               <button class="inbox-modal__close" id="inboxModalClose" aria-label="Close">
                 <span class="material-symbols-outlined">close</span>
               </button>
@@ -865,7 +865,7 @@
             <div class="inbox-modal__body">
               <div class="inbox-modal__field">
                 <label for="newConvoSubject">Subject</label>
-                <input id="newConvoSubject" type="text" placeholder="e.g. Parking allocation query" />
+                <input id="newConvoSubject" type="text" maxlength="120" placeholder="e.g. Parking allocation query" />
               </div>
               <div class="inbox-modal__field">
                 <label for="newConvoMsg">Message</label>

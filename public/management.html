@@ -715,7 +715,7 @@
             <div class="inbox__compose">
               <div class="inbox__compose-inner">
                 <textarea class="inbox__compose-input mgmt-compose" id="mgmtCompose"
-                  placeholder="Select a conversation to reply…" rows="1"
+                  placeholder="Select a conversation to reply…" rows="1" maxlength="2000"
                   aria-label="Reply" disabled></textarea>
                 <button class="inbox__send-btn" id="mgmtSendBtn" aria-label="Send reply" disabled>
                   <span class="material-symbols-outlined">send</span>
@@ -747,11 +747,11 @@
       </div>
       <div class="inbox-modal__field">
         <label for="mgmtConvoSubject">Subject <span style="opacity:.6;font-weight:400">(optional)</span></label>
-        <input id="mgmtConvoSubject" type="text" placeholder="e.g. Outstanding maintenance request" />
+        <input id="mgmtConvoSubject" type="text" maxlength="120" placeholder="e.g. Outstanding maintenance request" />
       </div>
       <div class="inbox-modal__field">
         <label for="mgmtConvoMsg">Message</label>
-        <textarea id="mgmtConvoMsg" rows="4" placeholder="Write your message to the resident…"></textarea>
+        <textarea id="mgmtConvoMsg" rows="4" maxlength="2000" placeholder="Write your message to the resident…"></textarea>
       </div>
       <p id="mgmtConvoErr" style="font-size:0.75rem;color:#c0392b;margin:0;min-height:1em"></p>
     </div>
