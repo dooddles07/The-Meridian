@@ -1089,6 +1089,48 @@
         sumEl.innerHTML = [['Complaint', 'Open Complaints'], ['Feedback', 'Open Feedback'], ['Suggestion', 'Open Suggestions']]
           .map(([k, label]) => `<div class="summary-cell"><div class="summary-count">${c[k]}</div><div class="summary-label">${label}</div></div>`).join('');
       }
+      // Add a per-row "Respond" action (the generic pipeline renderer only emits
+      // the stage select) so management can reply to the resident. Re-applied on
+      // every load, so the live poll doesn't drop it.
+      const respMap = {};
+      result.items.forEach(it => { respMap[it.oppId] = it.response || ''; });
+      $('feedbackBody')?.querySelectorAll('tr:not(.empty-row)').forEach(tr => {
+        const sel = tr.querySelector('.bk-stage-select');
+        if (!sel) return;
+        const oppId = sel.dataset.opp;
+        const actions = sel.closest('td');
+        if (!actions || actions.querySelector('.fb-respond-btn')) return;
+        const existing = respMap[oppId] || '';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'fb-respond-btn';
+        btn.textContent = existing ? 'Edit reply' : 'Respond';
+        if (existing) btn.title = existing;
+        actions.appendChild(btn);
+        btn.addEventListener('click', async () => {
+          if (!window.Swal) return;
+          const { isConfirmed, value } = await window.Swal.fire({
+            title: existing ? 'Edit response' : 'Respond to resident',
+            input: 'textarea',
+            inputValue: existing,
+            inputPlaceholder: 'Type your response — the resident will see this on their submission…',
+            inputAttributes: { maxlength: 2000 },
+            showCancelButton: true, confirmButtonText: 'Send', confirmButtonColor: '#312e81',
+            inputValidator: v => (!v || !v.trim()) ? 'A response is required.' : undefined,
+          });
+          if (!isConfirmed) return;
+          try {
+            const r = await fetch(`/api/management/feedback/${encodeURIComponent(oppId)}/response`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ response: value.trim() }),
+            });
+            const d = await r.json();
+            if (!d.success) { toast(d.message || 'Could not send response.', true); return; }
+            toast('Response sent.');
+            loadFeedback();
+          } catch { toast('Connection error. Please try again.', true); }
+        });
+      });
     }
     const { stages } = result || {};
     const fbStaSel = $('fbFilterStage');

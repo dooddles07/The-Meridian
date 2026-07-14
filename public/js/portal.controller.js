@@ -1720,6 +1720,8 @@
               ? `<div class="rec-field"><span class="rec-label">Date of Incident</span>${esc(incDate)}</div>
               <div class="rec-field"><span class="rec-label">Time of Incident</span>${esc((sv && sv.incident_time) || '')}</div>`
               : '';
+            const response = (sv && sv.response) || '';
+            const respondedAt = (sv && sv.respondedAt) ? new Date(sv.respondedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
             return `
               ${ref ? `<div class="rec-field"><span class="rec-label">Reference</span><span class="rec-ref">${esc(ref)}</span></div>` : ''}
               <div class="rec-field"><span class="rec-label">Submitted Date</span>${subDate}</div>
@@ -1727,7 +1729,8 @@
               <div class="rec-field"><span class="rec-label">Type</span>${esc(type)}</div>
               <div class="rec-field"><span class="rec-label">Category</span>${esc((sv && sv.category) || '')}</div>
               ${incidentRows}
-              <div class="rec-field"><span class="rec-label">${esc(descLabel)}</span>${esc((sv && sv.desc) || '')}</div>`;
+              <div class="rec-field"><span class="rec-label">${esc(descLabel)}</span>${esc((sv && sv.desc) || '')}</div>
+              ${response ? `<div class="rec-response"><div class="rec-response-head">Management Response${respondedAt ? ` · ${respondedAt}` : ''}</div><div class="rec-response-body">${esc(response)}</div></div>` : ''}`;
           })() : `
           ${refRow}${fields}${qrHtml}
           <div class="rec-field"><span class="rec-label">Submitted</span>${date}</div>`}

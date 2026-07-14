@@ -50,6 +50,7 @@ router.put('/defects/:id/stage',       mutateLimiter, auditLog, defects.updateSt
 
 router.get('/feedback',                feedback.listForManagement);
 router.put('/feedback/:id/stage',      mutateLimiter, auditLog, feedback.updateStage);
+router.put('/feedback/:id/response',   mutateLimiter, auditLog, feedback.respond);
 
 // Read-only attendance summary for an event announcement (no audit — a read).
 router.get('/rsvp/:announcement_id',   rsvp.rsvpSummary);

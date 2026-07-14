@@ -10,6 +10,9 @@ const schema = new mongoose.Schema({
   incident_date:  { type: String, default: '' }, // YYYY-MM-DD (Complaint only)
   incident_time:  { type: String, default: '' }, // display string
   status:         { type: String, enum: ['Submitted', 'Under Review', 'Resolved', 'Closed'], default: 'Submitted' },
+  // Management's reply, shown back to the resident on their submission card.
+  response:       { type: String, default: '' },
+  respondedAt:    { type: Date, default: null },
   contact_id:     { type: String, required: true, index: true },
   resident_name:  { type: String, default: '' },
   resident_email: { type: String, default: '' },

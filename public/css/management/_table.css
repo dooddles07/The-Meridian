@@ -1,3 +1,19 @@
+/* Feedback per-row "Respond" action */
+.fb-respond-btn {
+  margin-left: 6px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent, #312e81);
+  background: transparent;
+  border: 1px solid var(--accent, #312e81);
+  border-radius: var(--radius-pill, 999px);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.fb-respond-btn:hover { background: var(--accent, #312e81); color: #fff; }
+
 /* Defect photo thumbnail */
 .defect-thumb { width:44px; height:44px; object-fit:cover; border-radius:5px; cursor:zoom-in; border:1px solid var(--border); transition:opacity .15s; display:block; }
 .defect-thumb:hover { opacity:0.8; }

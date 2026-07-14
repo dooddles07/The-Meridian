@@ -59,6 +59,8 @@ async function listMine(req, res) {
       incident_date: f.incident_date || '',
       incident_time: f.incident_time || '',
       stage: f.status,
+      response: f.response || '',
+      respondedAt: f.respondedAt || null,
       createdAt: f.createdAt,
       ts: f.createdAt,
     })),
@@ -131,10 +133,27 @@ async function listForManagement(req, res) {
       contact: f.resident_name,
       unit: f.resident_unit,
       stage: f.status,
+      response: f.response || '',
       createdAt: f.createdAt,
     })),
     stages: ALL_STAGES,
   });
+}
+
+// PUT /api/management/feedback/:id/response  (management) — reply to a resident.
+// Recording a reply also advances a still-'Submitted' case to 'Under Review'.
+async function respond(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const response = String(req.body.response || '').trim();
+  if (!response) return res.status(400).json({ success: false, message: 'A response is required.' });
+  if (response.length > 2000) return res.status(400).json({ success: false, message: 'Response is too long (2000 characters max).' });
+  const existing = await Feedback.findById(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Submission not found.' });
+  existing.response = response;
+  existing.respondedAt = new Date();
+  if (existing.status === 'Submitted') existing.status = 'Under Review';
+  await existing.save();
+  return res.json({ success: true, message: 'Response sent.', stage: existing.status });
 }
 
 // PUT /api/management/feedback/:id/stage  (management)
@@ -149,4 +168,4 @@ async function updateStage(req, res) {
   return res.json({ success: true, message: `Moved to ${stage}.`, stage });
 }
 
-module.exports = { create, listMine, getOne, update, remove, listForManagement, updateStage };
+module.exports = { create, listMine, getOne, update, remove, listForManagement, updateStage, respond };
