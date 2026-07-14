@@ -35,6 +35,14 @@
   var onResidentPortal   = PATH.indexOf('portal.html') !== -1;
   var onManagementPortal = PATH.indexOf('management.html') !== -1;
 
+  // Resolves once the preview auto-login for a portal has actually established
+  // its httpOnly session cookie. The fetch override below holds real (Mongo-
+  // backed) API calls until the matching one settles — otherwise the portal's
+  // initial panel loads race the fire-and-forget login and 401 on cold load.
+  // Stays pre-resolved when no preview login is fired (e.g. a real signed-in
+  // user), so it adds zero delay in that case.
+  var _authReady = { resident: Promise.resolve(), management: Promise.resolve() };
+
   function seedSession() {
     try {
       // Resident and management are gated independently — each has its own real
@@ -52,19 +60,19 @@
         // above. Uses the native fetch (the mock override below hasn't been
         // installed yet at this point in the script).
         if (onResidentPortal) {
-          fetch('/api/auth/resident/login', {
+          _authReady.resident = fetch('/api/auth/resident/login', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(PREVIEW_RESIDENT),
-          }).catch(function () {});
+          }).then(function () {}).catch(function () {});
         }
       }
       if (localStorage.getItem('lumina_mgmt_signed_out') !== '1' && !localStorage.getItem('mgmtUser')) {
         localStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER)); sessionStorage.setItem('mgmtUser', JSON.stringify(MGMT_USER));
         if (onManagementPortal) {
-          fetch('/api/auth/management/login', {
+          _authReady.management = fetch('/api/auth/management/login', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(PREVIEW_MANAGEMENT),
-          }).catch(function () {});
+          }).then(function () {}).catch(function () {});
         }
       }
       if (localStorage.getItem('lumina_gh_signed_out') !== '1' && !sessionStorage.getItem('gh_session')) {
@@ -80,12 +88,11 @@
     facility: ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'],
     guest:    ['Registered', 'Checked In', 'Checked Out', 'Departed', 'Closed'],
     parcel:   ['Received', 'Notified', 'Collected', 'Uncollected / Returned'],
-    defect:   ['Reported', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'],
     feedback: ['Submitted', 'Under Review', 'Resolved', 'Closed'],
   };
   var PIPELINE_IDS = {
     facility: 'local-pipeline-facility', guest: 'local-pipeline-guest', parcel: 'local-pipeline-parcel',
-    defect: 'local-pipeline-defect', feedback: 'local-pipeline-feedback',
+    feedback: 'local-pipeline-feedback',
   };
 
   // Store
@@ -99,7 +106,6 @@
   function nowISO() { return new Date().toISOString(); }
   function daysFromNow(n) { var d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
   function guestRef(date) { return 'GST-' + String(date || daysFromNow(0)).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000); }
-  function defectRef() { return 'DFT-' + Math.floor(1000 + Math.random() * 9000); }
 
   window.__luminaReset = function () { localStorage.removeItem(DB_KEY); location.reload(); };
 
@@ -119,10 +125,6 @@
       parcels: [
         parcel('SF-88213004', 'SingPost', 'Small box', '', 'Notified', me),
         parcel('LZ-40021199', 'Ninja Van', 'Documents envelope', 'Priya Nair', 'Received', me),
-      ],
-      defects: [
-        defect('Leaking tap in master bathroom', 'Plumbing', '#12-08 Master Bath', 'Urgent', 'Acknowledged', me),
-        defect('Corridor light flickering on level 12', 'Electrical', 'Level 12 lift lobby', 'Routine', 'In Progress', me),
       ],
       feedback: [
         feedback('Complaint', 'Noise', 'Renovation noise past permitted hours on level 11.', daysFromNow(-3), '21:30', 'Under Review', me),
@@ -144,9 +146,6 @@
     }
     function parcel(ref, courier, desc, collector, stage, m) {
       return { id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: m.contact_id, ref: ref, courier: courier, desc: desc, collector: collector, resident: m.name, unit: m.unit, stage: stage, ts: nowISO() };
-    }
-    function defect(desc, category, location, urgency, stage, m) {
-      return { id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: m.contact_id, reference: defectRef(), desc: desc, category: category, secondaryCategory: '', location: location, urgency: urgency, photo: '', stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function feedback(type, category, desc, idate, itime, stage, m) {
       return { id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: m.contact_id, type: type, category: category, desc: desc, incident_date: idate, incident_time: itime, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
@@ -171,7 +170,6 @@
   function oppName(kind, it) {
     if (kind === 'guest')   return it.reference + ' - ' + it.visitor + ' (#' + it.unit + ')';
     if (kind === 'parcel')  return it.ref + ' - ' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
-    if (kind === 'defect')  return (it.category ? it.category + ': ' : '') + it.desc;
     if (kind === 'feedback')return (it.type ? it.type + ' - ' : '') + it.desc;
     if (kind === 'move')    return it.move_type + ' - ' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
     return it.desc || it.name || '';
@@ -180,7 +178,7 @@
     return { id: it.oppId || it.opportunityId || it.id, name: oppName(kind, it), stage: it.stage, pipelineId: PIPELINE_IDS[kind], createdAt: it.ts || it.createdAt || nowISO(), customFields: [] };
   }
   function collectionFor(kind) {
-    return { guest: db.guests, parcel: db.parcels, defect: db.defects, feedback: db.feedback }[kind] || [];
+    return { guest: db.guests, parcel: db.parcels, feedback: db.feedback }[kind] || [];
   }
   function setStageById(list, id, stage) {
     var hit = list.find(function (x) { return (x.oppId || x.opportunityId || x.id) === id; });
@@ -250,18 +248,6 @@
     // Guest registration/lookup (/api/guest, /api/guardhouse/lookup+checkin,
     // /api/management/guest(s), /api/management/contacts/search) is now real -
     // see isRealPath below - so those mock branches are gone from here.
-    if (p === '/api/defect' && method === 'POST') {
-      // Keep the attached photo only if it fits a sane budget — base64 images
-      // live in localStorage (~5MB cap shared across the whole demo), so an
-      // oversized upload is dropped rather than blowing the quota. Photos are
-      // already downscaled + JPEG-compressed client-side before they reach here.
-      var photo = (typeof body.defect_file === 'string' && body.defect_file.length < 1500000) ? body.defect_file : '';
-      var dref  = defectRef();
-      db.defects.unshift({ id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, reference: dref, desc: body.description, category: body.category || 'General', secondaryCategory: body.secondaryCategory || '', location: body.location || '', urgency: body.urgency || 'Routine', photo: photo, stage: 'Reported', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
-      if (db.defects.length > 40) db.defects.length = 40; // bound localStorage growth
-      persist();
-      return ok({ message: 'Defect report submitted.', reference: dref });
-    }
     if (p === '/api/feedback' && method === 'POST') {
       var fref = 'FB-' + Date.now().toString().slice(-8);
       db.feedback.unshift({ id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, type: body.type || 'Feedback', category: body.category || 'General', desc: body.description, incident_date: body.incident_date || '', incident_time: body.incident_time || '', stage: 'Submitted', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
@@ -276,7 +262,6 @@
       persist();
       return ok({ message: 'Guardhouse notified.', reference: pref });
     }
-    if (p === '/api/defect/mine')   return ok({ items: db.defects.map(function (x) { return { reference: x.reference || '', desc: x.desc, category: x.category, secondaryCategory: x.secondaryCategory || '', location: x.location, urgency: x.urgency, photo: x.photo || '', ts: x.ts }; }) });
     if (p === '/api/feedback/mine') return ok({ items: db.feedback.map(function (x) { return { type: x.type, category: x.category, desc: x.desc, incident_date: x.incident_date, incident_time: x.incident_time, ts: x.ts }; }) });
     if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
 
@@ -313,20 +298,11 @@
 
     // MANAGEMENT - guest desk (contacts/search, guest, guests, guests/:id/stage)
     // is real now (see isRealPath); the generic opportunities pipeline below
-    // still covers defect/parcel/feedback.
+    // still covers parcel/feedback.
     if (p === '/api/management/opportunities' && method === 'GET') {
       var pk = qs.get('pipeline');
       var list = collectionFor(pk).map(function (it) {
-        // Defects have no natural "reference" like a parcel/guest pass, so pack
-        // the tracking code + the actual reported issue into the reference cell
-        // — otherwise the management table shows a blank first column and the
-        // triager can't tell what's broken (and search-by-text finds nothing).
-        var ref = it.reference || it.ref || '';
-        if (pk === 'defect') {
-          var cat = it.secondaryCategory ? it.category + ' + ' + it.secondaryCategory : it.category;
-          ref = (it.reference ? it.reference + ' · ' : '') + (cat ? cat + ': ' : '') + (it.desc || '');
-        }
-        return { oppId: it.oppId || it.opportunityId || it.id, contactId: it.contactId, reference: ref, contact: it.contact || it.resident || it.host || '', unit: it.unit, stage: it.stage, urgency: it.urgency || '', photo: it.photo || '', location: it.location || '', createdAt: it.ts || it.createdAt || nowISO() };
+        return { oppId: it.oppId || it.opportunityId || it.id, contactId: it.contactId, reference: it.reference || it.ref || '', contact: it.contact || it.resident || it.host || '', unit: it.unit, stage: it.stage, urgency: it.urgency || '', createdAt: it.ts || it.createdAt || nowISO() };
       });
       return ok({ items: list, total: list.length, stages: STAGES[pk] || [] });
     }
@@ -396,9 +372,8 @@
   // Everything else stays mocked: parcels, feedback, messages, and the
   // guardhouse's shared activity log were built against a real CRM
   // (GoHighLevel) that isn't configured here, so they'd just 503 against the
-  // real backend — the mock keeps them working. (Defects are now real too — see
-  // /api/defect above — so the defect branches in this router are dead code
-  // kept only as a reference for how the others could be migrated.)
+  // real backend — the mock keeps them working. (Auth, RSVP, and defect reports
+  // are real now, so their paths are in isRealPath and pass straight through.)
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -428,6 +403,14 @@
         || s.indexOf('/api/guardhouse/checkin') !== -1;
       if (s.indexOf('/api/') !== -1 && !isRealPath) {
         return Promise.resolve(handle(s, opts));
+      }
+      // Real (Mongo-backed) API call — but not the login/logout itself: hold it
+      // until the preview auto-login for this portal has set its session cookie,
+      // so cold-load panel fetches don't 401 in the gap. Pre-resolved (no wait)
+      // for real signed-in users where no preview login was fired.
+      if (_real && s.indexOf('/api/') !== -1 && s.indexOf('/api/auth/') === -1) {
+        var gate = s.indexOf('/api/management/') !== -1 ? _authReady.management : _authReady.resident;
+        return gate.then(function () { return _real(url, opts); });
       }
     } catch (e) {
       console.error('[client-backend] error handling', url, e);

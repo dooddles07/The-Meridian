@@ -95,6 +95,62 @@ async function listForManagement(req, res) {
   });
 }
 
+// GET /api/defect/:id  (resident) — hydrate the edit form
+async function getOne(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const d = await Defect.findOne({ _id: req.params.id, contact_id: req.resident.contact_id }).lean();
+  if (!d) return res.status(404).json({ success: false, message: 'Defect report not found.' });
+  return res.json({
+    success: true,
+    defect: {
+      id: String(d._id), reference: d.reference, description: d.description,
+      category: d.category, secondaryCategory: d.secondaryCategory || '',
+      location: d.location || '', urgency: d.urgency, photo: d.photo || '', stage: d.status,
+    },
+  });
+}
+
+// A resident may only amend/withdraw their own report while it's still
+// 'Reported' — once management has Acknowledged it (or beyond), it's locked.
+async function findEditableOwn(req, res) {
+  const d = await Defect.findOne({ _id: req.params.id, contact_id: req.resident.contact_id });
+  if (!d) { res.status(404).json({ success: false, message: 'Defect report not found.' }); return null; }
+  if (d.status !== 'Reported') {
+    res.status(400).json({ success: false, message: 'This report is already being handled and can no longer be changed.' });
+    return null;
+  }
+  return d;
+}
+
+// PUT /api/defect/:id  (resident) — edit an unhandled report
+async function update(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const d = await findEditableOwn(req, res);
+  if (!d) return;
+  const description = String(req.body.description || '').trim();
+  if (!description) return res.status(400).json({ success: false, message: 'Please describe the issue.' });
+  d.description       = description;
+  d.category          = String(req.body.category || 'General').trim() || 'General';
+  d.secondaryCategory = String(req.body.secondaryCategory || '').trim();
+  d.location          = String(req.body.location || '').trim();
+  d.urgency           = URGENCIES.includes(req.body.urgency) ? req.body.urgency : 'Routine';
+  // Only replace the photo when a new valid one is supplied; an empty/omitted
+  // field leaves the existing photo untouched.
+  const newPhoto = sanitizePhoto(req.body.defect_file);
+  if (newPhoto) d.photo = newPhoto;
+  await d.save();
+  return res.json({ success: true, message: 'Report updated.', reference: d.reference });
+}
+
+// DELETE /api/defect/:id  (resident) — withdraw an unhandled report
+async function remove(req, res) {
+  if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
+  const d = await findEditableOwn(req, res);
+  if (!d) return;
+  await d.deleteOne();
+  return res.json({ success: true, message: 'Report withdrawn.' });
+}
+
 // PUT /api/management/defects/:id/stage  (management)
 async function updateStage(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
@@ -107,4 +163,4 @@ async function updateStage(req, res) {
   return res.json({ success: true, message: `Moved to ${stage}.`, stage });
 }
 
-module.exports = { create, listMine, listForManagement, updateStage };
+module.exports = { create, listMine, getOne, update, remove, listForManagement, updateStage };

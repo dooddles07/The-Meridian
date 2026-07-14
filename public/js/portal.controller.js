@@ -450,6 +450,7 @@
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
   let _myGuests = []; // latest /api/guest/mine items - used to count a booking's linked guests
   let _editingGuestId = null; // set while the guest form is editing an existing pass (vs creating)
+  let _editingDefectId = null; // set while the defect form is editing an existing report
   // The full text a resident typed for defects/parcels/moves/feedback (the opp
   // name only keeps a short summary) is read back here from /api/<type>/mine.
   // In this demo build those endpoints are served by the in-browser mock
@@ -1349,6 +1350,37 @@
     } catch { toast('Connection error. Please try again.', 'err'); }
   }
 
+  // Leave defect-edit mode: restore the form's Submit button.
+  function exitDefectEditMode() {
+    _editingDefectId = null;
+    const btn = $('dSubmitBtn'); if (btn) btn.textContent = 'Submit Report';
+  }
+
+  // Enter defect-edit mode: pull the report's current values into the submit
+  // form so a resident can correct it. Only offered while still 'Reported'
+  // (before management acts) - see the edit button in renderRecords.
+  async function startEditDefect(id) {
+    try {
+      const res  = await fetch(`/api/defect/${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!data.success) { toast(data.message || 'Could not open this report for editing.', 'err'); return; }
+      const d = data.defect;
+      if ($('dDesc'))             $('dDesc').value = d.description || '';
+      if ($('dLocation'))         $('dLocation').value = d.location || '';
+      if ($('dCategory'))         $('dCategory').value = d.category || '';
+      if ($('dSecondaryCategory')) $('dSecondaryCategory').value = d.secondaryCategory || '';
+      const urgRadio = document.querySelector(`input[name="dUrgency"][value="${d.urgency}"]`);
+      if (urgRadio) { urgRadio.checked = true; urgRadio.dispatchEvent(new Event('change', { bubbles: true })); }
+      // A new photo can be attached to replace the old one, but we can't refill a
+      // file input; leaving it empty keeps the existing photo server-side.
+      if ($('dPhoto')) { $('dPhoto').value = ''; const n = $('dPhotoName'); if (n) { n.textContent = 'Keep current photo (or choose a new one)…'; n.classList.remove('has-file'); } }
+      _editingDefectId = id;
+      const btn = $('dSubmitBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+      setMsg('dMsg', 'Editing your report — update the details and save.');
+      const form = $('dDesc'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch { toast('Connection error. Please try again.', 'err'); }
+  }
+
   // Hydrate the in-memory booking cache from the server (MongoDB - the source of
   // truth, with the live GHL pipeline stage overlaid). Replaces the booking list
   // wholesale, so cancellations / management stage moves are always reflected.
@@ -1557,6 +1589,15 @@
       const cancelBtn = editable
         ? `<button class="rec-cancel-btn" type="button" data-cancel-id="${esc(item.id)}" title="Cancel this guest pass" aria-label="Cancel this guest pass"><span class="material-symbols-outlined">close</span></button>`
         : '';
+      // Defect reports can be edited/withdrawn by the resident only while still
+      // 'Reported' (before management acknowledges them).
+      const defectEditable = opts.kind === 'defect' && item.stage === 'Reported' && item.id;
+      const defectEditBtn = defectEditable
+        ? `<button class="rec-edit-btn" type="button" data-defect-edit-id="${esc(item.id)}" title="Edit this report" aria-label="Edit this report"><span class="material-symbols-outlined">edit</span></button>`
+        : '';
+      const defectCancelBtn = defectEditable
+        ? `<button class="rec-cancel-btn" type="button" data-defect-cancel-id="${esc(item.id)}" title="Withdraw this report" aria-label="Withdraw this report"><span class="material-symbols-outlined">close</span></button>`
+        : '';
       const qrHtml = refCode ? `<div class="rec-qr">
           <div class="qr-img" data-qr-ref="${esc(refCode)}"></div>
           <a class="qr-dl-btn qr-dl-pending" data-qr-dl="${esc(refCode)}" href="#">
@@ -1579,6 +1620,8 @@
           ${qrBtn}
           ${editBtn}
           ${cancelBtn}
+          ${defectEditBtn}
+          ${defectCancelBtn}
           <span class="sbadge ${badge}">${esc(item.stage)}</span>
           <span class="rec-chevron">›</span>
         </summary>
@@ -1676,6 +1719,35 @@
         if (!data.success) { toast(data.message || 'Could not cancel.', 'err'); btn.disabled = false; return; }
         toast('Guest pass cancelled.');
         loadMyGuests();
+      } catch {
+        toast('Connection error. Please try again.', 'err');
+        btn.disabled = false;
+      }
+    }));
+    el.querySelectorAll('[data-defect-edit-id]').forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      startEditDefect(btn.dataset.defectEditId);
+    }));
+    el.querySelectorAll('[data-defect-cancel-id]').forEach(btn => btn.addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = btn.dataset.defectCancelId;
+      const proceed = window.Swal
+        ? (await window.Swal.fire({
+            title: 'Withdraw this report?',
+            text:  'This defect report will be removed and no longer sent to management.',
+            showCancelButton: true, confirmButtonText: 'Withdraw', cancelButtonText: 'Keep It',
+            confirmButtonColor: '#c0392b', reverseButtons: true,
+          })).isConfirmed
+        : confirm('Withdraw this report?');
+      if (!proceed) return;
+      btn.disabled = true;
+      try {
+        const res  = await fetch(`/api/defect/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) { toast(data.message || 'Could not withdraw.', 'err'); btn.disabled = false; return; }
+        if (_editingDefectId === id) { exitDefectEditMode(); clr(['dDesc']); setMsg('dMsg', ''); }
+        toast('Report withdrawn.');
+        loadMyDefects();
       } catch {
         toast('Connection error. Please try again.', 'err');
         btn.disabled = false;
@@ -2826,8 +2898,9 @@
         return;
       }
     }
+    const editing = _editingDefectId;
     const catDisplay = secondaryCategory ? `${category} + ${secondaryCategory}` : category;
-    const { isConfirmed: dOk } = await swalReview('Review Defect Report', [
+    const { isConfirmed: dOk } = await swalReview(editing ? 'Review Changes' : 'Review Defect Report', [
       ['Category', catDisplay || ''],
       ['Urgency',  urgency  || ''],
       ['Location', location || ''],
@@ -2835,20 +2908,20 @@
     ], desc);
     if (!dOk) return;
     const btn = $('dSubmitBtn');
-    setMsg('dMsg', 'Submitting…'); btn.disabled = true;
+    setMsg('dMsg', editing ? 'Saving…' : 'Submitting…'); btn.disabled = true;
     try {
-      const res = await fetch('/api/defect', {
-        method: 'POST',
+      // Defects are a real Mongo-backed endpoint — create (POST) or, while the
+      // report is still 'Reported', edit it in place (PUT /api/defect/:id).
+      const res = await fetch(editing ? `/api/defect/${encodeURIComponent(editing)}` : '/api/defect', {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: desc, location, category, secondaryCategory, urgency, defect_file, resident_name: member.name, resident_email: member.email, resident_unit: member.unit, resident_contact_id: member.contact_id }),
       });
       const data = await res.json();
-      if (!data.success) { setMsg('dMsg', data.message || 'Submission failed.', true); return; }
+      if (!data.success) { setMsg('dMsg', data.message || (editing ? 'Could not save changes.' : 'Submission failed.'), true); return; }
       setMsg('dMsg', '');
-      // Demo build: POST /api/defect is served by the in-browser mock
-      // (client-backend.js) and stored in localStorage — the full report,
-      // photo included, is read back from /api/defect/mine.
-      swalDone('Report Submitted', [
+      exitDefectEditMode();
+      swalDone(editing ? 'Report Updated' : 'Report Submitted', [
         ['Category', catDisplay || ''],
         ['Urgency',  urgency  || ''],
         ['Location', location || ''],
@@ -2877,6 +2950,7 @@
     });
   }
   bind('dCancelBtn', () => {
+    exitDefectEditMode();
     clr(['dDesc']);
     setMsg('dMsg', '');
     $('dSecondaryCategory').value = '';
