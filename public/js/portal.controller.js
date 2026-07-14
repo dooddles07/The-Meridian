@@ -524,9 +524,9 @@
     });
   });
 
-  $('loginBtn').addEventListener('click', doLogin);
-  $('loginEmail').addEventListener('keydown',    e => { if (e.key === 'Enter') doLogin(); });
-  $('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  // A real <form> now wraps this panel, so Enter-to-submit and native
+  // required/type=email validation come from the browser for free.
+  $('signInForm').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
 
   async function doLogin() {
     const email    = $('loginEmail').value.trim().toLowerCase();
@@ -558,10 +558,9 @@
     }
   }
 
-  $('signupBtn').addEventListener('click', doSignup);
-  ['regName', 'regUnit', 'regEmail', 'regPassword', 'regConfirm'].forEach(id => {
-    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
-  });
+  // Same real-<form> treatment as sign-in: Enter-to-submit + native validation
+  // (required fields, type=email, minlength=8) come from the browser now.
+  $('registerForm').addEventListener('submit', e => { e.preventDefault(); doSignup(); });
 
   let regResidentType = 'Owner';
   document.querySelectorAll('.login-segmented__opt').forEach(btn => {

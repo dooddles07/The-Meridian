@@ -24,18 +24,18 @@
 
     <button class="btn" id="signInLanding">SIGN IN</button>
 
-    <div class="form-wrap" id="formWrap">
+    <form class="form-wrap" id="formWrap">
       <div class="field">
         <label for="username">Username</label>
-        <input type="text" id="username" autocomplete="username" placeholder="username" />
+        <input type="text" id="username" autocomplete="username" placeholder="username" required />
       </div>
       <div class="field">
         <label for="password">Password</label>
-        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required />
       </div>
       <p class="err" id="errMsg"></p>
-      <button class="btn" id="submitBtn">SIGN IN</button>
-    </div>
+      <button type="submit" class="btn" id="submitBtn">SIGN IN</button>
+    </form>
 
     <p class="powered">The Lumina &middot; Management Console</p>
   </div>

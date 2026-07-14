@@ -24,19 +24,21 @@
     <div class="gh-login-title">The <em>Lumina</em></div>
     <div class="gh-login-subtitle">Guardhouse · Verification System</div>
 
-    <div class="gh-login-field">
-      <label class="gh-login-label" for="ghUsername">Username</label>
-      <input id="ghUsername" class="gh-login-input" type="text"
-        placeholder="guardhouse" autocomplete="username" />
-    </div>
-    <div class="gh-login-field" style="margin-bottom:1.4rem">
-      <label class="gh-login-label" for="ghPassword">Password</label>
-      <input id="ghPassword" class="gh-login-input" type="password"
-        placeholder="••••••••" autocomplete="current-password" />
-    </div>
+    <form id="ghLoginForm">
+      <div class="gh-login-field">
+        <label class="gh-login-label" for="ghUsername">Username</label>
+        <input id="ghUsername" class="gh-login-input" type="text"
+          placeholder="guardhouse" autocomplete="username" required />
+      </div>
+      <div class="gh-login-field" style="margin-bottom:1.4rem">
+        <label class="gh-login-label" for="ghPassword">Password</label>
+        <input id="ghPassword" class="gh-login-input" type="password"
+          placeholder="••••••••" autocomplete="current-password" required />
+      </div>
 
-    <p id="ghLoginErr" class="gh-login-err" role="alert" aria-live="polite"></p>
-    <button id="ghLoginBtn" class="gh-login-submit">Sign In</button>
+      <p id="ghLoginErr" class="gh-login-err" role="alert" aria-live="polite"></p>
+      <button type="submit" id="ghLoginBtn" class="gh-login-submit">Sign In</button>
+    </form>
     <p class="gh-login-footer">The Lumina · Guardhouse Station</p>
   </div>
 </div>

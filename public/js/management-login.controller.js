@@ -53,9 +53,12 @@ async function doLogin() {
   }
 }
 
-submitBtn.addEventListener('click', doLogin);
-passwordEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-usernameEl.addEventListener('keydown', e => { if (e.key === 'Enter') passwordEl.focus(); });
+// A real <form> wraps these fields, so Enter-to-submit and native
+// required-field validation come from the browser for free.
+document.getElementById('formWrap').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
+// Enter in the username field advances to password instead of submitting
+// early with an empty one - must preventDefault or the form would submit too.
+usernameEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); passwordEl.focus(); } });
 
 // Theme toggle
 (function () {

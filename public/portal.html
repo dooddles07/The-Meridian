@@ -122,64 +122,68 @@
     </div>
 
     <div id="panelSignIn" class="login-panel" role="tabpanel" aria-labelledby="tabSignIn">
-      <div class="login-field">
-        <label for="loginEmail">Email Address</label>
-        <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email" />
-      </div>
-      <div class="login-field">
-        <label for="loginPassword">Password</label>
-        <div class="pw-field">
-          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
-          <button type="button" class="pw-toggle" data-pw-toggle="loginPassword" aria-label="Show password" aria-pressed="false">
-            <span class="material-symbols-outlined">visibility</span>
-          </button>
+      <form id="signInForm">
+        <div class="login-field">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email" required />
         </div>
-      </div>
-      <p class="login-err" id="loginErr" role="alert"></p>
-      <button class="btn-login" id="loginBtn">Access Resident Portal</button>
+        <div class="login-field">
+          <label for="loginPassword">Password</label>
+          <div class="pw-field">
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="pw-toggle" data-pw-toggle="loginPassword" aria-label="Show password" aria-pressed="false">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </div>
+        </div>
+        <p class="login-err" id="loginErr" role="alert"></p>
+        <button type="submit" class="btn-login" id="loginBtn">Access Resident Portal</button>
+      </form>
     </div>
 
     <div id="panelRegister" class="login-panel" role="tabpanel" aria-labelledby="tabRegister" hidden>
-      <div class="login-field">
-        <label for="regName">Full Name</label>
-        <input type="text" id="regName" placeholder="Jane Tan" autocomplete="name" />
-      </div>
-      <div class="login-field">
-        <label for="regUnit">Unit Number</label>
-        <input type="text" id="regUnit" placeholder="e.g. #05-12" autocomplete="off" />
-      </div>
-      <div class="login-field">
-        <label id="regTypeLabel">I am a(n)</label>
-        <div class="login-segmented" role="radiogroup" aria-labelledby="regTypeLabel">
-          <button type="button" class="login-segmented__opt login-segmented__opt--active" data-reg-type="Owner" role="radio" aria-checked="true">Owner</button>
-          <button type="button" class="login-segmented__opt" data-reg-type="Tenant" role="radio" aria-checked="false">Tenant</button>
+      <form id="registerForm">
+        <div class="login-field">
+          <label for="regName">Full Name</label>
+          <input type="text" id="regName" placeholder="Jane Tan" autocomplete="name" required />
         </div>
-      </div>
-      <div class="login-field">
-        <label for="regEmail">Email Address</label>
-        <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email" />
-      </div>
-      <div class="login-field">
-        <label for="regPassword">Password</label>
-        <div class="pw-field">
-          <input type="password" id="regPassword" placeholder="••••••••" autocomplete="new-password" />
-          <button type="button" class="pw-toggle" data-pw-toggle="regPassword" aria-label="Show password" aria-pressed="false">
-            <span class="material-symbols-outlined">visibility</span>
-          </button>
+        <div class="login-field">
+          <label for="regUnit">Unit Number</label>
+          <input type="text" id="regUnit" placeholder="e.g. #05-12" autocomplete="off" required />
         </div>
-        <p class="pw-hint">At least 8 characters</p>
-      </div>
-      <div class="login-field">
-        <label for="regConfirm">Confirm Password</label>
-        <div class="pw-field">
-          <input type="password" id="regConfirm" placeholder="••••••••" autocomplete="new-password" />
-          <button type="button" class="pw-toggle" data-pw-toggle="regConfirm" aria-label="Show password" aria-pressed="false">
-            <span class="material-symbols-outlined">visibility</span>
-          </button>
+        <div class="login-field">
+          <label id="regTypeLabel">I am a(n)</label>
+          <div class="login-segmented" role="radiogroup" aria-labelledby="regTypeLabel">
+            <button type="button" class="login-segmented__opt login-segmented__opt--active" data-reg-type="Owner" role="radio" aria-checked="true">Owner</button>
+            <button type="button" class="login-segmented__opt" data-reg-type="Tenant" role="radio" aria-checked="false">Tenant</button>
+          </div>
         </div>
-      </div>
-      <p class="login-err" id="signupErr" role="alert"></p>
-      <button class="btn-login" id="signupBtn">Register My Unit</button>
+        <div class="login-field">
+          <label for="regEmail">Email Address</label>
+          <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email" required />
+        </div>
+        <div class="login-field">
+          <label for="regPassword">Password</label>
+          <div class="pw-field">
+            <input type="password" id="regPassword" placeholder="••••••••" autocomplete="new-password" required minlength="8" />
+            <button type="button" class="pw-toggle" data-pw-toggle="regPassword" aria-label="Show password" aria-pressed="false">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </div>
+          <p class="pw-hint">At least 8 characters</p>
+        </div>
+        <div class="login-field">
+          <label for="regConfirm">Confirm Password</label>
+          <div class="pw-field">
+            <input type="password" id="regConfirm" placeholder="••••••••" autocomplete="new-password" required minlength="8" />
+            <button type="button" class="pw-toggle" data-pw-toggle="regConfirm" aria-label="Show password" aria-pressed="false">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </div>
+        </div>
+        <p class="login-err" id="signupErr" role="alert"></p>
+        <button type="submit" class="btn-login" id="signupBtn">Register My Unit</button>
+      </form>
     </div>
 
     <div class="login-footer">

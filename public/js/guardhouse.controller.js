@@ -52,10 +52,12 @@
     window.location.reload();
   });
 
-  // Login
-  $('ghLoginBtn').addEventListener('click', doLogin);
-  $('ghPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  $('ghUsername').addEventListener('keydown', e => { if (e.key === 'Enter') $('ghPassword').focus(); });
+  // Login — a real <form> wraps these fields, so Enter-to-submit and native
+  // required-field validation come from the browser for free.
+  $('ghLoginForm').addEventListener('submit', e => { e.preventDefault(); doLogin(); });
+  // Enter in the username field advances to password instead of submitting
+  // early with an empty one - must preventDefault or the form would submit too.
+  $('ghUsername').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('ghPassword').focus(); } });
 
   async function doLogin() {
     const username = $('ghUsername').value.trim();
