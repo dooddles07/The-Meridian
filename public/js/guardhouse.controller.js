@@ -311,11 +311,19 @@
       { cls: 'log',  verb: 'noted',  icon: 'warning', label: 'Note & Escalate' },
     ];
     const admitBtns = `<div class="gh-result-actions">${list.map(a =>
-      `<button class="gh-action ${a.cls}" onclick="logAction('${a.verb}')">${icon(a.icon)} ${esc(a.label)}</button>`
+      `<button class="gh-action ${a.cls}" data-verb="${a.verb}">${icon(a.icon)} ${esc(a.label)}</button>`
     ).join('')}</div>`;
 
     $('ghResultBody').innerHTML = `<div>${rows}</div>${admitBtns}`;
   }
+  // Delegated on the stable container (its innerHTML gets replaced on every
+  // scan) rather than inline onclick="" on the generated buttons - keeps
+  // logAction a normal closure function instead of a required window.* global,
+  // consistent with how every other handler in this file is wired.
+  $('ghResultBody').addEventListener('click', e => {
+    const btn = e.target.closest('[data-verb]');
+    if (btn) logAction(btn.dataset.verb);
+  });
 
   // Every verb the gate can act on - what it logs as, whether it calls the
   // real check-in/out/depart endpoint, and how the toast reads.
@@ -327,7 +335,7 @@
     noted:    { logType: 'orange', text: 'Noted',           backendAction: null,       toast: 'err' },
   };
 
-  window.logAction = async function (verb) {
+  async function logAction(verb) {
     const meta = VERB_META[verb] || VERB_META.noted;
     // Capture the pass this click is acting on - if a new QR gets scanned while
     // this action's request is still in flight, _currentPass will point at
@@ -376,7 +384,7 @@
     if (_currentPass === pass) _currentPass = null;
     toast(meta.text, meta.toast);
     resetResult();
-  };
+  }
 
   function resetResult() {
     $('ghStatusDot').className   = 'gh-result-status grey';
@@ -432,12 +440,12 @@
     const body = locked
       ? `<div class="gh-parcel-locked">
            Finalised as <strong>${esc(label)}</strong> - locked.
-           <button class="gh-parcel-override" onclick="parcelOverride()">Override status</button>
+           <button class="gh-parcel-override" data-parcel-override>Override status</button>
          </div>`
       : `<div class="gh-parcel-actions">
-           <button class="gh-parcel-btn hold"        onclick="parcelStatus('received')">Received</button>
-           <button class="gh-parcel-btn collected"   onclick="parcelStatus('collected')">Collected</button>
-           <button class="gh-parcel-btn uncollected" onclick="parcelStatus('uncollected')">Uncollected</button>
+           <button class="gh-parcel-btn hold"        data-parcel-status="received">Received</button>
+           <button class="gh-parcel-btn collected"   data-parcel-status="collected">Collected</button>
+           <button class="gh-parcel-btn uncollected" data-parcel-status="uncollected">Uncollected</button>
          </div>`;
     const collectorRow = p.authorizedCollector
       ? `<div class="gh-parcel-collector"><span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:-2px">person_check</span> Auth. collector: <strong>${esc(p.authorizedCollector)}</strong></div>`
@@ -456,9 +464,19 @@
       </div>`;
   }
 
-  window.parcelOverride = function () { if (_parcel) { _parcel._override = true; renderParcel(); } };
+  // Delegated on the stable container, same rationale as ghResultBody above -
+  // checkParcel() also rewrites this element's innerHTML directly on lookup/
+  // error, so binding here (once) rather than on the generated buttons
+  // survives every one of those rewrites.
+  $('ghParcelResult').addEventListener('click', e => {
+    if (e.target.closest('[data-parcel-override]')) { parcelOverride(); return; }
+    const statusBtn = e.target.closest('[data-parcel-status]');
+    if (statusBtn) parcelStatus(statusBtn.dataset.parcelStatus);
+  });
 
-  window.parcelStatus = async function (status) {
+  function parcelOverride() { if (_parcel) { _parcel._override = true; renderParcel(); } }
+
+  async function parcelStatus(status) {
     if (!_parcel) return;
     const token = (session && session.token) || '';
     const box   = $('ghParcelResult');
@@ -481,7 +499,7 @@
       toast('Connection error. Please try again.', 'err');
       renderParcel();
     }
-  };
+  }
 
   // Visitor & parcel log (shared + live across all stations)
   // The log is persisted in MongoDB and polled, so every guardhouse device shows the
