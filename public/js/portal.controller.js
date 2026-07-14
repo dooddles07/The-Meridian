@@ -452,6 +452,7 @@
   let _editingGuestId = null; // set while the guest form is editing an existing pass (vs creating)
   let _editingDefectId = null; // set while the defect form is editing an existing report
   let _editingFeedbackId = null; // set while the feedback form is editing an existing submission
+  let _editingParcelId = null; // set while the parcel form is editing an existing notification
   // The full text a resident typed for defects/parcels/moves/feedback (the opp
   // name only keeps a short summary) is read back here from /api/<type>/mine.
   // In this demo build those endpoints are served by the in-browser mock
@@ -1449,6 +1450,31 @@
     } catch { toast('Connection error. Please try again.', 'err'); }
   }
 
+  // Leave parcel-edit mode: restore the form's Notify button.
+  function exitParcelEditMode() {
+    _editingParcelId = null;
+    const btn = $('pcSubmitBtn'); if (btn) btn.textContent = 'Notify Guardhouse';
+  }
+
+  // Enter parcel-edit mode: pull the notification's values into the form. Only
+  // offered while still 'Notified' (before the parcel arrives).
+  async function startEditParcel(id) {
+    try {
+      const res  = await fetch(`/api/parcel/${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!data.success) { toast(data.message || 'Could not open this parcel for editing.', 'err'); return; }
+      const p = data.parcel;
+      if ($('pcRef'))       $('pcRef').value = p.reference || '';
+      if ($('pcCourier'))   $('pcCourier').value = p.courier || '';
+      if ($('pcDesc'))      $('pcDesc').value = p.description || '';
+      if ($('pcCollector')) $('pcCollector').value = p.authorizedCollector || '';
+      _editingParcelId = id;
+      const btn = $('pcSubmitBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
+      setMsg('pcMsg', 'Editing your parcel notification — update the details and save.');
+      const form = $('pcRef'); if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch { toast('Connection error. Please try again.', 'err'); }
+  }
+
   // Hydrate the in-memory booking cache from the server (MongoDB - the source of
   // truth, with the live GHL pipeline stage overlaid). Replaces the booking list
   // wholesale, so cancellations / management stage moves are always reflected.
@@ -1675,6 +1701,15 @@
       const fbCancelBtn = fbEditable
         ? `<button class="rec-cancel-btn" type="button" data-fb-cancel-id="${esc(item.id)}" title="Withdraw this submission" aria-label="Withdraw this submission"><span class="material-symbols-outlined">close</span></button>`
         : '';
+      // Parcel notifications can be edited/cancelled by the resident only while
+      // still 'Notified' (before the parcel physically arrives).
+      const pcEditable = opts.kind === 'parcel' && item.stage === 'Notified' && item.id;
+      const pcEditBtn = pcEditable
+        ? `<button class="rec-edit-btn" type="button" data-pc-edit-id="${esc(item.id)}" title="Edit this parcel" aria-label="Edit this parcel"><span class="material-symbols-outlined">edit</span></button>`
+        : '';
+      const pcCancelBtn = pcEditable
+        ? `<button class="rec-cancel-btn" type="button" data-pc-cancel-id="${esc(item.id)}" title="Cancel this parcel" aria-label="Cancel this parcel"><span class="material-symbols-outlined">close</span></button>`
+        : '';
       const qrHtml = refCode ? `<div class="rec-qr">
           <div class="qr-img" data-qr-ref="${esc(refCode)}"></div>
           <a class="qr-dl-btn qr-dl-pending" data-qr-dl="${esc(refCode)}" href="#">
@@ -1701,6 +1736,8 @@
           ${defectCancelBtn}
           ${fbEditBtn}
           ${fbCancelBtn}
+          ${pcEditBtn}
+          ${pcCancelBtn}
           <span class="sbadge ${badge}">${esc(item.stage)}</span>
           <span class="rec-chevron">›</span>
         </summary>
@@ -1867,6 +1904,35 @@
         if (_editingFeedbackId === id) { exitFeedbackEditMode(); clr(['fbDesc', 'fbDate', 'fbTime']); setMsg('fbMsg', ''); }
         toast('Submission withdrawn.');
         loadMyFeedback();
+      } catch {
+        toast('Connection error. Please try again.', 'err');
+        btn.disabled = false;
+      }
+    }));
+    el.querySelectorAll('[data-pc-edit-id]').forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      startEditParcel(btn.dataset.pcEditId);
+    }));
+    el.querySelectorAll('[data-pc-cancel-id]').forEach(btn => btn.addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = btn.dataset.pcCancelId;
+      const proceed = window.Swal
+        ? (await window.Swal.fire({
+            title: 'Cancel this parcel notification?',
+            text:  'The guardhouse will no longer expect this parcel.',
+            showCancelButton: true, confirmButtonText: 'Cancel It', cancelButtonText: 'Keep It',
+            confirmButtonColor: '#c0392b', reverseButtons: true,
+          })).isConfirmed
+        : confirm('Cancel this parcel notification?');
+      if (!proceed) return;
+      btn.disabled = true;
+      try {
+        const res  = await fetch(`/api/parcel/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) { toast(data.message || 'Could not cancel.', 'err'); btn.disabled = false; return; }
+        if (_editingParcelId === id) { exitParcelEditMode(); clr(['pcRef', 'pcCourier', 'pcDesc', 'pcCollector']); setMsg('pcMsg', ''); }
+        toast('Parcel notification cancelled.');
+        loadMyParcels();
       } catch {
         toast('Connection error. Please try again.', 'err');
         btn.disabled = false;
@@ -2100,10 +2166,15 @@
     if (!member.contact_id && !member.email) { el.innerHTML = '<div class="panel-empty">No account ID - please log out and back in.</div>'; return; }
     if (!silent) el.innerHTML = '<div class="panel-empty">Loading…</div>';
     try {
-      const [res, saved] = await Promise.all([fetch(oppUrl('parcel')), fetchMine('parcel')]);
+      // Parcels are a real Mongo-backed endpoint — /api/parcel/mine returns the
+      // full record (stage included), so build rows from it directly.
+      const res  = await fetch('/api/parcel/mine');
       const data = await res.json();
       if (!data.success) { el.innerHTML = `<div class="panel-empty">${esc(data.message || 'Could not load parcels.')}</div>`; return; }
-      renderRecords(el, cnt, data.items, 'No parcels on record.', { kind: 'parcel', saved });
+      const items = (data.items || []).map(x => ({
+        id: x.id, stage: x.stage, createdAt: x.createdAt, customFields: [], name: x.ref || '',
+      }));
+      renderRecords(el, cnt, items, 'No parcels on record.', { kind: 'parcel', saved: data.items });
     } catch (e) { console.error('[parcels]', e); el.innerHTML = '<div class="panel-empty">Connection error loading parcels.</div>'; }
   }
 
@@ -2112,10 +2183,11 @@
     const text   = $('parcelNoticeText');
     if (!banner || !text || !member) return;
     try {
-      const res  = await fetch(oppUrl('parcel'));
+      const res  = await fetch('/api/parcel/mine');
       const data = await res.json();
       if (!data.success) return;
-      const awaiting = (data.items || []).filter(i => i.stage === 'Received' || i.stage === 'Notified');
+      // "Awaiting collection at the guardhouse" = physically Received (arrived).
+      const awaiting = (data.items || []).filter(i => i.stage === 'Received');
       if (awaiting.length > 0) {
         text.textContent = awaiting.length === 1
           ? 'You have 1 parcel awaiting collection at the guardhouse.'
@@ -3156,7 +3228,8 @@
     const desc      = $('pcDesc')      ? $('pcDesc').value.trim()      : '';
     const collector = $('pcCollector') ? $('pcCollector').value.trim() : '';
     if (!ref) { setMsg('pcMsg', 'Please enter the parcel reference.', true); return; }
-    const { isConfirmed: pcOk } = await swalReview('Notify Guardhouse', [
+    const editing = _editingParcelId;
+    const { isConfirmed: pcOk } = await swalReview(editing ? 'Review Changes' : 'Notify Guardhouse', [
       ['Parcel Ref',          ref],
       ['Courier/Sender',      courier   || ''],
       ['Description',         desc      || ''],
@@ -3165,36 +3238,39 @@
     ], null);
     if (!pcOk) return;
     const btn = $('pcSubmitBtn');
-    setMsg('pcMsg', 'Notifying…'); btn.disabled = true;
+    setMsg('pcMsg', editing ? 'Saving…' : 'Notifying…'); btn.disabled = true;
     try {
-      const res = await fetch('/api/parcel', {
-        method: 'POST',
+      // Parcels are a real Mongo-backed endpoint — create (POST) or, while still
+      // 'Notified', edit in place (PUT /api/parcel/:id).
+      const res = await fetch(editing ? `/api/parcel/${encodeURIComponent(editing)}` : '/api/parcel', {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parcel_reference: ref, courier, description: desc, authorized_collector: collector, resident_name: member.name, resident_email: member.email, resident_unit: member.unit, resident_contact_id: member.contact_id }),
       });
       const data = await res.json();
-      if (!data.success) { setMsg('pcMsg', data.message || 'Submission failed.', true); return; }
+      if (!data.success) { setMsg('pcMsg', data.message || (editing ? 'Could not save changes.' : 'Submission failed.'), true); return; }
       if (data.duplicate) {
         setMsg('pcMsg', '');
         window.Swal?.fire({ icon: 'info', title: 'Already Logged', text: `Parcel reference "${ref}" is already on record with the guardhouse.`, confirmButtonText: 'OK', confirmButtonColor: '#312e81' });
         return;
       }
       setMsg('pcMsg', '');
-      // Full submission is persisted server-side in MongoDB by POST /api/parcel.
-      swalDone('Guardhouse Notified', [
+      exitParcelEditMode();
+      swalDone(editing ? 'Parcel Updated' : 'Guardhouse Notified', [
         ['Parcel Ref',          ref],
         ['Courier/Sender',      courier   || ''],
         ['Authorized Collector', collector || ''],
         ['Unit',                member?.unit || ''],
-      ], 'The guardhouse will receive and hold your parcel. Please collect it within 7 days.');
+      ], editing ? 'Your changes are saved.' : 'The guardhouse will receive and hold your parcel. Please collect it within 7 days.');
       clr(['pcRef', 'pcCourier', 'pcDesc', 'pcCollector']);
       const pcPanel = $('parcelList');
       if (pcPanel) pcPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
-      setTimeout(() => loadMyParcels(), 3000);
+      setTimeout(() => loadMyParcels(), 300);
     } catch {
       setMsg('pcMsg', 'Connection error. Please try again.', true);
     } finally { btn.disabled = false; }
   });
+  bind('pcCancelBtn', () => { exitParcelEditMode(); clr(['pcRef', 'pcCourier', 'pcDesc', 'pcCollector']); setMsg('pcMsg', ''); });
 
   bind('fbSubmitBtn', async () => {
     const type     = $('fbType')     ? $('fbType').value     : '';

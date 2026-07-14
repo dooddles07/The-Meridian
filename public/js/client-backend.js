@@ -87,10 +87,9 @@
   var STAGES = {
     facility: ['Deposit Pending', 'Confirmed', 'Completed', 'No-Show', 'Cancelled'],
     guest:    ['Registered', 'Checked In', 'Checked Out', 'Departed', 'Closed'],
-    parcel:   ['Received', 'Notified', 'Collected', 'Uncollected / Returned'],
   };
   var PIPELINE_IDS = {
-    facility: 'local-pipeline-facility', guest: 'local-pipeline-guest', parcel: 'local-pipeline-parcel',
+    facility: 'local-pipeline-facility', guest: 'local-pipeline-guest',
   };
 
   // Store
@@ -120,10 +119,6 @@
         guest('Jane Lim',   'jane.lim@example.com',   '+65 9800 1122', 'Family & Friends', daysFromNow(1), 'Registered',  me),
         guest('David Wong', 'david.wong@example.com', '+65 9800 3344', 'Contractor',       daysFromNow(0), 'Checked In',  me),
       ],
-      parcels: [
-        parcel('SF-88213004', 'SingPost', 'Small box', '', 'Notified', me),
-        parcel('LZ-40021199', 'Ninja Van', 'Documents envelope', 'Priya Nair', 'Received', me),
-      ],
       rsvps: {},               // { [annId]: { [contactId]: {response, attendee_count, resident_name, resident_unit, updatedAt} } }
       conversations: [
         convo(me, [
@@ -137,9 +132,6 @@
 
     function guest(visitor, email, phone, type, date, stage, m) {
       return { oppId: uid('local-opp'), contactId: m.contact_id, reference: guestRef(date), visitor: visitor, visitorEmail: email, visitorPhone: phone, visitorType: type, host: m.name, unit: m.unit, phone: phone, visitDate: date, duration: 'Single Visit (Day)', stage: stage, createdAt: nowISO() };
-    }
-    function parcel(ref, courier, desc, collector, stage, m) {
-      return { id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: m.contact_id, ref: ref, courier: courier, desc: desc, collector: collector, resident: m.name, unit: m.unit, stage: stage, ts: nowISO() };
     }
     function convo(m, msgs, resolved) {
       var messages = msgs.map(function (x) {
@@ -160,7 +152,6 @@
   // "My …" panels and the management pipeline tables consume.
   function oppName(kind, it) {
     if (kind === 'guest')   return it.reference + ' - ' + it.visitor + ' (#' + it.unit + ')';
-    if (kind === 'parcel')  return it.ref + ' - ' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
     if (kind === 'move')    return it.move_type + ' - ' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
     return it.desc || it.name || '';
   }
@@ -168,7 +159,7 @@
     return { id: it.oppId || it.opportunityId || it.id, name: oppName(kind, it), stage: it.stage, pipelineId: PIPELINE_IDS[kind], createdAt: it.ts || it.createdAt || nowISO(), customFields: [] };
   }
   function collectionFor(kind) {
-    return { guest: db.guests, parcel: db.parcels }[kind] || [];
+    return { guest: db.guests }[kind] || [];
   }
   function setStageById(list, id, stage) {
     var hit = list.find(function (x) { return (x.oppId || x.opportunityId || x.id) === id; });
@@ -234,34 +225,10 @@
       return ok({ message: msg });
     }
 
-    // RESIDENT SUBMISSIONS + "mine" lists
-    // Guest registration/lookup (/api/guest, /api/guardhouse/lookup+checkin,
-    // /api/management/guest(s), /api/management/contacts/search) is now real -
-    // see isRealPath below - so those mock branches are gone from here.
-    if (p === '/api/parcel' && method === 'POST') {
-      var pref = body.parcel_reference;
-      var dup = db.parcels.find(function (x) { return x.ref.toLowerCase() === String(pref).toLowerCase(); });
-      if (dup) return ok({ message: 'This parcel is already logged with the guardhouse.', reference: pref, duplicate: true });
-      db.parcels.unshift({ id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, ref: pref, courier: body.courier || '', desc: body.description || '', collector: body.authorized_collector || '', resident: body.resident_name || MEMBER.name, unit: body.resident_unit || MEMBER.unit, stage: 'Received', ts: nowISO() });
-      persist();
-      return ok({ message: 'Guardhouse notified.', reference: pref });
-    }
-    if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
+    // Guest, parcels, defects, feedback, RSVP + their management/guardhouse
+    // sides are all real now (see isRealPath) — only the guardhouse activity log
+    // and messages remain mocked below.
 
-    // GUARDHOUSE - lookup/checkin are real now (see isRealPath); parcel + the
-    // shared activity log below are still mocked.
-    if (p === '/api/guardhouse/parcel' && method === 'GET') {
-      var pref2 = (qs.get('reference') || qs.get('ref') || '').trim();
-      var pc = db.parcels.find(function (x) { return x.ref.toLowerCase() === pref2.toLowerCase(); });
-      if (!pc) return ok({ found: false });
-      return ok({ found: true, reference: pc.ref, opportunityId: pc.opportunityId, resident: pc.resident, unit: pc.unit, stage: pc.stage, authorizedCollector: pc.collector });
-    }
-    if (p === '/api/guardhouse/parcel/status' && method === 'POST') {
-      var stMap = { received: 'Notified', hold: 'Notified', collected: 'Collected', uncollected: 'Uncollected / Returned' };
-      var pc2 = db.parcels.find(function (x) { return (body.opportunity_id && x.opportunityId === body.opportunity_id) || (body.reference && x.ref.toLowerCase() === String(body.reference).toLowerCase()); });
-      if (pc2) { pc2.stage = stMap[body.status] || pc2.stage; persist(); }
-      return ok({ tag: 'parcel-' + (body.status || 'notified') });
-    }
     if (p === '/api/guardhouse/log' && method === 'GET') {
       return ok({ entries: db.guardLog.map(fmtLog) });
     }
@@ -279,9 +246,9 @@
       return ok();
     }
 
-    // MANAGEMENT - guest desk (contacts/search, guest, guests, guests/:id/stage)
-    // is real now (see isRealPath); the generic opportunities pipeline below
-    // still covers parcel.
+    // MANAGEMENT - every pipeline (guest, parcel, defect, feedback) is real now
+    // (see isRealPath). The generic opportunities handlers below are legacy/dead
+    // (no caller left) but kept as a harmless fallback.
     if (p === '/api/management/opportunities' && method === 'GET') {
       var pk = qs.get('pipeline');
       var list = collectionFor(pk).map(function (it) {
@@ -352,11 +319,11 @@
   // deployed on Railway), so those paths pass through untouched (logout MUST
   // reach the real network - it's what actually clears the httpOnly session
   // cookie server-side; the mock can't do that).
-  // Everything else stays mocked: parcels, messages, and the guardhouse's
-  // shared activity log were built against a real CRM (GoHighLevel) that isn't
-  // configured here, so they'd just 503 against the real backend — the mock
-  // keeps them working. (Auth, RSVP, defect reports, and feedback are real now,
-  // so their paths are in isRealPath and pass straight through.)
+  // Only messages and the guardhouse's shared activity log stay mocked — they
+  // were built against a real CRM (GoHighLevel) that isn't configured here, so
+  // they'd 503 against the real backend; the mock keeps them working. (Auth,
+  // RSVP, defects, feedback, parcels, and guest passes are all real now, so
+  // their paths are in isRealPath and pass straight through.)
   var _real = (typeof window.fetch === 'function') ? window.fetch.bind(window) : null;
   window.fetch = function (url, opts) {
     opts = opts || {};
@@ -380,6 +347,9 @@
         || s.indexOf('/api/management/rsvp') !== -1
         || s.indexOf('/api/feedback') !== -1
         || s.indexOf('/api/management/feedback') !== -1
+        || s.indexOf('/api/parcel') !== -1
+        || s.indexOf('/api/management/parcels') !== -1
+        || s.indexOf('/api/guardhouse/parcel') !== -1
         || s.indexOf('/api/guest') !== -1
         || s.indexOf('/api/management/guest') !== -1
         || s.indexOf('/api/management/contacts/search') !== -1
@@ -404,5 +374,5 @@
     return _real ? _real(url, opts) : Promise.reject(new Error('fetch unavailable'));
   };
 
-  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, guest passes, defect reports, and feedback are live (Mongo-backed); parcels still run on a local mock.', 'color:#312e81;font-weight:bold');
+  console.log('%c[The Lumina] Auth, resources, announcements, facility booking, Move-In/Out, guest passes, defect reports, feedback, and parcels are live (Mongo-backed); only messages + the guardhouse activity log run on a local mock.', 'color:#312e81;font-weight:bold');
 })();

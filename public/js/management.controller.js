@@ -859,7 +859,7 @@
   async function loadParcels() {
     const body = $('parcelsBody'), countEl = $('parcelCount');
     if (!body) return;
-    const res  = await fetch('/api/management/opportunities?pipeline=parcel', { headers: { Authorization: `Bearer ${token}` } });
+    const res  = await fetch('/api/management/parcels', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!data.success) {
       body.innerHTML = `<tr class="empty-row"><td colspan="7">${esc(data.message || 'Could not load.')}</td></tr>`;
@@ -871,10 +871,8 @@
 
     body.innerHTML = items.length
       ? items.map(it => {
-          const ref  = it.reference || '';
-          const authM = ref.match(/\[Auth:\s*([^\]]+)\]/);
-          const auth  = authM ? authM[1].trim() : '';
-          const code  = ref.split('')[0].trim() || ref;
+          const code = it.reference || '';
+          const auth = it.authorizedCollector || '';
           const overdue = daysSince(it.createdAt) >= 7 && !PIPE_DONE.has(it.stage);
           const dateCell = it.createdAt
             ? `${esc(bkDateLabel(it.createdAt.slice(0,10)))}${overdue ? ' <span class="badge badge-uncollected" title="7+ days uncollected">7d+</span>' : ''}`
@@ -925,10 +923,10 @@
         const oppId = sel.dataset.opp, stage = sel.value;
         sel.disabled = true;
         try {
-          const r = await fetch(`/api/management/opportunities/${encodeURIComponent(oppId)}/stage`, {
+          const r = await fetch(`/api/management/parcels/${encodeURIComponent(oppId)}/stage`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ pipeline: 'parcel', stage }),
+            body: JSON.stringify({ stage }),
           });
           const d = await r.json();
           if (!d.success) throw new Error(d.message || 'Update failed.');
@@ -947,6 +945,14 @@
     _pipeSnap.parcel = result;
     _refreshDashKpis();
     _renderPipelinesSummary();
+
+    // Open-parcel counts by stage (Notified / Received awaiting collection).
+    const sumEl = $('parcelSummary');
+    if (sumEl) {
+      const cnt = s => items.filter(it => it.stage === s).length;
+      sumEl.innerHTML = [['Notified', 'Expected'], ['Received', 'Awaiting Collection'], ['Collected', 'Collected'], ['Uncollected / Returned', 'Returned']]
+        .map(([s, label]) => `<div class="summary-cell"><div class="summary-count">${cnt(s)}</div><div class="summary-label">${label}</div></div>`).join('');
+    }
   }
   loadParcels().catch(e => console.error('[mgmt parcels]', e));
   document.querySelectorAll('[data-view="parcels"]').forEach(el =>
