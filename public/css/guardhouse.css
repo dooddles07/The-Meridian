@@ -342,6 +342,19 @@ body {
 }
 .gh-log-clear:hover { color: var(--red); border-color: var(--red); }
 
+/* Today / All-history toggle - applies to both log panels at once, since
+   they're both fed by the one shared /api/guardhouse/log fetch. */
+.gh-log-range-toggle {
+  display: flex; gap: 0.4rem; padding: 0.7rem 1.6rem 0;
+}
+.gh-range-btn {
+  font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); background: none; border: 1px solid var(--border);
+  border-radius: 999px; padding: 0.3rem 0.7rem; cursor: pointer; transition: all 0.15s;
+}
+.gh-range-btn:hover { color: var(--text); border-color: var(--gold); }
+.gh-range-btn.active { color: var(--gold); border-color: var(--gold); background: rgba(165,163,245,0.1); }
+
 .gh-log-body { flex: 1; overflow-y: auto; }
 .gh-log-body::-webkit-scrollbar { width: 4px; }
 .gh-log-body::-webkit-scrollbar-track { background: var(--surface); }

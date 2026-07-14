@@ -5,10 +5,12 @@
   // Auth: POST /api/auth/guardhouse/login - see backend/.env.example for the
   // LUMINA_GUARDHOUSE account(s), there's no fixed default credential.
   // QR decode: jsQR library (loaded by the page)
-  // Log: stored in sessionStorage (clears when tab closes - intentional for shift changes)
+  // Log: persisted in MongoDB, shared live across every guard station - it
+  // never auto-resets; defaults to showing today's entries (see _logRange
+  // below), with a toggle to pull up full history, and a manual Clear button
+  // scoped to whichever range is currently active.
 
   const GH_SESS = 'gh_session';
-  const GH_LOG  = 'gh_log';
   const $ = id => document.getElementById(id);
 
   // Holds the most recently scanned valid pass (for the check-in tag call).
@@ -491,6 +493,22 @@
     : { Authorization: `Bearer ${_logToken()}` };
   let _logEntries = [];
   let _logPoll    = null;
+  // 'today' (default) or 'all' - which slice of the permanent log is currently
+  // shown. Toggled via the Today/All History buttons; both log panels share
+  // this one setting since they're fed by the same request.
+  let _logRange = 'today';
+
+  function setLogRange(range) {
+    if (range !== 'today' && range !== 'all') return;
+    _logRange = range;
+    if ($('ghRangeToday')) { $('ghRangeToday').classList.toggle('active', range === 'today'); $('ghRangeToday').setAttribute('aria-pressed', String(range === 'today')); }
+    if ($('ghRangeAll'))   { $('ghRangeAll').classList.toggle('active',   range === 'all');   $('ghRangeAll').setAttribute('aria-pressed',   String(range === 'all')); }
+    if ($('ghLogTitle'))       $('ghLogTitle').textContent       = range === 'today' ? "Today's Visitor Log" : 'All Visitor History';
+    if ($('ghParcelLogTitle')) $('ghParcelLogTitle').textContent = range === 'today' ? "Today's Parcel Log"  : 'All Parcel History';
+    renderLog();
+  }
+  if ($('ghRangeToday')) $('ghRangeToday').addEventListener('click', () => setLogRange('today'));
+  if ($('ghRangeAll'))   $('ghRangeAll').addEventListener('click',   () => setLogRange('all'));
 
   // Function declarations (hoisted) - safe to call from showPortal() at startup.
   async function addLog(entry) {
@@ -517,34 +535,49 @@
 
   async function renderLog() {
     try {
-      const d = await fetch('/api/guardhouse/log', { headers: _logHeaders() }).then(r => r.json());
+      const d = await fetch(`/api/guardhouse/log?range=${_logRange}`, { headers: _logHeaders() }).then(r => r.json());
       if (d && d.success) _logEntries = d.entries || [];
     } catch { /* keep the last-rendered entries on a transient failure */ }
     const list    = _logEntries;
     const parcels = list.filter(e => e.cat === 'parcel');
     const guests  = list.filter(e => e.cat !== 'parcel');
+    const emptySuffix = _logRange === 'today' ? ' today' : '';
 
     $('ghLogCount').textContent = guests.length + (guests.length === 1 ? ' entry' : ' entries');
     $('ghLogBody').innerHTML = guests.length
       ? guests.map(entryHtml).join('')
-      : `<div class="gh-log-empty"><div class="gh-log-empty-icon"><span class="material-symbols-outlined">assignment</span></div><div class="gh-log-empty-text">No visitors logged today</div></div>`;
+      : `<div class="gh-log-empty"><div class="gh-log-empty-icon"><span class="material-symbols-outlined">assignment</span></div><div class="gh-log-empty-text">No visitors logged${emptySuffix}</div></div>`;
 
     if ($('ghParcelLogCount')) $('ghParcelLogCount').textContent = parcels.length + (parcels.length === 1 ? ' entry' : ' entries');
     if ($('ghParcelLogBody')) {
       $('ghParcelLogBody').innerHTML = parcels.length
         ? parcels.map(entryHtml).join('')
-        : `<div class="gh-log-empty"><div class="gh-log-empty-icon"><span class="material-symbols-outlined">inventory_2</span></div><div class="gh-log-empty-text">No parcels logged today</div></div>`;
+        : `<div class="gh-log-empty"><div class="gh-log-empty-icon"><span class="material-symbols-outlined">inventory_2</span></div><div class="gh-log-empty-text">No parcels logged${emptySuffix}</div></div>`;
     }
   }
 
-  // Clear today's entries of one category for ALL stations (visitor vs parcel).
+  // Clear entries of one category, scoped to whichever range is currently
+  // shown - clearing "Today" never touches older history, and wiping the full
+  // permanent history (while viewing "All") gets its own, more serious
+  // confirmation copy since that's a real destructive action now that the log
+  // no longer auto-resets.
   if ($('ghClearBtn')) $('ghClearBtn').addEventListener('click', async () => {
-    try { await fetch('/api/guardhouse/log?scope=guest', { method: 'DELETE', headers: _logHeaders() }); } catch {}
-    renderLog(); toast('Visitor log cleared.');
+    const wipingAll = _logRange === 'all';
+    const msg = wipingAll
+      ? 'Permanently delete ALL visitor log history (not just today)? This cannot be undone.'
+      : "Clear today's visitor log entries?";
+    if (!confirm(msg)) return;
+    try { await fetch(`/api/guardhouse/log?scope=guest&range=${_logRange}`, { method: 'DELETE', headers: _logHeaders() }); } catch {}
+    renderLog(); toast(wipingAll ? 'Visitor history cleared.' : "Today's visitor log cleared.");
   });
   if ($('ghParcelClearBtn')) $('ghParcelClearBtn').addEventListener('click', async () => {
-    try { await fetch('/api/guardhouse/log?scope=parcel', { method: 'DELETE', headers: _logHeaders() }); } catch {}
-    renderLog(); toast('Parcel log cleared.');
+    const wipingAll = _logRange === 'all';
+    const msg = wipingAll
+      ? 'Permanently delete ALL parcel log history (not just today)? This cannot be undone.'
+      : "Clear today's parcel log entries?";
+    if (!confirm(msg)) return;
+    try { await fetch(`/api/guardhouse/log?scope=parcel&range=${_logRange}`, { method: 'DELETE', headers: _logHeaders() }); } catch {}
+    renderLog(); toast(wipingAll ? 'Parcel history cleared.' : "Today's parcel log cleared.");
   });
 
   // Helpers

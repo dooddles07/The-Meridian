@@ -132,9 +132,14 @@
     <!-- Right: Logs -->
     <div class="gh-logs">
 
+      <div class="gh-log-range-toggle" role="group" aria-label="Log time range">
+        <button class="gh-range-btn active" id="ghRangeToday" data-range="today" aria-pressed="true">Today</button>
+        <button class="gh-range-btn" id="ghRangeAll" data-range="all" aria-pressed="false">All History</button>
+      </div>
+
       <div class="gh-log-panel">
         <div class="gh-log-header">
-          <div class="gh-log-title">Today's Visitor Log</div>
+          <div class="gh-log-title" id="ghLogTitle">Today's Visitor Log</div>
           <div style="display:flex;align-items:center;gap:1rem">
             <span class="gh-log-count" id="ghLogCount" aria-live="polite">0 entries</span>
             <button class="gh-log-clear" id="ghClearBtn">Clear</button>
@@ -143,14 +148,14 @@
         <div class="gh-log-body" id="ghLogBody" role="log" aria-label="Visitor log">
           <div class="gh-log-empty">
             <div class="gh-log-empty-icon"><span class="material-symbols-outlined">assignment</span></div>
-            <div class="gh-log-empty-text">No visitors logged today</div>
+            <div class="gh-log-empty-text" id="ghLogEmptyText">No visitors logged today</div>
           </div>
         </div>
       </div>
 
       <div class="gh-log-panel">
         <div class="gh-log-header">
-          <div class="gh-log-title">Today's Parcel Log</div>
+          <div class="gh-log-title" id="ghParcelLogTitle">Today's Parcel Log</div>
           <div style="display:flex;align-items:center;gap:1rem">
             <span class="gh-log-count" id="ghParcelLogCount" aria-live="polite">0 entries</span>
             <button class="gh-log-clear" id="ghParcelClearBtn">Clear</button>
@@ -159,7 +164,7 @@
         <div class="gh-log-body" id="ghParcelLogBody" role="log" aria-label="Parcel log">
           <div class="gh-log-empty">
             <div class="gh-log-empty-icon"><span class="material-symbols-outlined">inventory_2</span></div>
-            <div class="gh-log-empty-text">No parcels logged today</div>
+            <div class="gh-log-empty-text" id="ghParcelLogEmptyText">No parcels logged today</div>
           </div>
         </div>
       </div>
