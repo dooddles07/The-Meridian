@@ -19,4 +19,6 @@ const schema = new mongoose.Schema({
   createdAt:           { type: Date, default: Date.now },
 });
 
+schema.index({ createdAt: -1 }); // management list is always sorted newest-first
+
 module.exports = mongoose.models.Parcel || mongoose.model('Parcel', schema);

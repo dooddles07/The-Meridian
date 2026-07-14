@@ -1,7 +1,5 @@
-const mongoose = require('mongoose');
 const Parcel   = require('../models/parcel.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 const ALL_STAGES = ['Notified', 'Received', 'Collected', 'Uncollected / Returned'];
 // Guardhouse action → stage. "received" = physically in hand; there is no
@@ -107,7 +105,7 @@ async function remove(req, res) {
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
   await autoReturnStale();
-  const items = await Parcel.find({}).sort({ createdAt: -1 }).lean();
+  const items = await Parcel.find({}).sort({ createdAt: -1 }).limit(500).lean();
   return res.json({
     success: true,
     items: items.map(p => ({

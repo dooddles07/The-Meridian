@@ -1,9 +1,8 @@
-const mongoose = require('mongoose');
 const Move     = require('../models/move.model');
+const facilities = require('../config/facilities');
 const stripeService = require('../services/stripe.service');
 const depositCheckout = require('../services/depositCheckout.service');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 // $200 admin fee (non-refundable) + $2000 refundable deposit = $2200 total.
 // No facility config for this to live in (Move-In/Out isn't a bookable
@@ -154,7 +153,11 @@ async function createCheckoutSession(req, res) {
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
   await runSweeps();
-  const items = await Move.find({}).sort({ moveDate: 1 }).lean();
+  // Same reasoning as booking.controller.js#listForManagement: a row cap would
+  // truncate to the OLDEST rows (sorted moveDate:1) and hide current/future
+  // move requests once the collection outgrows it - use a date floor instead.
+  const cutoff = facilities.addDaysSGT(facilities.todaySGT(), -90);
+  const items = await Move.find({ moveDate: { $gte: cutoff } }).sort({ moveDate: 1 }).lean();
   return res.json({
     success: true,
     items: items.map(m => ({

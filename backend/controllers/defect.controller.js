@@ -1,7 +1,5 @@
-const mongoose = require('mongoose');
 const Defect   = require('../models/defect.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 const ALL_STAGES = ['Reported', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'];
 const URGENCIES  = ['Routine', 'Urgent', 'Emergency'];
@@ -76,7 +74,7 @@ async function listMine(req, res) {
 // GET /api/management/defects  (management)
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  const items = await Defect.find({}).sort({ createdAt: -1 }).lean();
+  const items = await Defect.find({}).sort({ createdAt: -1 }).limit(500).lean();
   return res.json({
     success: true,
     items: items.map(d => ({

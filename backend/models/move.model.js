@@ -31,4 +31,6 @@ const schema = new mongoose.Schema({
   createdAt:      { type: Date, default: Date.now },
 });
 
+schema.index({ moveDate: 1 }); // management list is filtered/sorted by calendar date
+
 module.exports = mongoose.models.Move || mongoose.model('Move', schema);

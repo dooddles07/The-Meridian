@@ -1,7 +1,5 @@
-const mongoose = require('mongoose');
 const Feedback = require('../models/feedback.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 const ALL_STAGES = ['Submitted', 'Under Review', 'Resolved', 'Closed'];
 const TYPES      = ['Complaint', 'Feedback', 'Suggestion'];
@@ -137,7 +135,7 @@ async function remove(req, res) {
 // GET /api/management/feedback  (management)
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  const items = await Feedback.find({}).sort({ createdAt: -1 }).lean();
+  const items = await Feedback.find({}).sort({ createdAt: -1 }).limit(500).lean();
   return res.json({
     success: true,
     items: items.map(f => ({

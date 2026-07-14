@@ -1,7 +1,5 @@
-const mongoose     = require('mongoose');
 const Announcement = require('../models/announcement.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 const fmt = (a) => ({
   id:        String(a._id),
   title:     a.title,

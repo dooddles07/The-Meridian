@@ -30,4 +30,6 @@ const schema = new mongoose.Schema({
   last_sender:          { type: String, default: '' },
 }, { timestamps: true });
 
+schema.index({ last_message_at: -1 }); // management inbox is sorted by most recent activity
+
 module.exports = mongoose.models.Conversation || mongoose.model('Conversation', schema);

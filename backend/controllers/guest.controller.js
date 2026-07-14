@@ -1,10 +1,9 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); // still used below for mongoose.isValidObjectId
 const crypto   = require('crypto');
 const Guest    = require('../models/guest.model');
 const Booking  = require('../models/booking.model');
 const residents = require('../services/residents.service');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 const VISITOR_TYPES = ['Social Guest', 'Contractor', 'Delivery', 'Mover', 'Other'];
 const STAGES        = ['Registered', 'Checked In', 'Checked Out', 'Departed', 'Closed'];
@@ -228,7 +227,7 @@ async function createByManagement(req, res) {
 // GET /api/management/guests
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  const items = await Guest.find({}).sort({ createdAt: -1 }).lean();
+  const items = await Guest.find({}).sort({ createdAt: -1 }).limit(500).lean();
   return res.json({
     success: true,
     items: items.map(g => ({

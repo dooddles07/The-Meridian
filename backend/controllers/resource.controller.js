@@ -1,8 +1,6 @@
-const mongoose = require('mongoose');
 const Resource = require('../models/resource.model');
 const storage  = require('../config/storage');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 // Files live on disk (config/storage.js), not as base64 inside the Mongo
 // document — reconstructs the same data: URL shape the frontend already

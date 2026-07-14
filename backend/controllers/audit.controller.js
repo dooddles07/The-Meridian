@@ -1,7 +1,5 @@
-const mongoose = require('mongoose');
 const AuditLog = require('../models/audit.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 const ROLES = ['resident', 'management', 'guardhouse'];
 

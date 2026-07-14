@@ -1,7 +1,5 @@
-const mongoose = require('mongoose');
 const GuardLog = require('../models/guardlog.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 function fmt(e) {
   return {

@@ -1,8 +1,6 @@
-const mongoose     = require('mongoose');
 const Conversation = require('../models/conversation.model');
 const residents    = require('../services/residents.service');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 function convoMeta(c) {
   return {
@@ -69,7 +67,7 @@ async function send(req, res) {
 // GET /api/management/messages
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
-  const convos = await Conversation.find({}).sort({ last_message_at: -1, updatedAt: -1 }).lean();
+  const convos = await Conversation.find({}).sort({ last_message_at: -1, updatedAt: -1 }).limit(500).lean();
   const total_unread = convos.reduce((s, c) => s + (c.unread_management || 0), 0);
   return res.json({ success: true, conversations: convos.map(convoMeta), total_unread });
 }

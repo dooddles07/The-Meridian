@@ -65,12 +65,37 @@
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Singapore',
   });
 
-  // Toast
-  let _t;
-  function toast(msg, isErr) {
-    const el = $('toast'); if (!el) return;
-    el.textContent = msg; el.className = 'show ' + (isErr ? 'error' : 'success');
-    clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3500);
+  // Toast (shared factory lives in shared.js)
+  const toast = makeToast('toast', { resolveClass: isErr => isErr ? 'error' : 'success' });
+
+  // Shared by the booking and move-in/out deposit Refund/Forfeit actions.
+  // Falls back to window.prompt/confirm if the SweetAlert CDN didn't load -
+  // same reasoning as the review-dialog fallbacks elsewhere in this file.
+  async function confirmDepositAction(action, damageExample) {
+    if (action === 'forfeit') {
+      const note = window.Swal
+        ? ((await window.Swal.fire({
+            title: 'Reason for forfeiting this deposit',
+            text: `Required, e.g. ${damageExample}`,
+            input: 'text',
+            inputPlaceholder: 'Reason for forfeiting…',
+            showCancelButton: true,
+            confirmButtonText: 'Forfeit',
+            confirmButtonColor: '#c0392b',
+            reverseButtons: true,
+            inputValidator: v => (!v || !v.trim()) ? 'A reason is required.' : undefined,
+          })).value || '')
+        : (window.prompt(`Reason for forfeiting this deposit (required, e.g. ${damageExample}):`, '') || '');
+      return { proceed: !!note.trim(), note };
+    }
+    const proceed = window.Swal
+      ? (await window.Swal.fire({
+          title: 'Refund this deposit back to the resident?',
+          showCancelButton: true, confirmButtonText: 'Refund', cancelButtonText: 'Cancel',
+          confirmButtonColor: '#312e81', reverseButtons: true,
+        })).isConfirmed
+      : confirm('Refund this deposit back to the resident?');
+    return { proceed, note: '' };
   }
 
   // Mobile sidebar toggle
@@ -425,13 +450,8 @@
         btn.addEventListener('click', async () => {
           const action = btn.dataset.depositAction;
           const id     = btn.dataset.id;
-          let note = '';
-          if (action === 'forfeit') {
-            note = window.prompt('Reason for forfeiting this deposit (required, e.g. facility damage):', '') || '';
-            if (!note.trim()) return; // cancelled, or left blank - don't submit
-          } else if (!confirm('Refund this deposit back to the resident?')) {
-            return;
-          }
+          const { proceed, note } = await confirmDepositAction(action, 'facility damage');
+          if (!proceed) return;
           const row = btn.closest('.bk-deposit-actions');
           if (row) row.querySelectorAll('button').forEach(b => b.disabled = true);
           try {
@@ -525,8 +545,12 @@
   }
   // Honors the "Auto-refresh" setting for the global cadence.
   const _bkSecs = Math.max(30, parseInt(localStorage.getItem('mgmtRefreshSecs'), 10) || 90);
+  // The 15s tick already covers the Bookings view; the slower cadence only
+  // needs to run when that faster one wouldn't otherwise fire (dashboard KPIs
+  // reading _allBookings from any other view) - skip it here to avoid both
+  // intervals hitting the same endpoint back-to-back while the view is open.
   setInterval(() => { if ($('view-bookings')?.classList.contains('active')) _pollBookings(); }, 15000);
-  setInterval(_pollBookings, _bkSecs * 1000);
+  setInterval(() => { if (!$('view-bookings')?.classList.contains('active')) _pollBookings(); }, _bkSecs * 1000);
   // Refresh immediately on returning to the tab if a bookings-backed view is open.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' &&
@@ -1075,13 +1099,8 @@
         btn.addEventListener('click', async () => {
           const action = btn.dataset.depositAction;
           const id     = btn.dataset.id;
-          let note = '';
-          if (action === 'forfeit') {
-            note = window.prompt('Reason for forfeiting this deposit (required, e.g. property damage):', '') || '';
-            if (!note.trim()) return;
-          } else if (!confirm('Refund this deposit back to the resident?')) {
-            return;
-          }
+          const { proceed, note } = await confirmDepositAction(action, 'property damage');
+          if (!proceed) return;
           const row = btn.closest('.bk-deposit-actions');
           if (row) row.querySelectorAll('button').forEach(b => b.disabled = true);
           try {
@@ -1867,8 +1886,10 @@
     _payPolling = true;
     try { await loadPaymentsPanel(); } catch {} finally { _payPolling = false; }
   }
+  // Same reasoning as _pollBookings above: the 15s tick already covers the
+  // Payments view, so the slower cadence skips it to avoid a redundant hit.
   setInterval(() => { if ($('view-payments')?.classList.contains('active')) _pollPayments(); }, 15000);
-  setInterval(_pollPayments, _bkSecs * 1000);
+  setInterval(() => { if (!$('view-payments')?.classList.contains('active')) _pollPayments(); }, _bkSecs * 1000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && $('view-payments')?.classList.contains('active')) _pollPayments();
   });
@@ -2172,7 +2193,9 @@
   loadMessageResidents().catch(() => {});
   document.querySelectorAll('[data-view="messages"]').forEach(el =>
     el.addEventListener('click', () => loadConversations().catch(e => console.error('[mgmt messages]', e))));
-  setInterval(() => loadConversations().catch(() => {}), 30000);
+  // The 7s tick below already covers the Messages view; skip this slower one
+  // there to avoid both hitting /api/management/messages back-to-back.
+  setInterval(() => { if (!$('view-messages')?.classList.contains('active')) loadConversations().catch(() => {}); }, 30000);
   // Live inbox: while the Messages view is open, refresh the list + open thread.
   setInterval(() => {
     const v = $('view-messages');
@@ -2507,7 +2530,10 @@
   }
 
   async function _resDelete(id, title) {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    const proceed = window.Swal
+      ? (await window.Swal.fire({ title: `Delete "${title}"?`, text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#c0392b', cancelButtonText: 'Cancel', reverseButtons: true })).isConfirmed
+      : confirm(`Delete "${title}"? This cannot be undone.`);
+    if (!proceed) return;
     try {
       const res  = await fetch(`/api/management/resources/${encodeURIComponent(id)}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
@@ -2528,7 +2554,11 @@
     resBulkDeleteBtn.addEventListener('click', async () => {
       const ids = [..._resSelected];
       if (!ids.length) return;
-      if (!confirm(`Delete ${ids.length} document${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) return;
+      const label = `${ids.length} document${ids.length > 1 ? 's' : ''}`;
+      const proceed = window.Swal
+        ? (await window.Swal.fire({ title: `Delete ${label}?`, text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#c0392b', cancelButtonText: 'Cancel', reverseButtons: true })).isConfirmed
+        : confirm(`Delete ${label}? This cannot be undone.`);
+      if (!proceed) return;
       resBulkDeleteBtn.disabled = true;
       try {
         const results = await Promise.allSettled(ids.map(id => fetch(`/api/management/resources/${encodeURIComponent(id)}`, {

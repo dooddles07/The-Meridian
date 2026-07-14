@@ -8,6 +8,7 @@
 
   const SESS = 'lumina_member';
   const $ = id => document.getElementById(id);
+  const toast = makeToast('toast', { resolveClass: t => t || 'ok' }); // from shared.js
   // Finished bookings (no longer active): shown in history but excluded from the
   // active count, per-day limit, slot re-booking guard and guest linking.
   const FINISHED_STATUSES = ['Completed', 'No-Show', 'Cancelled'];
@@ -428,10 +429,7 @@
     if (durField) durField.hidden = false;
   }
   function todaySGT() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); }
-  function fmtDate(iso) {
-    if (!iso) return ' - ';
-    return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  // fmtDate() now lives in shared.js
   // Bookings are persisted SERVER-SIDE in MongoDB (the source of truth) - never in the
   // browser, so they're consistent across devices and both portals. We keep an
   // in-memory cache hydrated from /api/booking/mine (see loadBookings); create/edit/
@@ -649,7 +647,10 @@
     syncBookingStatuses(); // pull live stages set by management
     loadNotices();         // pull announcements published by management
     loadMsgBadge();        // unread message count for the sidebar
-    setInterval(loadMsgBadge, 30000); // keep the unread badge fresh
+    // loadMessages() already refreshes the badge itself (see its tail call), so
+    // skip this slower poll while the Messages view is open to avoid both
+    // hitting /api/messages back-to-back.
+    setInterval(() => { if (!$('view-messages')?.classList.contains('active')) loadMsgBadge(); }, 30000);
     // Live inbox: refresh the open Messages thread without a page reload.
     setInterval(() => { const v = $('view-messages'); if (v && v.classList.contains('active')) loadMessages(); }, 7000);
     // Live payments: refresh the panel while it's open so a payment confirmed
@@ -2901,8 +2902,6 @@
   }
 
   // Feedback helpers + other forms
-  let _t;
-  function toast(msg, type) { const el = $('toast'); if (!el) return; el.textContent = msg; el.className = 'show ' + (type || 'ok'); clearTimeout(_t); _t = setTimeout(() => { el.className = ''; }, 3500); }
 
   function swalHtml(rows, body) {
     const cells = rows.map(([lbl, val]) =>

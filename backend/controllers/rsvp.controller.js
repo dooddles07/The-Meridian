@@ -1,8 +1,6 @@
-const mongoose    = require('mongoose');
 const RsvpResponse = require('../models/rsvp.model');
 const Announcement = require('../models/announcement.model');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 // POST /api/rsvp — resident submits or updates their RSVP (upsert).
 async function submitRsvp(req, res) {

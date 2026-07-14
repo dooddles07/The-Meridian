@@ -54,4 +54,6 @@ const schema = new mongoose.Schema({
   createdAt:      { type: Date, default: Date.now },
 });
 
+schema.index({ date: 1 }); // management list is filtered/sorted by calendar date
+
 module.exports = mongoose.models.Booking || mongoose.model('Booking', schema);

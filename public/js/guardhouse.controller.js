@@ -584,18 +584,28 @@
     const msg = wipingAll
       ? 'Permanently delete ALL visitor log history (not just today)? This cannot be undone.'
       : "Clear today's visitor log entries?";
-    if (!confirm(msg)) return;
+    const proceed = window.Swal
+      ? (await window.Swal.fire({ title: msg, icon: 'warning', showCancelButton: true, confirmButtonText: 'Clear', confirmButtonColor: '#c0392b', cancelButtonText: 'Cancel', reverseButtons: true })).isConfirmed
+      : confirm(msg);
+    if (!proceed) return;
+    const btn = $('ghClearBtn'); btn.disabled = true;
     try { await fetch(`/api/guardhouse/log?scope=guest&range=${_logRange}`, { method: 'DELETE', headers: _logHeaders() }); } catch {}
     renderLog(); toast(wipingAll ? 'Visitor history cleared.' : "Today's visitor log cleared.");
+    btn.disabled = false;
   });
   if ($('ghParcelClearBtn')) $('ghParcelClearBtn').addEventListener('click', async () => {
     const wipingAll = _logRange === 'all';
     const msg = wipingAll
       ? 'Permanently delete ALL parcel log history (not just today)? This cannot be undone.'
       : "Clear today's parcel log entries?";
-    if (!confirm(msg)) return;
+    const proceed = window.Swal
+      ? (await window.Swal.fire({ title: msg, icon: 'warning', showCancelButton: true, confirmButtonText: 'Clear', confirmButtonColor: '#c0392b', cancelButtonText: 'Cancel', reverseButtons: true })).isConfirmed
+      : confirm(msg);
+    if (!proceed) return;
+    const btn = $('ghParcelClearBtn'); btn.disabled = true;
     try { await fetch(`/api/guardhouse/log?scope=parcel&range=${_logRange}`, { method: 'DELETE', headers: _logHeaders() }); } catch {}
     renderLog(); toast(wipingAll ? 'Parcel history cleared.' : "Today's parcel log cleared.");
+    btn.disabled = false;
   });
 
   // Helpers

@@ -1,10 +1,8 @@
-const mongoose  = require('mongoose');
 const Booking   = require('../models/booking.model');
 const facilities = require('../config/facilities');
 const stripeService = require('../services/stripe.service');
 const depositCheckout = require('../services/depositCheckout.service');
-
-const dbReady = () => mongoose.connection.readyState === 1;
+const { isDbReady: dbReady } = require('../utils/db');
 
 // GET /api/booking/facilities - public, no auth: just static catalogue metadata
 // (key/name/deposit/depositAmount), no different from what's already visible
@@ -285,7 +283,11 @@ async function createCheckoutSession(req, res) {
 async function listForManagement(req, res) {
   if (!dbReady()) return res.status(503).json({ success: false, message: 'Database not connected.' });
   await runSweeps();
-  const items = await Booking.find({}).sort({ date: 1 }).lean();
+  // Keep all current/future bookings but drop stale history beyond ~90 days
+  // back - a row cap here would truncate to the OLDEST rows (sorted date:1)
+  // and hide current/future bookings once the collection outgrows the cap.
+  const cutoff = facilities.addDaysSGT(facilities.todaySGT(), -90);
+  const items = await Booking.find({ date: { $gte: cutoff } }).sort({ date: 1 }).lean();
   return res.json({
     success: true,
     items: items.map(b => ({
