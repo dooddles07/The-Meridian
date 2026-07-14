@@ -1,3 +1,10 @@
+/* This landing page intentionally keeps its own copy of the design tokens
+   below rather than linking public/css/portal/_tokens.css directly: that file
+   also sets html{font-size:20px} and a different font pairing (Cormorant +
+   Elms Sans) for the portal apps, either of which would break this page's
+   16px/Cormorant Garamond+Tenor Sans layout if imported wholesale. The color
+   values are kept in sync by hand - if you change the palette in one, check
+   the other. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
