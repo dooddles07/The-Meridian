@@ -122,7 +122,22 @@
     localStorage.setItem('mgmtLastView', view);
     closeSidebar();
   }
-  document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.view)));
+  // Every [data-view] nav trigger (sidebar items, "view all" links) is a plain
+  // <div>/<span> - neither is focusable or keyboard-activatable by default, so
+  // without this a keyboard-only or screen-reader user can't navigate the
+  // console at all beyond the view they land on. Skip anything already
+  // natively interactive (a real <button>, or an <a> that already has href).
+  document.querySelectorAll('[data-view]').forEach(el => {
+    const activate = () => navigate(el.dataset.view);
+    el.addEventListener('click', activate);
+    const isNativelyInteractive = (el.tagName === 'A' && el.hasAttribute('href')) || el.tagName === 'BUTTON';
+    if (isNativelyInteractive) return;
+    if (!el.hasAttribute('tabindex')) el.tabIndex = 0;
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+  });
   navigate(localStorage.getItem('mgmtLastView') || 'dashboard');
 
   // Dashboard date tabs
@@ -130,11 +145,19 @@
   const dateTabs = $('dashDateTabs');
   if (dateTabs) {
     dateTabs.querySelectorAll('.date-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
+      const activateTab = () => {
         dateTabs.querySelectorAll('.date-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         _dashPeriod = tab.dataset.period || 'today';
         _refreshDashKpis();
+      };
+      // Same keyboard-access gap as the [data-view] triggers above - these are
+      // plain <div>s too.
+      if (!tab.hasAttribute('tabindex')) tab.tabIndex = 0;
+      if (!tab.hasAttribute('role')) tab.setAttribute('role', 'button');
+      tab.addEventListener('click', activateTab);
+      tab.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateTab(); }
       });
     });
   }
