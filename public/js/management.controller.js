@@ -11,14 +11,48 @@
 
   // Session gate — the actual credential lives in an httpOnly cookie now;
   // mgmtUser is just the display-info signal that a session exists. If the
-  // cookie's actually gone/expired, this page's own API calls will 401.
+  // cookie's actually gone/expired, this page's own API calls will 401 - see
+  // the fetch shadow just below, which catches that and bounces back to login
+  // instead of leaving every panel silently broken.
   let USER = {};
   try { USER = JSON.parse(sessionStorage.getItem('mgmtUser') || localStorage.getItem('mgmtUser') || '{}'); } catch {}
   if (!USER.username) { window.location.href = 'management-login.html'; return; }
-  // Every data view below still attaches this to its mock API calls, which
-  // ignore it entirely (the mock doesn't check headers) - kept as a harmless
-  // placeholder so those existing call sites don't need touching.
+  // The real credential is the httpOnly cookie sent automatically on every
+  // same-origin request; this header is a harmless fallback for direct API
+  // testing (curl/Postman) and isn't what actually authenticates the browser.
   const token = 'session';
+
+  // Authenticated fetch — mirrors portal.controller.js's identical pattern.
+  // A 401 on a non-login API call means the session cookie is gone/expired
+  // (past its 8h TTL, or revoked): bounce back to the login page instead of
+  // leaving every panel showing a generic "could not load" forever.
+  const STORAGE_KEYS = ['mgmtToken', 'mgmtUser', 'mgmtLastView', 'mgmtDataSnapshot'];
+  let _authExpiredHandled = false;
+  const _rawFetch = window.fetch.bind(window);
+  function fetch(url, opts = {}) {
+    return _rawFetch(url, opts).then(res => {
+      if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
+        handleAuthExpired();
+      }
+      return res;
+    });
+  }
+  function handleAuthExpired() {
+    if (_authExpiredHandled) return; // avoid a storm of redirects from parallel calls
+    _authExpiredHandled = true;
+    _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'management' }) }).catch(() => {});
+    STORAGE_KEYS.forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    try { localStorage.setItem('lumina_mgmt_logout_broadcast', String(Date.now())); } catch {}
+    window.location.href = 'management-login.html';
+  }
+  // Cross-tab logout sync - see portal.controller.js's identical rationale:
+  // the `storage` event fires in every OTHER same-origin tab the instant one
+  // tab's session expires or logs out, so a second open management tab bounces
+  // to login immediately instead of waiting for its own next 401.
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'lumina_mgmt_logout_broadcast' || !e.newValue) return;
+    window.location.href = 'management-login.html';
+  });
 
   // Hide the full-screen loading overlay (covers everything by default)
   const overlay = $('loadingOverlay');
@@ -2620,8 +2654,9 @@
 
   // Logout
   bind('logoutBtn', () => {
-    fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'management' }) }).catch(() => {}); // clear the cookie server-side
-    ['mgmtToken', 'mgmtUser', 'mgmtLastView', 'mgmtDataSnapshot'].forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'management' }) }).catch(() => {}); // clear the cookie server-side
+    STORAGE_KEYS.forEach(k => { sessionStorage.removeItem(k); localStorage.removeItem(k); });
+    try { localStorage.setItem('lumina_mgmt_logout_broadcast', String(Date.now())); } catch {}
     window.location.href = 'index.html';
   });
 

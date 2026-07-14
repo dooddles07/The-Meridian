@@ -21,6 +21,37 @@
   // → renderLog() reads top-level consts declared later (e.g. esc); calling it here
   // would hit a temporal-dead-zone error for restored sessions.
 
+  // Authenticated fetch — mirrors portal.controller.js's identical pattern. A
+  // 401 on a non-login API call means the session cookie is gone/expired (past
+  // its 8h TTL, or revoked): bounce back to the login screen instead of leaving
+  // the parcel/guest lookups silently failing forever.
+  let _authExpiredHandled = false;
+  const _rawFetch = window.fetch.bind(window);
+  function fetch(url, opts = {}) {
+    return _rawFetch(url, opts).then(res => {
+      if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/') && !url.includes('/auth/')) {
+        handleAuthExpired();
+      }
+      return res;
+    });
+  }
+  function handleAuthExpired() {
+    if (_authExpiredHandled) return; // avoid a storm of reloads from parallel calls
+    _authExpiredHandled = true;
+    _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'guardhouse' }) }).catch(() => {});
+    sessionStorage.removeItem(GH_SESS);
+    try { localStorage.setItem('lumina_gh_logout_broadcast', String(Date.now())); } catch {}
+    window.location.reload();
+  }
+  // Cross-tab/station logout sync - see portal.controller.js's identical
+  // rationale: the `storage` event fires in every OTHER same-origin tab the
+  // instant one station's session expires or logs out.
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'lumina_gh_logout_broadcast' || !e.newValue) return;
+    if (!sessionStorage.getItem(GH_SESS)) return; // this tab isn't logged in anyway
+    window.location.reload();
+  });
+
   // Login
   $('ghLoginBtn').addEventListener('click', doLogin);
   $('ghPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -66,8 +97,9 @@
   // Logout
   $('ghLogout').addEventListener('click', () => {
     stopCamera();
-    fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'guardhouse' }) }).catch(() => {}); // clear the cookie server-side
+    _rawFetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'guardhouse' }) }).catch(() => {}); // clear the cookie server-side
     sessionStorage.removeItem(GH_SESS);
+    try { localStorage.setItem('lumina_gh_logout_broadcast', String(Date.now())); } catch {}
     window.location.href = 'index.html';
   });
 
