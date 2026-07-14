@@ -542,5 +542,6 @@
   // Restore an existing session and boot the portal LAST - after every top-level
   // const above is initialized - so showPortal()/renderLog() can safely read them.
   if (session) showPortal();
+  else $('ghUsername').focus(); // land keyboard focus straight on the first field
 
 })();

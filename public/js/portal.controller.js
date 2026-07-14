@@ -3595,6 +3595,7 @@
   // handleAuthExpired() bounces back to login.
   try { member = JSON.parse(sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || 'null'); } catch {}
   if (member) bootPortal();
+  else $('loginEmail').focus(); // land keyboard focus straight on the first field
 
   // Returning from Stripe Checkout (see startStripeCheckout) - clean the URL so
   // refreshing/re-sharing the link can't be mistaken for a fresh payment, then
