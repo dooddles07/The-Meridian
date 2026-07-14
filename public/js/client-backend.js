@@ -99,6 +99,7 @@
   function nowISO() { return new Date().toISOString(); }
   function daysFromNow(n) { var d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
   function guestRef(date) { return 'GST-' + String(date || daysFromNow(0)).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000); }
+  function defectRef() { return 'DFT-' + Math.floor(1000 + Math.random() * 9000); }
 
   window.__luminaReset = function () { localStorage.removeItem(DB_KEY); location.reload(); };
 
@@ -120,8 +121,8 @@
         parcel('LZ-40021199', 'Ninja Van', 'Documents envelope', 'Priya Nair', 'Received', me),
       ],
       defects: [
-        defect('Leaking tap in master bathroom', 'Plumbing', '#12-08 Master Bath', 'High', 'Acknowledged', me),
-        defect('Corridor light flickering on level 12', 'Electrical', 'Level 12 lift lobby', 'Medium', 'In Progress', me),
+        defect('Leaking tap in master bathroom', 'Plumbing', '#12-08 Master Bath', 'Urgent', 'Acknowledged', me),
+        defect('Corridor light flickering on level 12', 'Electrical', 'Level 12 lift lobby', 'Routine', 'In Progress', me),
       ],
       feedback: [
         feedback('Complaint', 'Noise', 'Renovation noise past permitted hours on level 11.', daysFromNow(-3), '21:30', 'Under Review', me),
@@ -145,7 +146,7 @@
       return { id: uid('local-parcel'), opportunityId: uid('local-opp'), contactId: m.contact_id, ref: ref, courier: courier, desc: desc, collector: collector, resident: m.name, unit: m.unit, stage: stage, ts: nowISO() };
     }
     function defect(desc, category, location, urgency, stage, m) {
-      return { id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: m.contact_id, desc: desc, category: category, location: location, urgency: urgency, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
+      return { id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: m.contact_id, reference: defectRef(), desc: desc, category: category, secondaryCategory: '', location: location, urgency: urgency, photo: '', stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
     }
     function feedback(type, category, desc, idate, itime, stage, m) {
       return { id: uid('local-fb'), opportunityId: uid('local-opp'), contactId: m.contact_id, type: type, category: category, desc: desc, incident_date: idate, incident_time: itime, stage: stage, contact: m.name, unit: m.unit, ts: nowISO() };
@@ -168,11 +169,11 @@
   // Map a stored collection item → the generic "opportunity" shape the resident
   // "My …" panels and the management pipeline tables consume.
   function oppName(kind, it) {
-    if (kind === 'guest')   return it.reference + '' + it.visitor + ' (#' + it.unit + ')';
-    if (kind === 'parcel')  return it.ref + '' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
+    if (kind === 'guest')   return it.reference + ' - ' + it.visitor + ' (#' + it.unit + ')';
+    if (kind === 'parcel')  return it.ref + ' - ' + it.resident + ' (#' + it.unit + ')' + (it.collector ? ' [Auth: ' + it.collector + ']' : '');
     if (kind === 'defect')  return (it.category ? it.category + ': ' : '') + it.desc;
-    if (kind === 'feedback')return (it.type ? it.type + '' : '') + it.desc;
-    if (kind === 'move')    return it.move_type + '' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
+    if (kind === 'feedback')return (it.type ? it.type + ' - ' : '') + it.desc;
+    if (kind === 'move')    return it.move_type + ' - ' + it.contact + ' (#' + it.unit + ') · ' + it.move_date + ' ' + it.move_time;
     return it.desc || it.name || '';
   }
   function toOpp(kind, it) {
@@ -249,9 +250,16 @@
     // /api/management/guest(s), /api/management/contacts/search) is now real -
     // see isRealPath below - so those mock branches are gone from here.
     if (p === '/api/defect' && method === 'POST') {
-      db.defects.unshift({ id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, desc: body.description, category: body.category || 'General', location: body.location || '', urgency: body.urgency || 'Medium', stage: 'Reported', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
+      // Keep the attached photo only if it fits a sane budget — base64 images
+      // live in localStorage (~5MB cap shared across the whole demo), so an
+      // oversized upload is dropped rather than blowing the quota. Photos are
+      // already downscaled + JPEG-compressed client-side before they reach here.
+      var photo = (typeof body.defect_file === 'string' && body.defect_file.length < 1500000) ? body.defect_file : '';
+      var dref  = defectRef();
+      db.defects.unshift({ id: uid('local-defect'), opportunityId: uid('local-opp'), contactId: MEMBER.contact_id, reference: dref, desc: body.description, category: body.category || 'General', secondaryCategory: body.secondaryCategory || '', location: body.location || '', urgency: body.urgency || 'Routine', photo: photo, stage: 'Reported', contact: MEMBER.name, unit: MEMBER.unit, ts: nowISO() });
+      if (db.defects.length > 40) db.defects.length = 40; // bound localStorage growth
       persist();
-      return ok({ message: 'Defect report submitted.' });
+      return ok({ message: 'Defect report submitted.', reference: dref });
     }
     if (p === '/api/feedback' && method === 'POST') {
       var fref = 'FB-' + Date.now().toString().slice(-8);
@@ -267,7 +275,7 @@
       persist();
       return ok({ message: 'Guardhouse notified.', reference: pref });
     }
-    if (p === '/api/defect/mine')   return ok({ items: db.defects.map(function (x) { return { desc: x.desc, category: x.category, location: x.location, urgency: x.urgency, ts: x.ts }; }) });
+    if (p === '/api/defect/mine')   return ok({ items: db.defects.map(function (x) { return { reference: x.reference || '', desc: x.desc, category: x.category, secondaryCategory: x.secondaryCategory || '', location: x.location, urgency: x.urgency, photo: x.photo || '', ts: x.ts }; }) });
     if (p === '/api/feedback/mine') return ok({ items: db.feedback.map(function (x) { return { type: x.type, category: x.category, desc: x.desc, incident_date: x.incident_date, incident_time: x.incident_time, ts: x.ts }; }) });
     if (p === '/api/parcel/mine')   return ok({ items: db.parcels.map(function (x) { return { ref: x.ref, courier: x.courier, desc: x.desc, collector: x.collector, ts: x.ts }; }) });
 
@@ -308,7 +316,16 @@
     if (p === '/api/management/opportunities' && method === 'GET') {
       var pk = qs.get('pipeline');
       var list = collectionFor(pk).map(function (it) {
-        return { oppId: it.oppId || it.opportunityId || it.id, contactId: it.contactId, reference: it.reference || it.ref || '', contact: it.contact || it.resident || it.host || '', unit: it.unit, stage: it.stage, urgency: it.urgency || '', createdAt: it.ts || it.createdAt || nowISO() };
+        // Defects have no natural "reference" like a parcel/guest pass, so pack
+        // the tracking code + the actual reported issue into the reference cell
+        // — otherwise the management table shows a blank first column and the
+        // triager can't tell what's broken (and search-by-text finds nothing).
+        var ref = it.reference || it.ref || '';
+        if (pk === 'defect') {
+          var cat = it.secondaryCategory ? it.category + ' + ' + it.secondaryCategory : it.category;
+          ref = (it.reference ? it.reference + ' · ' : '') + (cat ? cat + ': ' : '') + (it.desc || '');
+        }
+        return { oppId: it.oppId || it.opportunityId || it.id, contactId: it.contactId, reference: ref, contact: it.contact || it.resident || it.host || '', unit: it.unit, stage: it.stage, urgency: it.urgency || '', photo: it.photo || '', location: it.location || '', createdAt: it.ts || it.createdAt || nowISO() };
       });
       return ok({ items: list, total: list.length, stages: STAGES[pk] || [] });
     }

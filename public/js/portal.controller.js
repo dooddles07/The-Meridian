@@ -450,10 +450,12 @@
   const saveBookings = list => { _bookings = Array.isArray(list) ? list : []; };  // optimistic; persistence is via the API
   let _myGuests = []; // latest /api/guest/mine items - used to count a booking's linked guests
   let _editingGuestId = null; // set while the guest form is editing an existing pass (vs creating)
-  // The full text a resident typed for defects/parcels/moves/feedback (GHL only keeps
-  // a short opp name) is persisted in the live MongoDB on submit and read back here -
-  // never in localStorage, so it's consistent across every device and both portals.
-  // Returns newest-first rows in the shape renderRecords expects as `saved`.
+  // The full text a resident typed for defects/parcels/moves/feedback (the opp
+  // name only keeps a short summary) is read back here from /api/<type>/mine.
+  // In this demo build those endpoints are served by the in-browser mock
+  // (client-backend.js, backed by localStorage); a live deployment would back
+  // them with the real datastore instead. Returns newest-first rows in the
+  // shape renderRecords expects as `saved`.
   const fetchMine = async (type) => {
     if (!member || (!member.contact_id && !member.email)) return [];
     try {
@@ -1584,15 +1586,18 @@
           ${opts.kind === 'defect' ? (() => {
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
             const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
-            const cat   = (sv && sv.category) || issue.split('|')[0].split('')[0].trim() || '';
+            let   cat   = (sv && sv.category) || issue.split('|')[0].split(':')[0].trim() || '';
+            if (sv && sv.secondaryCategory) cat += ` + ${sv.secondaryCategory}`;
             const urg   = (sv && sv.urgency) || (item.name.match(/\[(emergency|urgent|routine)\]/i) || [])[1] || '';
+            const photo = (sv && sv.photo) || '';
             return `
               <div class="rec-field"><span class="rec-label">Submitted date</span>${subDate}</div>
               <div class="rec-field"><span class="rec-label">Unit Number</span>${esc(unit)}</div>
               <div class="rec-field"><span class="rec-label">Category</span>${esc(cat)}</div>
               <div class="rec-field"><span class="rec-label">Location</span>${esc((sv && sv.location) || '')}</div>
               <div class="rec-field"><span class="rec-label">Urgency Level</span>${esc(urg)}</div>
-              <div class="rec-field"><span class="rec-label">Issue</span>${esc((sv && sv.desc) || '')}</div>`;
+              <div class="rec-field"><span class="rec-label">Issue</span>${esc((sv && sv.desc) || '')}</div>
+              ${photo ? `<div class="rec-field"><span class="rec-label">Photo</span><a href="${esc(photo)}" target="_blank" rel="noopener"><img src="${esc(photo)}" alt="defect photo" class="rec-photo-thumb" /></a></div>` : ''}`;
           })() : opts.kind === 'parcel' ? (() => {
             // Fall back to the parcel's GHL custom fields when no local copy exists.
             const cf = (re) => { const f = (item.customFields || []).find(c => re.test(c.label || '')); return f ? (f.fieldValueString || '') : ''; };
@@ -1612,7 +1617,7 @@
           })() : opts.kind === 'move' ? (() => {
             const unitM = String(item.name || '').match(/#\s*([\w-]+)/);
             const unit  = (member && member.unit) || (unitM ? unitM[1] : '') || '';
-            const mType = (sv && sv.move_type) || (item.name.split('')[0].trim()) || '';
+            const mType = (sv && sv.move_type) || (item.name.split(' - ')[0].trim()) || '';
             const mDate = (sv && sv.move_date) ? fmtDate(sv.move_date) : '';
             return `
               <div class="rec-field"><span class="rec-label">Submitted Date</span>${subDate}</div>
@@ -2745,6 +2750,17 @@
   if ($('gLinkedBooking')) $('gLinkedBooking').addEventListener('change', updateGuestBookingStatus);
   document.querySelectorAll('[data-view="guests"]').forEach(el => el.addEventListener('click', populateBookingSelector));
 
+  // Fill the (previously empty) defect stage legend so residents can see the
+  // lifecycle their report moves through.
+  (function fillDefectStages() {
+    const el = $('defectStages');
+    if (!el) return;
+    const stages = ['Reported', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'];
+    el.innerHTML = stages
+      .map(s => `<span class="stage-pill">${esc(s)}</span>`)
+      .join('<span class="stage-pill-sep">›</span>');
+  })();
+
   if (document.querySelectorAll('input[name="dUrgency"]').length > 0) {
     document.querySelectorAll('input[name="dUrgency"]').forEach(radio => {
       radio.addEventListener('change', () => {
@@ -2814,7 +2830,9 @@
       const data = await res.json();
       if (!data.success) { setMsg('dMsg', data.message || 'Submission failed.', true); return; }
       setMsg('dMsg', '');
-      // Full submission is persisted server-side in MongoDB by POST /api/defect.
+      // Demo build: POST /api/defect is served by the in-browser mock
+      // (client-backend.js) and stored in localStorage — the full report,
+      // photo included, is read back from /api/defect/mine.
       swalDone('Report Submitted', [
         ['Category', catDisplay || ''],
         ['Urgency',  urgency  || ''],
@@ -2828,7 +2846,7 @@
       $('dUrgencyMsg').style.display = 'none';
       const dfPanel = $('myDefects');
       if (dfPanel) dfPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
-      setTimeout(() => loadMyDefects(), 3000);
+      setTimeout(() => loadMyDefects(), 300);
     } catch {
       setMsg('dMsg', 'Connection error. Please try again.', true);
     } finally { btn.disabled = false; }
