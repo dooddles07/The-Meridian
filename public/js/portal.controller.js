@@ -467,6 +467,34 @@
     } catch { return []; }
   };
 
+  // Read an image File, downscale to <=1920px, and return a compressed JPEG data
+  // URL. Rejects on a read/decode failure so callers can show a photo-specific
+  // error instead of a generic network one.
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('read'));
+      reader.onload = e => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('decode'));
+        img.onload = () => {
+          const MAX = 1920;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+            else                { width = Math.round(width * MAX / height); height = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
 
   // Session / login
   let member = null;
@@ -1398,10 +1426,20 @@
       const f = data.feedback;
       if ($('fbType')) { $('fbType').value = f.type || 'Complaint'; }
       updateFbCategories(); // rebuild category list + labels for the type
-      if ($('fbCategory')) $('fbCategory').value = f.category || '';
+      // A stored category that isn't one of the presets was entered via "Others"
+      // — restore it into the specify box.
+      const sel = $('fbCategory');
+      const known = sel && [...sel.options].some(o => o.value === f.category);
+      if (sel) {
+        if (f.category && !known) { sel.value = 'Others'; if ($('fbCategoryOther')) $('fbCategoryOther').value = f.category; }
+        else { sel.value = f.category || ''; }
+      }
+      toggleFbOther();
       if ($('fbDesc'))     $('fbDesc').value = f.description || '';
       if ($('fbDate'))     $('fbDate').value = f.incident_date || '';
       if ($('fbTime'))     $('fbTime').value = f.incident_time || '';
+      // A new photo replaces the old one; leaving it empty keeps the existing one.
+      if ($('fbPhoto')) { $('fbPhoto').value = ''; const n = $('fbPhotoName'); if (n) { n.textContent = f.photo ? 'Keep current photo (or choose a new one)…' : 'Choose a photo…'; n.classList.remove('has-file'); } }
       _editingFeedbackId = id;
       const btn = $('fbSubmitBtn'); if (btn) { btn.textContent = 'Save Changes'; btn.disabled = false; }
       setMsg('fbMsg', 'Editing your submission — update the details and save.');
@@ -1722,6 +1760,7 @@
               : '';
             const response = (sv && sv.response) || '';
             const respondedAt = (sv && sv.respondedAt) ? new Date(sv.respondedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' }) : '';
+            const fbPhoto = (sv && sv.photo) || '';
             return `
               ${ref ? `<div class="rec-field"><span class="rec-label">Reference</span><span class="rec-ref">${esc(ref)}</span></div>` : ''}
               <div class="rec-field"><span class="rec-label">Submitted Date</span>${subDate}</div>
@@ -1730,6 +1769,7 @@
               <div class="rec-field"><span class="rec-label">Category</span>${esc((sv && sv.category) || '')}</div>
               ${incidentRows}
               <div class="rec-field"><span class="rec-label">${esc(descLabel)}</span>${esc((sv && sv.desc) || '')}</div>
+              ${fbPhoto ? `<div class="rec-field"><span class="rec-label">Photo</span><a href="${esc(fbPhoto)}" target="_blank" rel="noopener"><img src="${esc(fbPhoto)}" alt="attached photo" class="rec-photo-thumb" /></a></div>` : ''}
               ${response ? `<div class="rec-response"><div class="rec-response-head">Management Response${respondedAt ? ` · ${respondedAt}` : ''}</div><div class="rec-response-body">${esc(response)}</div></div>` : ''}`;
           })() : `
           ${refRow}${fields}${qrHtml}
@@ -1923,11 +1963,36 @@
       dateRow.style.display = showIncident ? '' : 'none';
       if (!showIncident) { if ($('fbDate')) $('fbDate').value = ''; if ($('fbTime')) $('fbTime').value = ''; }
     }
+    toggleFbOther();
+  }
+  // Reveal a free-text "please specify" box when the category is "Others", so
+  // the actual category isn't lost.
+  function toggleFbOther() {
+    const grp = $('fbCategoryOtherGroup');
+    if (!grp) return;
+    const isOther = $('fbCategory') && $('fbCategory').value === 'Others';
+    grp.style.display = isOther ? '' : 'none';
+    if (!isOther && $('fbCategoryOther')) $('fbCategoryOther').value = '';
+  }
+  // Effective category = the specify text when "Others" is chosen, else the select.
+  function fbEffectiveCategory() {
+    const sel = $('fbCategory') ? $('fbCategory').value : '';
+    if (sel === 'Others') { const t = $('fbCategoryOther') ? $('fbCategoryOther').value.trim() : ''; return t || 'Others'; }
+    return sel;
   }
   const fbTypeEl = $('fbType');
   if (fbTypeEl) fbTypeEl.addEventListener('change', updateFbCategories);
+  if ($('fbCategory')) $('fbCategory').addEventListener('change', toggleFbOther);
   // An incident can only have happened in the past — cap the picker at today (SGT).
   if ($('fbDate')) $('fbDate').max = todaySGT();
+  // Photo file-name label + optional-photo picker.
+  if ($('fbPhoto')) {
+    $('fbPhoto').addEventListener('change', () => {
+      const nameEl = $('fbPhotoName');
+      const file   = $('fbPhoto').files[0];
+      if (nameEl) { nameEl.textContent = file ? file.name : 'Choose a photo…'; nameEl.classList.toggle('has-file', !!file); }
+    });
+  }
   updateFbCategories(); // sync categories/labels/incident-row to the default type on load
 
   async function loadMyFeedback(silent) {
@@ -3101,13 +3166,21 @@
 
   bind('fbSubmitBtn', async () => {
     const type     = $('fbType')     ? $('fbType').value     : '';
-    const category = $('fbCategory') ? $('fbCategory').value : '';
+    const category = fbEffectiveCategory();
     const desc     = $('fbDesc').value.trim();
     // Incident date/time only apply to a Complaint (the form hides them otherwise).
     const fbDate   = (type === 'Complaint' && $('fbDate')) ? $('fbDate').value : '';
     const fbTime   = (type === 'Complaint' && $('fbTime')) ? $('fbTime').value : '';
     if (!desc) { setMsg('fbMsg', 'Please describe your submission.', true); return; }
     if (fbDate && fbDate > todaySGT()) { setMsg('fbMsg', 'The incident date cannot be in the future.', true); return; }
+    // Optional evidence photo (compressed to a base64 data URL).
+    let feedback_file = '';
+    const fbPhotoInput = $('fbPhoto');
+    if (fbPhotoInput && fbPhotoInput.files[0]) {
+      setMsg('fbMsg', 'Compressing photo…');
+      try { feedback_file = await compressImage(fbPhotoInput.files[0]); setMsg('fbMsg', ''); }
+      catch { setMsg('fbMsg', "Couldn't read that image. Try a different photo, or submit without one.", true); return; }
+    }
     const editing = _editingFeedbackId;
     const { isConfirmed: fbOk } = await swalReview(editing ? 'Review Changes' : `Review ${type || 'Submission'}`, [
       ['Type',     type     || ''],
@@ -3124,7 +3197,7 @@
       const res = await fetch(editing ? `/api/feedback/${encodeURIComponent(editing)}` : '/api/feedback', {
         method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, category, description: desc, incident_date: fbDate, incident_time: fbTime, resident_name: member.name, resident_email: member.email, resident_unit: member.unit, resident_contact_id: member.contact_id }),
+        body: JSON.stringify({ type, category, description: desc, incident_date: fbDate, incident_time: fbTime, feedback_file, resident_name: member.name, resident_email: member.email, resident_unit: member.unit, resident_contact_id: member.contact_id }),
       });
       const data = await res.json();
       if (!data.success) { setMsg('fbMsg', data.message || (editing ? 'Could not save changes.' : 'Submission failed.'), true); return; }
@@ -3138,6 +3211,10 @@
         ['Unit',     member?.unit || ' - '],
       ], editing ? 'Your changes are saved.' : `Thank you. Management will review your submission and respond shortly.${data.reference ? ` Your reference is ${data.reference}.` : ''}`);
       clr(['fbDesc', 'fbDate', 'fbTime']);
+      if ($('fbCategoryOther')) $('fbCategoryOther').value = '';
+      if ($('fbCategory')) $('fbCategory').selectedIndex = 0;
+      toggleFbOther();
+      if ($('fbPhoto')) { $('fbPhoto').value = ''; const n = $('fbPhotoName'); if (n) { n.textContent = 'Choose a photo…'; n.classList.remove('has-file'); } }
       const fbPanel = $('myFeedback');
       if (fbPanel) fbPanel.innerHTML = '<div class="panel-empty">Processing your submission, please wait…</div>';
       setTimeout(() => loadMyFeedback(), 300);
@@ -3145,7 +3222,14 @@
       setMsg('fbMsg', 'Connection error. Please try again.', true);
     } finally { btn.disabled = false; }
   });
-  bind('fbCancelBtn', () => { exitFeedbackEditMode(); clr(['fbDesc', 'fbDate', 'fbTime']); setMsg('fbMsg', ''); });
+  bind('fbCancelBtn', () => {
+    exitFeedbackEditMode();
+    clr(['fbDesc', 'fbDate', 'fbTime']);
+    if ($('fbCategoryOther')) $('fbCategoryOther').value = '';
+    toggleFbOther();
+    if ($('fbPhoto')) { $('fbPhoto').value = ''; const n = $('fbPhotoName'); if (n) { n.textContent = 'Choose a photo…'; n.classList.remove('has-file'); } }
+    setMsg('fbMsg', '');
+  });
 
   // Panel refresh buttons
   async function refreshPanel(btnId, loadFn) {

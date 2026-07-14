@@ -6,6 +6,16 @@ const dbReady = () => mongoose.connection.readyState === 1;
 const ALL_STAGES = ['Submitted', 'Under Review', 'Resolved', 'Closed'];
 const TYPES      = ['Complaint', 'Feedback', 'Suggestion'];
 
+// Optional evidence photo — a base64 data URL, already downscaled + compressed
+// client-side. Reject non-images / oversized uploads rather than storing junk.
+const MAX_PHOTO_CHARS = 1_500_000;
+function sanitizePhoto(v) {
+  if (typeof v !== 'string') return '';
+  if (!/^data:image\/[a-z+]+;base64,/i.test(v)) return '';
+  if (v.length > MAX_PHOTO_CHARS) return '';
+  return v;
+}
+
 // Type-prefixed reference so the management type filter (which keys off the
 // CMP/FBK/SUG prefix) works, and residents get a memorable case number.
 function feedbackRef(type) {
@@ -35,6 +45,7 @@ async function create(req, res) {
     type,
     category:  String(req.body.category || 'General').trim() || 'General',
     description, incident_date, incident_time,
+    photo: sanitizePhoto(req.body.feedback_file),
     status: 'Submitted',
     contact_id:     req.resident.contact_id,
     resident_name:  req.resident.name,
@@ -58,6 +69,7 @@ async function listMine(req, res) {
       desc: f.description,
       incident_date: f.incident_date || '',
       incident_time: f.incident_time || '',
+      photo: f.photo || '',
       stage: f.status,
       response: f.response || '',
       respondedAt: f.respondedAt || null,
@@ -76,7 +88,7 @@ async function getOne(req, res) {
     success: true,
     feedback: {
       id: String(f._id), reference: f.reference, type: f.type, category: f.category,
-      description: f.description, incident_date: f.incident_date || '', incident_time: f.incident_time || '', stage: f.status,
+      description: f.description, incident_date: f.incident_date || '', incident_time: f.incident_time || '', photo: f.photo || '', stage: f.status,
     },
   });
 }
@@ -106,6 +118,9 @@ async function update(req, res) {
   f.description   = description;
   f.incident_date = type === 'Complaint' ? String(req.body.incident_date || '').trim() : '';
   f.incident_time = type === 'Complaint' ? String(req.body.incident_time || '').trim() : '';
+  // Replace the photo only when a new valid one is supplied; empty leaves it.
+  const newPhoto = sanitizePhoto(req.body.feedback_file);
+  if (newPhoto) f.photo = newPhoto;
   await f.save();
   return res.json({ success: true, message: 'Submission updated.', reference: f.reference });
 }
@@ -134,6 +149,7 @@ async function listForManagement(req, res) {
       unit: f.resident_unit,
       stage: f.status,
       response: f.response || '',
+      photo: f.photo || '',
       createdAt: f.createdAt,
     })),
     stages: ALL_STAGES,

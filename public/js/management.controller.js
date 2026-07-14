@@ -1092,14 +1092,34 @@
       // Add a per-row "Respond" action (the generic pipeline renderer only emits
       // the stage select) so management can reply to the resident. Re-applied on
       // every load, so the live poll doesn't drop it.
-      const respMap = {};
-      result.items.forEach(it => { respMap[it.oppId] = it.response || ''; });
+      const respMap = {}, photoMap = {};
+      result.items.forEach(it => { respMap[it.oppId] = it.response || ''; photoMap[it.oppId] = it.photo || ''; });
       $('feedbackBody')?.querySelectorAll('tr:not(.empty-row)').forEach(tr => {
         const sel = tr.querySelector('.bk-stage-select');
         if (!sel) return;
         const oppId = sel.dataset.opp;
         const actions = sel.closest('td');
         if (!actions || actions.querySelector('.fb-respond-btn')) return;
+        // Evidence photo (if attached) — a small thumbnail that opens full-size.
+        const photo = photoMap[oppId];
+        if (photo) {
+          const img = document.createElement('img');
+          img.src = photo; img.className = 'defect-thumb'; img.title = 'Click to enlarge'; img.alt = 'attached photo';
+          img.style.marginLeft = '6px';
+          img.addEventListener('click', () => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;padding:20px;box-sizing:border-box';
+            const full = document.createElement('img');
+            full.src = photo; full.style.cssText = 'max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)';
+            overlay.appendChild(full);
+            const close = () => { overlay.remove(); document.removeEventListener('keydown', onEsc); };
+            const onEsc = e => { if (e.key === 'Escape') close(); };
+            overlay.addEventListener('click', close);
+            document.addEventListener('keydown', onEsc);
+            document.body.appendChild(overlay);
+          });
+          actions.appendChild(img);
+        }
         const existing = respMap[oppId] || '';
         const btn = document.createElement('button');
         btn.type = 'button';

@@ -681,13 +681,17 @@
                 <select id="fbCategory">
                   <option>Noise</option>
                   <option>Cleanliness</option>
-                  <option>Security</option>
-                  <option>Maintenance</option>
+                  <option>Security Concern</option>
+                  <option>Maintenance Issue</option>
                   <option>Neighbour Dispute</option>
                   <option>Facility Condition</option>
                   <option>Staff Conduct</option>
                   <option>Others</option>
                 </select>
+              </div>
+              <div class="form-group" id="fbCategoryOtherGroup" style="display:none">
+                <label>Please specify</label>
+                <input type="text" id="fbCategoryOther" maxlength="60" placeholder="Tell us the category…" />
               </div>
               <div class="form-group">
                 <label>What Happened?</label>
@@ -728,6 +732,14 @@
                     <option value="11:00 PM">11:00 PM</option>
                   </select>
                 </div>
+              </div>
+              <div class="form-group">
+                <label>Attach Photo <span class="opt">(optional)</span></label>
+                <label class="file-upload-btn" for="fbPhoto">
+                  <span class="material-symbols-outlined" style="font-size:18px;line-height:1;flex-shrink:0;display:flex;align-items:center">attach_file</span>
+                  <span id="fbPhotoName" class="file-upload-name">Choose a photo…</span>
+                </label>
+                <input type="file" id="fbPhoto" accept="image/*" style="display:none" />
               </div>
               <div class="form-info">
                 A reference number is issued on submission. Track the status here — management's reply appears on your submission once they respond.
