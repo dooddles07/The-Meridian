@@ -6,6 +6,19 @@
   <title>The Lumina · Community Portal</title>
   <meta name="description" content="The Lumina community portal. One connected system for residents, the management office, and the guardhouse.">
   <link rel="icon" type="image/png" href="assets/images/logomark.png">
+
+  <!-- Open Graph / Twitter Card - so sharing the live link shows a real preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="The Lumina">
+  <meta property="og:title" content="The Lumina · Community Portal">
+  <meta property="og:description" content="One connected system for residents, the management office, and the guardhouse - facility bookings, guest passes, parcels, defects, messaging, and more.">
+  <meta property="og:image" content="https://the-lumina-production.up.railway.app/assets/images/hero-skyline.jpg">
+  <meta property="og:url" content="https://the-lumina-production.up.railway.app/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Lumina · Community Portal">
+  <meta name="twitter:description" content="One connected system for residents, the management office, and the guardhouse.">
+  <meta name="twitter:image" content="https://the-lumina-production.up.railway.app/assets/images/hero-skyline.jpg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Tenor+Sans&display=swap" rel="stylesheet">
@@ -54,6 +67,10 @@
         <span class="badge badge--note">
           <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
           <span class="badge__txt">Nothing is ever charged</span>
+        </span>
+        <span class="badge badge--checking" id="statusBadge">
+          <span class="material-symbols-outlined tt-spin" aria-hidden="true">sync</span>
+          <span class="badge__txt">Checking live status…</span>
         </span>
       </div>
     </header>
@@ -128,6 +145,38 @@
       document.documentElement.dataset.theme = next;
       try { localStorage.setItem('lumina-portal-theme', next); } catch (e) {}
     });
+
+    // Ping the live backend so a visitor knows before clicking in whether the
+    // real API/database is reachable right now (Railway can cold-start after
+    // idle). Non-blocking, short timeout, fails quiet - this is a courtesy
+    // signal, not a gate.
+    (function checkStatus() {
+      var badge = document.getElementById('statusBadge');
+      var txt   = badge.querySelector('.badge__txt');
+      var icon  = badge.querySelector('.material-symbols-outlined');
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+      fetch('/api/health', { signal: ctrl.signal })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          clearTimeout(timer);
+          if (d && d.success && d.db) {
+            badge.className = 'badge badge--ok';
+            icon.textContent = 'check_circle';
+            txt.textContent = 'Live system, online now';
+          } else {
+            badge.className = 'badge badge--warn';
+            icon.textContent = 'warning';
+            txt.textContent = 'Server is up, database is reconnecting';
+          }
+        })
+        .catch(function () {
+          clearTimeout(timer);
+          badge.className = 'badge badge--warn';
+          icon.textContent = 'bedtime';
+          txt.textContent = 'Waking up the server - first click may be slow';
+        });
+    })();
   </script>
 </body>
 </html>

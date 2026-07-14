@@ -233,6 +233,15 @@ a { color: inherit; text-decoration: none; }
 .badge--ok { color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, transparent); background: var(--green-lt); }
 .badge--ok .material-symbols-outlined { color: var(--green); }
 .badge--note .material-symbols-outlined { color: var(--gold); }
+.badge--checking .material-symbols-outlined { color: var(--muted); }
+.badge--warn { color: #9a4d12; border-color: color-mix(in srgb, #9a4d12 35%, transparent); background: color-mix(in srgb, #9a4d12 10%, var(--surface)); }
+.badge--warn .material-symbols-outlined { color: #9a4d12; }
+[data-theme="dark"] .badge--warn { color: #d47848; border-color: color-mix(in srgb, #d47848 35%, transparent); background: color-mix(in srgb, #d47848 12%, var(--surface)); }
+[data-theme="dark"] .badge--warn .material-symbols-outlined { color: #d47848; }
+
+.tt-spin { animation: spin 1.1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tt-spin { animation: none; } }
 
 /* Portal directory */
 .directory {
